@@ -7,8 +7,8 @@ const app = express();
 
 app.use(express.json());
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("TypeScript Backend Running");
+app.get("/test", (req: Request, res: Response) => {
+  res.status(200).send("TypeScript Backend Running");
 });
 
 app.listen(PORT, () => {
