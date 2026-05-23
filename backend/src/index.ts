@@ -1,15 +1,17 @@
 import express from "express";
-import type{ Request, Response } from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
+
+import userrouter from "./routes/user.route.ts"
+
 const PORT: number = Number(process.env.PORT) ||  3000;
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
-app.get("/test", (req: Request, res: Response) => {
-  res.status(200).send("TypeScript Backend Running");
-});
+app.use("/api",userrouter)
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
