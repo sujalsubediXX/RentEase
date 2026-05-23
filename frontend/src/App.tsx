@@ -1,10 +1,12 @@
+import Header from "./components/Header.tsx";
+import Body from "./pages/Body.tsx";
 
 function App() {
 
-
   return (
     <>
-    <h1>HelloS</h1>
+    <Header />
+    <Body />
     </>
   )
 }
