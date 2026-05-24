@@ -1,53 +1,10 @@
-import { useState, useEffect, useRef} from "react";
-import type {  ReactNode, RefObject}from "react";
+import { useState, useEffect} from "react";
+import { Reveal } from "../../config/MotionFunction.tsx";
 import axios from "axios";
-import API_BASE_URL from "../config/api";
+import API_BASE_URL from "../../config/api";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
 
-interface RevealState {
-  ref: RefObject<HTMLDivElement | null>; 
-  visible: boolean;
-}
-
-function useReveal(): RevealState {
-  const ref = useRef<HTMLDivElement>(null); 
-  const [visible, setVisible] = useState<boolean>(false);
-  
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setVisible(true); },
-      { threshold: 0.12 }
-    );
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  
-  return { ref, visible };
-}
-
-interface RevealProps {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-}
-
-function Reveal({ children, delay = 0, className = "" }: RevealProps) {
-  const { ref, visible } = useReveal();
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(32px)",
-        transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
 
 interface Category {
   icon: string;
@@ -74,12 +31,6 @@ interface Testimonial {
   role: string;
   initial: string;
   featured?: boolean;
-}
-
-interface Step {
-  emoji: string;
-  title: string;
-  desc: string;
 }
 
 
@@ -116,13 +67,6 @@ const testimonials: Testimonial[] = [
   },
 ];
 
-const steps: Step[] = [
-  { emoji: "🔍", title: "Search", desc: "Browse thousands of items by category, location, or keyword. Filter by price, availability, and rating." },
-  { emoji: "📅", title: "Book", desc: "Choose your rental dates and submit a booking request. Most owners respond within the hour." },
-  { emoji: "📦", title: "Pickup", desc: "Meet the owner or receive delivery. Every item is verified and insured for your peace of mind." },
-  { emoji: "↩️", title: "Return", desc: "Return the item in the same condition and leave a review. It's that simple!" },
-];
-
 
 
 
@@ -141,26 +85,9 @@ export default function Body() {
     setFavs((f) => ({ ...f, [i]: !f[i] }));
 
   return (
-    <div className="bg-white text-gray-900 font-sans overflow-x-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
-        .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
-        .hero-grid-bg {
-          background-image: linear-gradient(rgba(212,146,42,0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(212,146,42,0.08) 1px, transparent 1px);
-          background-size: 60px 60px;
-        }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-        .anim-0 { animation: fadeUp 0.6s 0s ease both; }
-        .anim-1 { animation: fadeUp 0.6s 0.1s ease both; }
-        .anim-2 { animation: fadeUp 0.6s 0.2s ease both; }
-        .anim-3 { animation: fadeUp 0.6s 0.3s ease both; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f9f6f1; }
-        ::-webkit-scrollbar-thumb { background: #e0d5c0; border-radius: 99px; }
-      `}</style>
-
-      {/* NAV */}
+    <div>
+      
+     
     
 
       {/* HERO */}
@@ -307,33 +234,6 @@ export default function Body() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section id="how" className="py-24 px-[5vw] bg-amber-50">
-        <div className="max-w-300 mx-auto">
-          <Reveal className="text-center mb-14">
-            <div className="flex items-center justify-center gap-2.5 text-[11px] text-amber-500 tracking-[0.15em] uppercase font-medium mb-3">
-              <span className="block w-6 h-px bg-amber-400" />Simple Process<span className="block w-6 h-px bg-amber-400" />
-            </div>
-            <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(36px,4.5vw,58px)" }}>
-              How RentEase <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Works</em>
-            </h2>
-            <p className="text-gray-500 text-[15px] mt-3">Start renting in minutes — it's that easy.</p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 relative">
-            <div className="absolute top-10 left-[12%] right-[12%] h-px bg-amber-200 hidden md:block pointer-events-none" />
-            {steps.map((s, i) => (
-              <Reveal key={i} delay={i * 0.08} className="text-center group">
-                <div className="w-20 h-20 rounded-full mx-auto mb-7 border border-amber-200 bg-white flex items-center justify-center text-[30px] relative z-10 shadow-sm group-hover:border-amber-400 group-hover:shadow-md transition-all duration-300">
-                  {s.emoji}
-                </div>
-                <h3 className="font-display text-[22px] font-normal text-gray-800 mb-2.5">{s.title}</h3>
-                <p className="text-[14px] text-gray-400 leading-relaxed">{s.desc}</p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* TESTIMONIALS */}
       <section className="py-24 px-[5vw] bg-white">

@@ -1,11 +1,12 @@
 import { useState, useEffect} from "react";
 const AMBER = "#d4922a";
 const navLinks: { label: string; href: string }[] = [
-  { label: "Categories", href: "#" },
-  { label: "Browse", href: "#" },
-  { label: "How It Works", href: "#" },
-  { label: "List an Item", href: "#" },
-  { label: "About", href: "#" },
+  { label: "Home", href: "/" },
+  { label: "Categories", href: "/" },
+  { label: "Browse", href: "/" },
+  { label: "How It Works", href: "/how-it-works" },
+  { label: "List an Item", href: "/" },
+  { label: "About", href: "/" },
 ];
 
 export default function Header() {

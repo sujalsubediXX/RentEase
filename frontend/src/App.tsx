@@ -1,12 +1,9 @@
-import Header from "./components/Header.tsx";
-import Body from "./pages/Body.tsx";
-
+import {Outlet} from "react-router-dom";
 function App() {
 
   return (
     <>
-    <Header />
-    <Body />
+    <Outlet/>
     </>
   )
 }
