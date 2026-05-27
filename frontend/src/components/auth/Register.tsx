@@ -214,7 +214,7 @@ export const Register: React.FC<RegisterProps> = ({
             type="submit"
             disabled={isLoading}
             className={`
-              w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg
+              w-full bg-linear-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg
               font-semibold transition-all duration-200 transform
               ${isLoading 
                 ? 'opacity-70 cursor-not-allowed' 

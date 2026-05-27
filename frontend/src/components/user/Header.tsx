@@ -1,4 +1,5 @@
 import { useState, useEffect} from "react";
+import { Link } from "react-router-dom";
 const AMBER = "#d4922a";
 const navLinks: { label: string; href: string }[] = [
   { label: "Home", href: "/" },
@@ -35,16 +36,16 @@ export default function Header() {
         <ul className="hidden md:flex gap-9 list-none">
           {navLinks.map((l) => (
             <li key={l.label}>
-              <a href={l.href} className="text-gray-500 text-[13.5px] tracking-wide no-underline hover:text-amber-600 transition-colors duration-200">
+              <Link to={l.href} className="text-gray-500 text-[13.5px] tracking-wide no-underline hover:text-amber-600 transition-colors duration-200">
                 {l.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
         <div className="flex gap-3 items-center">
-          <button className="px-5 py-2 border border-amber-200 text-gray-500 text-[13px] rounded bg-transparent hover:border-amber-500 hover:text-amber-600 transition-all duration-200 cursor-pointer">
+          <Link to="/login" className="px-5 py-2 border border-amber-200 text-gray-500 text-[13px] rounded bg-transparent hover:border-amber-500 hover:text-amber-600 transition-all duration-200 cursor-pointer">
             Sign In
-          </button>
+          </Link>
           <button className="px-5 py-2 border-none text-[13px] font-semibold rounded cursor-pointer transition-all duration-200 hover:brightness-110" style={{ background: AMBER, color: "#1a1209" }}>
             Get Started
           </button>

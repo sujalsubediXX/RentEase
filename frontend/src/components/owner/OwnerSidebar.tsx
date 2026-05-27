@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import {useSidebar} from "../../contexts/SidebarContext"
+import {useAuth } from "../../hooks/useAuth"
 import {
     LayoutDashboard, Package, CalendarCheck, BarChart3, Star,
     Settings,Home,
@@ -10,6 +11,7 @@ import { Link } from 'react-router-dom';
 export const OwnerSidebar = () => {
     const { isSidebarOpen } = useSidebar();
     const [activeNav, setActiveNav] = useState<string>("dashboard");
+    const { logout } = useAuth();
 
     interface NavItem {
         href: string;
@@ -71,7 +73,7 @@ export const OwnerSidebar = () => {
                     <Settings size={18} className="shrink-0" />
                     {isSidebarOpen && <span>Settings</span>}
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all">
+                <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all" onClick={logout}>
                     <LogOut size={18} className="shrink-0" />
                     {isSidebarOpen && <span>Log Out</span>}
                 </button>

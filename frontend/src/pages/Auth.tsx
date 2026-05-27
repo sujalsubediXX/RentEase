@@ -15,7 +15,7 @@ export const Auth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -25,11 +25,11 @@ export const Auth: React.FC = () => {
         <div className="flex flex-col items-center justify-center min-h-screen">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-linear-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <span className="text-white text-3xl font-bold">R</span>
               </div>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               RentEase
             </h1>
             <p className="text-gray-600 mt-2">Rent Anything, Anytime, Anywhere</p>
@@ -43,6 +43,7 @@ export const Auth: React.FC = () => {
                 error={error}
                 onSwitchToRegister={() => setMode('register')}
               />
+             
             ) : (
               <Register
                 onRegister={register}
@@ -88,5 +89,4 @@ export const Auth: React.FC = () => {
   );
 };
 
-// Also add a default export for compatibility
 export default Auth;
