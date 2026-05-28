@@ -16,6 +16,7 @@ import Bookings from "./pages/owner/Bookings";
 
 import Auth from "./pages/Auth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import  NoFoundPage  from "./pages/NoFoundPage";
 
 const router = createBrowserRouter([
   {
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
         element: <Bookings />,
       },
     ],
+  },
+  {
+    path: "*",
+    element: <NoFoundPage />,
   },
 ]);
 
