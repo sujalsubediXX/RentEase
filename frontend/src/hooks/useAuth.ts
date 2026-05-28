@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { authService } from '../services/auth.services';
-import type{ LoginCredentials, RegisterData, User } from '../types/auth.types';
+import type { LoginCredentials, RegisterData, User } from '../types/auth.types';
+import { useNavigate } from 'react-router-dom';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  const navigate = useNavigate();
   useEffect(() => {
     // Check for existing session
     const checkAuth = async () => {
@@ -32,11 +33,11 @@ export const useAuth = () => {
   const login = async (credentials: LoginCredentials): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await authService.login(credentials);
       setUser(response.user);
-      // Don't return anything (void)
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
@@ -50,7 +51,7 @@ export const useAuth = () => {
   const register = async (userData: RegisterData): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await authService.register(userData);
       setUser(response.user);
@@ -69,6 +70,7 @@ export const useAuth = () => {
     try {
       await authService.logout();
       setUser(null);
+      navigate('/');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
