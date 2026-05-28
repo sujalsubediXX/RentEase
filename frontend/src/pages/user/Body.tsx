@@ -139,7 +139,7 @@ export default function Body() {
       {/* CATEGORIES */}
       <section id="categories" className="py-24 px-[5vw] bg-gray-50">
         <div className="max-w-300 mx-auto">
-          <Reveal className="mb-14">
+          <Reveal  delay={(1 % 3) * 0.1} className="mb-14">
             <div className="flex items-center gap-2.5 text-[11px] text-amber-500 tracking-[0.15em] uppercase font-medium mb-3">
               <span className="block w-6 h-px bg-amber-400" />What We Offer
             </div>

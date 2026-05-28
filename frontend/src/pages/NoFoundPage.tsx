@@ -1,24 +1,26 @@
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
-
+import { Reveal } from "../config/MotionFunction.tsx";
 const NotFoundPage = () => {
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-      <div className="max-w-2xl w-full text-center">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+        .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+      `}</style>
 
-        {/* Glowing Background */}
+      <div className="max-w-2xl w-full text-center">
         <div className="relative mb-8">
           <div className="absolute inset-0 blur-3xl bg-blue-500/20 rounded-full"></div>
 
-          <div className="relative">
+          <Reveal delay={(1 % 3) * 0.1} className="relative">
             <h1 className="text-[120px] sm:text-[160px] font-black text-white leading-none tracking-tight">
               404
             </h1>
-          </div>
+          </Reveal>
         </div>
-
-        {/* Content */}
-        <div className="space-y-4">
+        <Reveal className="space-y-4">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Page Not Found
           </h2>
@@ -27,10 +29,9 @@ const NotFoundPage = () => {
             The page you are looking for doesn&apos;t exist or may have been
             moved to another location.
           </p>
-        </div>
+        </Reveal>
 
-        {/* Buttons */}
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <Reveal delay={(2 % 3) * 0.1} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             to="/"
             className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all duration-300 shadow-lg shadow-blue-500/20 hover:scale-105"
@@ -46,13 +47,14 @@ const NotFoundPage = () => {
             <ArrowLeft className="w-5 h-5" />
             Go Back
           </button>
-        </div>
+        </Reveal>
 
-        {/* Bottom Text */}
         <div className="mt-14">
-          <p className="text-sm text-slate-500">
-            Error Code: 404 | Resource Not Found
-          </p>
+          <Reveal delay={(3 % 3) * 0.1}>
+            <p className="text-sm text-slate-500">
+              Error Code: 404 | Resource Not Found
+            </p>
+          </Reveal>
         </div>
       </div>
     </div>
