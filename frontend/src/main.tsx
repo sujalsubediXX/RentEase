@@ -6,11 +6,8 @@ import "./index.css";
 
 import HowItWorks from "./pages/user/HowItWorks";
 import Body from "./pages/user/Body";
-
 import CategoriesPage from "./pages/user/Categories";
-
 import CategoryPage from "./pages/user/CategoryPage";
-
 
 import { UserLayout } from "./layouts/UserLayout";
 import { OwnerLayout } from "./layouts/OwnerLayout";
