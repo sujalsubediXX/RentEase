@@ -138,7 +138,7 @@ src/
 
 ```bash
 git clone <repository-url>
-cd rentease
+cd RENTEASEPROJECT
 ```
 
 ---
