@@ -17,7 +17,7 @@ import { OwnerLayout } from "./layouts/OwnerLayout";
 
 import Dashboard from "./pages/owner/Dashboard";
 import Bookings from "./pages/owner/Bookings";
-
+import OwnerListings from "./pages/owner/OwnerListing";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import NoFoundPage from "./pages/NoFoundPage";
 import { Login } from "./pages/Login";
@@ -77,6 +77,10 @@ const router = createBrowserRouter([
         path: "/owner/bookings",
         element: <Bookings />,
       },
+      {
+        path: "/owner/listings",
+        element: <OwnerListings />,
+      }
     ],
   },
   {
