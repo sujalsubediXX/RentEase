@@ -69,10 +69,10 @@ export const OwnerSidebar = () => {
 
             {/* Bottom */}
             < div className="px-2 pb-4 space-y-0.5 border-t border-stone-800 pt-3" >
-                <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all`}>
+                <Link to="/owner/settings" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all`}>
                     <Settings size={18} className="shrink-0" />
                     {isSidebarOpen && <span>Settings</span>}
-                </button>
+                </Link>
                 <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all" onClick={logout}>
                     <LogOut size={18} className="shrink-0" />
                     {isSidebarOpen && <span>Log Out</span>}

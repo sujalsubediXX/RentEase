@@ -1,143 +1,125 @@
-
-import {  CalendarCheck, ChevronRight,Clock, Wallet} from "lucide-react";
-
-const LISTING_STATUS = {
-    ACTIVE: "active",
-    PAUSED: "paused",
-    PENDING: "pending"
-} as const;
-
-const BOOKING_STATUS = {
-    CONFIRMED: "confirmed",
-    PENDING: "pending",
-    CANCELLED: "cancelled"
-} as const;
-
-type ListingStatus = typeof LISTING_STATUS[keyof typeof LISTING_STATUS];
-type BookingStatus = typeof BOOKING_STATUS[keyof typeof BOOKING_STATUS];
-
+import { Check, X, Calendar } from "lucide-react";
+import  { useState } from "react";
+import { Avatar } from "../../components/owner/Avatar";
+import { TopBar } from "../../components/owner/TopBar";
+type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
 interface Booking {
     id: string;
-    item: string;
+    listing: string;
     renter: string;
-    avatar: string;
-    start: string;
-    end: string;
+    renterAvatar: string;
+    startDate: string;
+    endDate: string;
     amount: number;
     status: BookingStatus;
-    daysAgo: number;
+    message: string;
 }
-
-interface StatusBadgeProps {
-    status: ListingStatus | BookingStatus;
-}
-
-const recentBookings: Booking[] = [
-    {
-        id: "BK-2401", item: "Canon EOS R5 Camera Kit", renter: "Aarav Sharma",
-        avatar: "AS", start: "May 28", end: "May 31", amount: 255,
-        status: BOOKING_STATUS.CONFIRMED, daysAgo: 0,
-    },
-    {
-        id: "BK-2399", item: 'MacBook Pro 16" M3', renter: "Priya Tamang",
-        avatar: "PT", start: "May 25", end: "May 27", amount: 130,
-        status: BOOKING_STATUS.CONFIRMED, daysAgo: 1,
-    },
-    {
-        id: "BK-2395", item: "Canon EOS R5 Camera Kit", renter: "Rajan Khatri",
-        avatar: "RK", start: "May 20", end: "May 22", amount: 170,
-        status: BOOKING_STATUS.PENDING, daysAgo: 3,
-    },
-    {
-        id: "BK-2388", item: "Camping Tent (4-Person)", renter: "Sita Poudel",
-        avatar: "SP", start: "May 17", end: "May 19", amount: 30,
-        status: BOOKING_STATUS.CANCELLED, daysAgo: 6,
-    },
-    {
-        id: "BK-2380", item: "Trek Mountain Bike", renter: "Bishal Rai",
-        avatar: "BR", start: "May 12", end: "May 14", amount: 40,
-        status: BOOKING_STATUS.CONFIRMED, daysAgo: 11,
-    },
-];
-
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-    const map = {
-        active: { bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500", label: "Active" },
-        paused: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Paused" },
-        pending: { bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-500", label: "Pending" },
-        confirmed: { bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500", label: "Confirmed" },
-        cancelled: { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500", label: "Cancelled" },
-    };
-    const s = map[status as keyof typeof map] || map.pending;
-    return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-            {s.label}
-        </span>
-    );
+const statusColor: Record<string, string> = {
+    active: "bg-emerald-100 text-emerald-700",
+    paused: "bg-amber-100 text-amber-700",
+    rented: "bg-blue-100 text-blue-700",
+    pending: "bg-amber-100 text-amber-700",
+    confirmed: "bg-emerald-100 text-emerald-700",
+    completed: "bg-slate-100 text-slate-600",
+    cancelled: "bg-red-100 text-red-600",
 };
 
-export default function Bookings() {
 
-    const weeklyStats = [
-        { label: "New Bookings", value: "3", icon: CalendarCheck },
-        { label: "Revenue", value: "Rs 515", icon: Wallet },
-        { label: "Pending Review", value: "1", icon: Clock },
-    ];
+const mockBookings: Booking[] = [
+    { id: "BK-001", listing: "Vintage Camera Kit", renter: "Arjun Sharma", renterAvatar: "AS", startDate: "2026-06-01", endDate: "2026-06-03", amount: 2400, status: "confirmed", message: "Need it for a wedding shoot." },
+    { id: "BK-002", listing: "Mountain Bike - Trek", renter: "Priya Thapa", renterAvatar: "PT", startDate: "2026-06-05", endDate: "2026-06-07", amount: 1500, status: "pending", message: "Weekend cycling trip to Nagarkot." },
+    { id: "BK-003", listing: "DSLR Canon EOS 90D", renter: "Rohan KC", renterAvatar: "RK", startDate: "2026-05-25", endDate: "2026-05-27", amount: 4500, status: "completed", message: "Product photography session." },
+    { id: "BK-004", listing: "Camping Tent (6-Person)", renter: "Sita Gurung", renterAvatar: "SG", startDate: "2026-06-10", endDate: "2026-06-13", amount: 2400, status: "confirmed", message: "" },
+    { id: "BK-005", listing: "Electric Guitar + Amp", renter: "Bikash Rai", renterAvatar: "BR", startDate: "2026-05-20", endDate: "2026-05-22", amount: 2100, status: "cancelled", message: "Band practice sessions." },
+];
+
+const BookingsPage = () => {
+    const [tab, setTab] = useState<"all" | BookingStatus>("all");
+    const [selected, setSelected] = useState<string | null>(null);
+
+    const filtered = tab === "all" ? mockBookings : mockBookings.filter(b => b.status === tab);
 
     return (
-        <>
-            <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Recent Bookings */}
-                <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-display font-bold text-stone-800">Recent Bookings</h2>
-                        <button className="text-sm text-amber-600 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
-                            View all <ChevronRight size={14} />
+        <div className="flex-1 overflow-y-auto bg-stone-50">
+            <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
+            <div className="p-6 space-y-4">
+                {/* Tabs */}
+                <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit">
+                    {(["all", "pending", "confirmed", "completed", "cancelled"] as const).map(t => (
+                        <button key={t} onClick={() => setTab(t)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${tab === t ? "bg-amber-600 text-white shadow-sm" : "text-stone-600 hover:bg-stone-50"}`}>
+                            {t}
+                            {t !== "all" && <span className="ml-1.5 text-xs opacity-70">({mockBookings.filter(b => b.status === t).length})</span>}
                         </button>
-                    </div>
-                    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
-                        {recentBookings.map((b) => (
-                            <div key={b.id} className="p-4 hover:bg-stone-50/50 transition-colors">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-8 h-8 rounded-xl bg-linear-to-br from-stone-700 to-stone-900 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                                        {b.avatar}
-                                    </div>
+                    ))}
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+                    <div className="divide-y divide-stone-100">
+                        {filtered.map(b => (
+                            <div key={b.id} className={`p-5 hover:bg-stone-50 transition-colors cursor-pointer ${selected === b.id ? "bg-amber-50" : ""}`}
+                                onClick={() => setSelected(selected === b.id ? null : b.id)}>
+                                <div className="flex items-center gap-4">
+                                    <Avatar initials={b.renterAvatar} size="md" color="bg-stone-600" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-stone-800 truncate">{b.renter}</p>
-                                        <p className="text-xs text-stone-400 truncate">{b.item}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-semibold text-stone-800">{b.renter}</p>
+                                            <span className="text-stone-300">·</span>
+                                            <p className="text-xs text-stone-400 font-mono">{b.id}</p>
+                                        </div>
+                                        <p className="text-sm text-stone-500 truncate mt-0.5">{b.listing}</p>
                                     </div>
-                                    <StatusBadge status={b.status} />
-                                </div>
-                                <div className="flex items-center justify-between ml-11">
-                                    <div className="flex items-center gap-1 text-xs text-stone-400">
-                                        <Clock size={11} />
-                                        <span>{b.start} – {b.end}</span>
+                                    <div className="text-right hidden sm:block">
+                                        <p className="text-sm font-bold text-stone-900">रू {b.amount.toLocaleString()}</p>
+                                        <p className="text-xs text-stone-400">{b.startDate} → {b.endDate}</p>
                                     </div>
-                                    <span className="text-sm font-bold text-stone-700">रू{b.amount}</span>
+                                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[b.status]}`}>{b.status}</span>
                                 </div>
+
+                                {selected === b.id && (
+                                    <div className="mt-4 pt-4 border-t border-stone-100">
+                                        {b.message && (
+                                            <div className="bg-stone-50 rounded-xl p-3 mb-4">
+                                                <p className="text-xs text-stone-500 font-medium mb-1">Message from renter</p>
+                                                <p className="text-sm text-stone-700">"{b.message}"</p>
+                                            </div>
+                                        )}
+                                        <div className="grid grid-cols-3 gap-3 text-center mb-4">
+                                            {[
+                                                ["Pickup", b.startDate],
+                                                ["Return", b.endDate],
+                                                ["Duration", `${Math.max(1, Math.round((new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / (1000 * 60 * 60 * 24)))} days`],
+                                            ].map(([l, v]) => (
+                                                <div key={l} className="bg-stone-50 rounded-xl p-3">
+                                                    <p className="text-xs text-stone-400 mb-1">{l}</p>
+                                                    <p className="text-sm font-semibold text-stone-700">{v}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {b.status === "pending" && (
+                                            <div className="flex gap-2">
+                                                <button className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
+                                                    <Check size={16} /> Approve
+                                                </button>
+                                                <button className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors">
+                                                    <X size={16} /> Decline
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
-
-                    {/* Quick Summary */}
-                    <div className="mt-4 bg-linear-to-br from-stone-800 to-stone-900 rounded-2xl p-5 text-white">
-                        <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">This Week</p>
-                        <div className="space-y-3">
-                            {weeklyStats.map(({ label, value, icon: Icon }) => (
-                                <div key={label} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-stone-400 text-sm">
-                                        <Icon size={14} />
-                                        <span>{label}</span>
-                                    </div>
-                                    <span className="text-sm font-bold">{value}</span>
-                                </div>
-                            ))}
+                    {filtered.length === 0 && (
+                        <div className="text-center py-16 text-stone-400">
+                            <Calendar size={48} className="mx-auto mb-3 opacity-50" />
+                            <p>No {tab} bookings</p>
                         </div>
-                    </div>
+                    )}
                 </div>
-
-            </main>
-        </>
+            </div>
+        </div>
     );
-}
+};
+export default BookingsPage;

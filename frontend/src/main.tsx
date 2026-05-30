@@ -18,10 +18,14 @@ import { OwnerLayout } from "./layouts/OwnerLayout";
 import Dashboard from "./pages/owner/Dashboard";
 import Bookings from "./pages/owner/Bookings";
 import OwnerListings from "./pages/owner/OwnerListing";
+import {Earnings} from "./pages/owner/Earnings";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import NoFoundPage from "./pages/NoFoundPage";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { Messages } from "./pages/owner/Messages";
+import { Reviews } from "./pages/owner/Reviews";
+import { Settings } from "./pages/owner/Settings";
 
 const router = createBrowserRouter([
   {
@@ -58,7 +62,7 @@ const router = createBrowserRouter([
     path: "/register",
     element: <Register />,
   },
-
+ 
   {
     path: "/owner",
     element:
@@ -80,6 +84,22 @@ const router = createBrowserRouter([
       {
         path: "/owner/listings",
         element: <OwnerListings />,
+      },
+      {
+        path: "/owner/reviews",
+        element: <Reviews />,
+      },
+      {
+        path: "/owner/messages",
+        element: <Messages />,
+      },
+      {
+        path: "/owner/settings",
+        element: <Settings />,
+      },
+      {
+        path: "/owner/earnings",
+        element: <Earnings />,
       }
     ],
   },
