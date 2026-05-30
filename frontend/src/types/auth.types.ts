@@ -1,8 +1,8 @@
 export type UserRole = 'renter' | 'owner' | 'admin';
 
 export interface LoginCredentials {
-  email: string;
-  password: string;
+  email: string | undefined;
+  password: string | undefined;
 }
 
 export interface RegisterData {

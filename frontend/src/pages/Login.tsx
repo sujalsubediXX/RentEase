@@ -1,21 +1,10 @@
 import React, { useState } from 'react';
-import { Input } from './Input';
-import { validateLoginForm } from '../../utils/validation';
-import type { LoginCredentials } from '../../types/auth.types';
+import { Input } from '../auth/Input';
+import { validateLoginForm } from '../utils/validation';
+import { useAuth } from '../hooks/useAuth';
+import { Link, Navigate } from 'react-router-dom';
 
-interface LoginProps {
-  onLogin: (credentials: LoginCredentials) => Promise<void>;
-  isLoading: boolean;
-  error: string | null;
-  onSwitchToRegister: () => void;
-}
-
-export const Login: React.FC<LoginProps> = ({
-  onLogin,
-  isLoading,
-  error,
-  onSwitchToRegister,
-}) => {
+export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +12,11 @@ export const Login: React.FC<LoginProps> = ({
     email?: string;
     password?: string;
   }>({});
+   const { login,  isLoading, error, isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +25,7 @@ export const Login: React.FC<LoginProps> = ({
     setValidationErrors(errors);
     
     if (isValid) {
-      await onLogin({ email, password });
+      await login({ email, password });
     }
   };
 
@@ -43,11 +37,18 @@ export const Login: React.FC<LoginProps> = ({
     
     setEmail(demoCredentials[role].email);
     setPassword(demoCredentials[role].password);
-    await onLogin(demoCredentials[role]);
+    await login(demoCredentials[role]);
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50">
+  
+
+      <div className="relative container mx-auto ">
+        <div className="flex flex-col items-center justify-center min-h-screen">
+
+
+          <div className="w-full max-w-md">
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
@@ -152,14 +153,17 @@ export const Login: React.FC<LoginProps> = ({
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <button
-            onClick={onSwitchToRegister}
+          <Link to="/register"
+          
             className="text-blue-600 hover:text-blue-700 font-semibold"
           >
             Sign up
-          </button>
+          </Link>
         </p>
       </div>
+    </div>
+    </div>
+    </div>
     </div>
   );
 };

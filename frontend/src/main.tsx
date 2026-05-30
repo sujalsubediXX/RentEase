@@ -9,19 +9,19 @@ import Body from "./pages/user/Body";
 
 import CategoriesPage from "./pages/user/Categories";
 
-import CategoryPage from "../src/pages/user/CategoryPage";
+import CategoryPage from "./pages/user/CategoryPage";
 
 
 import { UserLayout } from "./layouts/UserLayout";
 import { OwnerLayout } from "./layouts/OwnerLayout";
 
 import Dashboard from "./pages/owner/Dashboard";
-import OwnerListing from "./pages/owner/OwnerListing";
 import Bookings from "./pages/owner/Bookings";
 
-import Auth from "./pages/Auth";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
 import NoFoundPage from "./pages/NoFoundPage";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
 
 const router = createBrowserRouter([
   {
@@ -52,7 +52,11 @@ const router = createBrowserRouter([
 
   {
     path: "/login",
-    element: <Auth />,
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
   },
 
   {
@@ -68,10 +72,7 @@ const router = createBrowserRouter([
         path: "/owner/dashboard",
         element: <Dashboard />,
       },
-      {
-        path: "/owner/listings",
-        element: <OwnerListing />,
-      },
+
       {
         path: "/owner/bookings",
         element: <Bookings />,
