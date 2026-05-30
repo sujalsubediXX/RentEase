@@ -7,6 +7,11 @@ import "./index.css";
 import HowItWorks from "./pages/user/HowItWorks";
 import Body from "./pages/user/Body";
 
+import CategoriesPage from "./pages/user/Categories";
+
+import CategoryPage from "../src/pages/user/CategoryPage";
+
+
 import { UserLayout } from "./layouts/UserLayout";
 import { OwnerLayout } from "./layouts/OwnerLayout";
 
@@ -16,7 +21,7 @@ import Bookings from "./pages/owner/Bookings";
 
 import Auth from "./pages/Auth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import  NoFoundPage  from "./pages/NoFoundPage";
+import NoFoundPage from "./pages/NoFoundPage";
 
 const router = createBrowserRouter([
   {
@@ -31,8 +36,19 @@ const router = createBrowserRouter([
         path: "/how-it-works",
         element: <HowItWorks />,
       },
+
+      {
+        path: "/categories/:categoryId",
+        element: <CategoryPage />,
+      },
+      {
+        path: "/categories",
+        element: <CategoriesPage />,
+      }
+
     ],
   },
+
 
   {
     path: "/login",

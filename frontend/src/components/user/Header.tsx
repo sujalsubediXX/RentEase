@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 const AMBER = "#d4922a";
 const navLinks: { label: string; href: string }[] = [
   { label: "Home", href: "/" },
-  { label: "Categories", href: "/" },
+  { label: "Categories", href: "/categories" },
   { label: "Browse", href: "/" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "List an Item", href: "/" },
