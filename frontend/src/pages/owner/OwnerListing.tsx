@@ -6,6 +6,7 @@ import {
      Wallet,
     RefreshCw
 } from "lucide-react";
+import { TopBar } from "../../components/owner/TopBar";
 
 const LISTING_STATUS = {
     ACTIVE: "active",
@@ -190,13 +191,13 @@ export default function OwnerListing() {
 
     return (
         <>
-            {/* Listings + Bookings */}
+              <div className="flex-1 overflow-y-auto  space-y-6">
+                <TopBar title="My Listings"/>
                 <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
 
                 {/* Listings Grid */}
                 <div className="xl:col-span-2">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-display font-bold text-stone-800">My Listings</h2>
+                    <div className="flex items-center justify-end mb-4">
                         <button className="text-sm text-amber-600 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
                             View all <ChevronRight size={14} />
                         </button>
@@ -222,6 +223,7 @@ export default function OwnerListing() {
                 </div>
                                         
             </main>
+                </div>
         </>
     );
 }

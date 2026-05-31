@@ -1,8 +1,8 @@
 import { useState } from "react";
-import {TopBar} from "../../components/owner/TopBar";
 import { Avatar } from "../../components/owner/Avatar";
 import { Stars } from "../../components/owner/Stars";
 import { Edit } from "lucide-react";
+import { TopBar } from "../../components/owner/TopBar";
 interface NotificationSettings {
     bookingReq: boolean;
     messages: boolean;

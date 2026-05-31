@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Avatar } from "../../components/owner/Avatar";
 import { Stars } from "../../components/owner/Stars";
+import { NotificationBar } from "../../components/owner/NotificationBar";
 import { TopBar } from "../../components/owner/TopBar";
 interface Review {
     id: number;

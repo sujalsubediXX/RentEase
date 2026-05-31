@@ -1,4 +1,5 @@
 import { Clock, DollarSign, TrendingUp } from "lucide-react";
+import { NotificationBar } from "../../components/owner/NotificationBar";
 import { TopBar } from "../../components/owner/TopBar";
 type ListingStatus = "active" | "paused" | "rented";
 
@@ -35,6 +36,7 @@ export const Earnings = () => {
     return (
         <div className="flex-1 overflow-y-auto bg-stone-50">
             <TopBar title="Earnings" subtitle="Track your rental income" />
+          
             <div className="p-6 space-y-5">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
