@@ -6,8 +6,8 @@ const navLinks: { label: string; href: string }[] = [
   { label: "Categories", href: "/categories" },
   { label: "Browse", href: "/" },
   { label: "How It Works", href: "/how-it-works" },
-  { label: "List an Item", href: "/" },
-  { label: "About", href: "/" },
+  { label: "Contact Us", href: "/contact" },
+  { label: "About Us", href: "/about" },
 ];
 
 export default function Header() {

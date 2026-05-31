@@ -8,6 +8,8 @@ import HowItWorks from "./pages/user/HowItWorks";
 import Body from "./pages/user/Body";
 import CategoriesPage from "./pages/user/Categories";
 import CategoryPage from "./pages/user/CategoryPage";
+import Contact from "./pages/user/Contact";
+import About from "./pages/user/About";
 
 import { UserLayout } from "./layouts/UserLayout";
 import { OwnerLayout } from "./layouts/OwnerLayout";
@@ -45,6 +47,14 @@ const router = createBrowserRouter([
       {
         path: "/categories",
         element: <CategoriesPage />,
+      },
+      {
+        path: "/about",
+        element: <About/>,
+      },
+      {
+        path: "/contact",
+        element: <Contact />,
       }
 
     ],
