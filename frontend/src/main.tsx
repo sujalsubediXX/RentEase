@@ -6,6 +6,7 @@ import "./index.css";
 
 import HowItWorks from "./pages/user/HowItWorks";
 import Body from "./pages/user/Body";
+import About from "./pages/user/About";
 import CategoriesPage from "./pages/user/Categories";
 import CategoryPage from "./pages/user/CategoryPage";
 
@@ -45,6 +46,11 @@ const router = createBrowserRouter([
       {
         path: "/categories",
         element: <CategoriesPage />,
+      }
+      ,
+      {
+        path: "/about",
+        element:<About/>,
       }
 
     ],

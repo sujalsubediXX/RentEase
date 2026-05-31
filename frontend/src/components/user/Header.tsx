@@ -7,7 +7,7 @@ const navLinks: { label: string; href: string }[] = [
   { label: "Browse", href: "/" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "List an Item", href: "/" },
-  { label: "About", href: "/" },
+  { label: "About Us", href: "/about" },
 ];
 
 export default function Header() {
