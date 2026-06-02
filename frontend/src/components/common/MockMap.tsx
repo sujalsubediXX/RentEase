@@ -36,7 +36,7 @@ const MockMap: React.FC<MockMapProps> = ({
         </div>
         
         {/* Location Info Card */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg p-3 min-w-[200px] text-center">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg p-3 min-w-50 text-center">
           <p className="font-semibold text-black text-sm">{location}</p>
           <p className="text-xs text-gray-500 mt-1">{address}</p>
           <div className="mt-2 flex items-center justify-center gap-2 text-xs">

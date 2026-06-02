@@ -25,6 +25,18 @@ import { Register } from "./pages/Register";
 import { Messages } from "./pages/owner/Messages";
 import { Reviews } from "./pages/owner/Reviews";
 import { Settings } from "./pages/owner/Settings";
+import { AdminLayout } from "./layouts/AdminLayout";
+import { DashboardPage } from "./pages/admin/DashboardPage";
+import { UsersPage } from "./pages/admin/UsersPage";
+import { ListingsPage } from "./pages/admin/ListingsPage";
+import { BookingsPage } from "./pages/admin/BookingsPage";
+import { RevenuePage } from "./pages/admin/RevenuePage";
+import { ReviewsPage } from "./pages/admin/ReviewsPage";
+import { MessagesPage } from "./pages/admin/MessagesPage";
+import { SettingsPage } from "./pages/admin/SettingsPage";
+import { OwnersPage } from "./pages/admin/OwnersPage";
+
+
 
 const router = createBrowserRouter([
   {
@@ -108,6 +120,55 @@ const router = createBrowserRouter([
         path: "/owner/earnings",
         element: <Earnings />,
       }
+    ],
+  },
+  {
+    path: "/admin",
+    element:
+      <>
+        <ProtectedRoute>
+          <AdminLayout />
+        </ProtectedRoute>
+      </>,
+    children: [
+      {
+        path: "/admin/dashboard",
+        element: <DashboardPage />,
+      },
+      {
+        path: "/admin/users",
+        element: <UsersPage  roleFilter="user" />,
+      },
+      {
+        path: "/admin/owners",
+        element: <OwnersPage roleFilter="owner" />,
+      },
+      {
+        path: "/admin/listings",
+        element: <ListingsPage />,
+      },
+      {
+        path: "/admin/bookings",
+        element: <BookingsPage />,
+      },
+      {
+        path: "/admin/revenue",
+        element: <RevenuePage />,
+      },
+      {
+        path: "/admin/reviews",
+        element: <ReviewsPage />,
+      },
+      {
+        path: "/admin/messages",
+        element: <MessagesPage />,
+      },
+      {
+        path: "/admin/settings",
+        element: <SettingsPage />,
+      },
+
+     
     ],
   },
   {
