@@ -76,7 +76,9 @@ const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "
 export default function Body() {
   const [favs, setFavs] = useState<Record<number, boolean>>({});
   const [query, setQuery] = useState<string>("");
+  
   const [items, setItems] = useState<RentalItem[]>([]);
+
   useEffect(() => {
     axios.get(`${API_BASE_URL}/items`).then((res) => setItems(res.data));
   } , []);
