@@ -1,4 +1,5 @@
 import type {Request, Response } from "express";
+
 interface RentalItem {
     icon: string;
     cat: string;
