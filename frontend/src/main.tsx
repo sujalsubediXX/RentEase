@@ -35,7 +35,11 @@ import { ReviewsPage } from "./pages/admin/ReviewsPage";
 import { MessagesPage } from "./pages/admin/MessagesPage";
 import { SettingsPage } from "./pages/admin/SettingsPage";
 import { OwnersPage } from "./pages/admin/OwnersPage";
-
+import ProfilePage from "./pages/user/ProfilePage";
+import WishlistPage from "./pages/user/WishlistPage";
+import CartPage from "./pages/user/CartPage";
+import UserSettingsPage from "./pages/user/UserSettingsPage";
+import KYCVerificationForm from "./pages/KYCVerificationForm";
 
 
 const router = createBrowserRouter([
@@ -67,7 +71,23 @@ const router = createBrowserRouter([
       {
         path: "/contact",
         element: <Contact />,
-      }
+      },
+      {
+        path: "/profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "/wishlist",
+        element: <WishlistPage />,
+      },
+      {
+        path: "/cart",
+        element: <CartPage />,
+      },
+      {
+        path: "/settings",
+        element: <UserSettingsPage />,
+      },
 
     ],
   },
@@ -76,6 +96,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/kycverification",
+    element: <KYCVerificationForm />,
   },
   {
     path: "/register",

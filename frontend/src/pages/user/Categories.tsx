@@ -1,56 +1,32 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
+import axios from "axios";
+import API_BASE_URL from "../../config/api";
 interface Category {
   id: string;
   name: string;
   description: string;
-  icon: string;
   image: string;
   productCount: number;
-  color: string;
-}
+  }
 
-const categories: Category[] = [
-  {
-    id: 'cameras',
-    name: 'Cameras & Photography',
-    description: 'Professional cameras, lenses, and photography equipment',
-    icon: '📷',
-    image: 'https://picsum.photos/id/20/400/300',
-    productCount: 4,
-    color: 'from-yellow-500 to-amber-600',
-  },
-  {
-    id: 'laptops',
-    name: 'Laptops & Computers',
-    description: 'High-performance laptops for work and gaming',
-    icon: '💻',
-    image: 'https://picsum.photos/id/0/400/300',
-    productCount: 3,
-    color: 'from-yellow-500 to-amber-600',
-  },
-  {
-    id: 'dresses',
-    name: 'Dresses & Fashion',
-    description: 'Designer outfits for every occasion',
-    icon: '👗',
-    image: 'https://picsum.photos/id/30/400/300',
-    productCount: 3,
-    color: 'from-yellow-500 to-amber-600',
-  },
-  {
-    id: 'electronics',
-    name: 'Electronics',
-    description: 'Latest gadgets and electronic devices',
-    icon: '📱',
-    image: 'https://picsum.photos/id/2/400/300',
-    productCount: 2,
-    color: 'from-yellow-500 to-amber-600',
-  },
-];
-
+const IMAGE_BASE_URL = "http://localhost:3000";
 const CategoriesPage: React.FC = () => {
+  const [categories, setCategories] = React.useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try{
+        const response = await axios.get(`${API_BASE_URL}/category/getcategory`);
+        setCategories(response.data);
+      }catch(error){
+        console.error("Error fetching categories:", error);
+      }
+     
+    };
+
+    fetchCategories();
+  }, []);
   return (
     <div className="min-h-screen bg-white-50" style={{ fontFamily: 'serif' }}>
       {/* Hero Section with Black and Yellow */}
@@ -71,20 +47,20 @@ const CategoriesPage: React.FC = () => {
           {categories.map((category) => (
             <Link
               key={category.id}
-              to={`/categories/${category.id}`}
+              to={`/categories/${category.name.toLowerCase()}`} // Link to category page
               className="group block bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
             >
               {/* Category Image */}
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={category.image}
+                 src={`${IMAGE_BASE_URL}/uploads/categories/${category.image}`}
                   alt={category.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60`}></div>
-                <div className="absolute bottom-3 left-3 text-5xl">
+                <div className={`absolute inset-0 bg-linear-to-t  opacity-60`}></div>
+                {/* <div className="absolute bottom-3 left-3 text-5xl">
                   {category.icon}
-                </div>
+                </div> */}
               </div>
               
               {/* Category Info - White Background */}

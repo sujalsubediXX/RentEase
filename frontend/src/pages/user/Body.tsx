@@ -1,10 +1,10 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import { Reveal } from "../../config/MotionFunction.tsx";
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
-
+import { useNavigate } from "react-router-dom"
 
 interface Category {
   icon: string;
@@ -12,6 +12,12 @@ interface Category {
   count: string;
   badge?: string;
   featured?: boolean;
+}
+interface dbCategory {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
 }
 
 interface RentalItem {
@@ -43,14 +49,7 @@ const categories: Category[] = [
   { icon: "💻", name: "Electronics & Tech", count: "1,432" },
 ];
 
-// const items: RentalItem[] = [
-//   { icon: "📷", cat: "Photography", name: "Sony A7 IV Full Frame Camera", rating: "4.9", reviews: 128, loc: "Kathmandu", price: "₨850", bg: "#f5f0e8" },
-//   { icon: "⛺", cat: "Camping", name: "4-Person Dome Tent — Ultralight", rating: "4.8", reviews: 74, loc: "Pokhara", price: "₨400", bg: "#ede8e0" },
-//   { icon: "🎸", cat: "Music", name: "Fender Stratocaster Guitar + Amp", rating: "5.0", reviews: 43, loc: "Lalitpur", price: "₨650", bg: "#ede8e0" },
-//   { icon: "🛶", cat: "Outdoor Sports", name: "Inflatable Kayak — 2 Person", rating: "4.7", reviews: 56, loc: "Chitwan", price: "₨700", bg: "#e8edf0" },
-//   { icon: "🎥", cat: "Electronics", name: "4K Projector — 3000 Lumens", rating: "4.8", reviews: 91, loc: "Bhaktapur", price: "₨500", bg: "#ede8f0" },
-//   { icon: "🚲", cat: "Recreation", name: 'Trek Mountain Bike — 29"', rating: "4.9", reviews: 112, loc: "Kathmandu", price: "₨300", bg: "#e8f0ea" },
-// ];
+
 
 const testimonials: Testimonial[] = [
   {
@@ -76,28 +75,40 @@ const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "
 export default function Body() {
   const [favs, setFavs] = useState<Record<number, boolean>>({});
   const [query, setQuery] = useState<string>("");
-  
-  const [items, setItems] = useState<RentalItem[]>([]);
 
+  const [items, setItems] = useState<RentalItem[]>([]);
+  const [category, setCategory] = useState<dbCategory[]>([]);
+  const navigate = useNavigate();
   useEffect(() => {
     axios.get(`${API_BASE_URL}/items`).then((res) => setItems(res.data));
-  } , []);
+  }, []);
+  useEffect(() => {
+    const fetchCategory = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/category/getcategory`);
+        setCategory(res.data);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    fetchCategory();
+  }, []);
 
   const toggleFav = (i: number): void =>
     setFavs((f) => ({ ...f, [i]: !f[i] }));
 
   return (
     <div>
-      
-     
-    
+
+
+
 
       {/* HERO */}
       <section className="min-h-screen flex flex-col items-center justify-center px-[5vw] pt-28 pb-20 relative overflow-hidden text-center bg-white">
         <div className="absolute inset-0 hero-grid-bg opacity-60 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 60%, rgba(212,146,42,0.07) 0%, transparent 70%)" }} />
 
-     
+
 
         <h1 className="anim-1 font-display text-gray-900 font-light leading-none tracking-tight mb-6" style={{ fontSize: "clamp(54px, 8vw, 112px)" }}>
           Rent <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Anything</em>
@@ -118,9 +129,27 @@ export default function Body() {
               className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-gray-800 text-[15px] placeholder-gray-400"
             />
             <div className="w-px h-6 bg-amber-100" />
-            <div className="bg-transparent border-none outline-none px-5 py-4 text-gray-500 text-[14px] cursor-pointer flex items-center gap-1.5 whitespace-nowrap">
-              All Categories ▾
-            </div>
+
+            <select
+              className="bg-transparent border-none outline-none px-5 py-4 text-gray-500 text-[14px] cursor-pointer whitespace-nowrap"
+              onChange={(e) => {
+                const value = e.target.value;
+
+                if (value === "all") {
+                  navigate("/");
+                } else {
+                  navigate(`/categories/${value.toLowerCase()}`);
+                }
+              }}
+            >
+              <option value="all">All Categories</option>
+
+              {category.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
             <button className="m-1.5 px-6 py-2.5 border-none rounded-md font-semibold text-[14px] cursor-pointer whitespace-nowrap transition-all duration-200 hover:brightness-110" style={{ background: AMBER, color: "#1a1209" }}>
               Search
             </button>
@@ -136,12 +165,12 @@ export default function Body() {
         </div>
       </section>
 
-    
+
 
       {/* CATEGORIES */}
       <section id="categories" className="py-24 px-[5vw] bg-gray-50">
         <div className="max-w-300 mx-auto">
-          <Reveal  delay={(1 % 3) * 0.1} className="mb-14">
+          <Reveal delay={(1 % 3) * 0.1} className="mb-14">
             <div className="flex items-center gap-2.5 text-[11px] text-amber-500 tracking-[0.15em] uppercase font-medium mb-3">
               <span className="block w-6 h-px bg-amber-400" />What We Offer
             </div>
@@ -298,7 +327,7 @@ export default function Body() {
         </div>
       </section>
 
-     
+
     </div>
   );
 }
