@@ -40,6 +40,7 @@ import WishlistPage from "./pages/user/WishlistPage";
 import CartPage from "./pages/user/CartPage";
 import UserSettingsPage from "./pages/user/UserSettingsPage";
 import KYCVerificationForm from "./pages/KYCVerificationForm";
+import CategoryManagement from "./pages/owner/CategoryManagement";
 
 
 const router = createBrowserRouter([
@@ -123,6 +124,10 @@ const router = createBrowserRouter([
       {
         path: "/owner/bookings",
         element: <Bookings />,
+      },
+      {
+        path: "/owner/managecategory",
+        element: <CategoryManagement />,
       },
       {
         path: "/owner/listings",

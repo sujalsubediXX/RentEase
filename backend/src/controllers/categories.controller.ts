@@ -5,24 +5,24 @@ import Category from "../models/category.model.ts";
 
 
 export const addCategory = async (req: Request, res: Response) => {
-  try {
-    const { name, description } = req.body;
+    try {
+        const { name, description } = req.body;
 
-    const category = new Category({
-      name,
-      description,
-      image: req.file?.filename || "",
-    });
+        const category = new Category({
+            name,
+            description,
+            image: req.file?.filename || "",
+        });
 
-    const saved = await category.save();
+        const saved = await category.save();
 
-    return res.status(201).json(saved);
-  } catch (error: any) {
-    return res.status(400).json({
-      message: "Error creating category",
-      error: error.message,
-    });
-  }
+        return res.status(201).json(saved);
+    } catch (error: any) {
+        return res.status(400).json({
+            message: "Error creating category",
+            error: error.message,
+        });
+    }
 };
 
 
@@ -40,30 +40,41 @@ export const fetchCategory = async (req: Request, res: Response) => {
 };
 
 
+
 export const updateCategory = async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const { name, description } = req.body;
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
 
-        const updatedCategory = await Category.findByIdAndUpdate(
-            id,
-            { name, description },
-             { returnDocument: "after" }
-        );
+    const file = req.file;
 
-        if (!updatedCategory) {
-            return res.status(404).json({ message: "Category not found" });
-        }
+    const updateData: any = {
+      name,
+      description,
+    };
 
-        return res.status(200).json(updatedCategory);
-    } catch (error: any) {
-        return res.status(400).json({
-            message: "Error updating category",
-            error: error.message,
-        });
+    if (file) {
+       updateData.image = file.filename;
     }
-};
 
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id,
+      updateData,
+      { returnDocument: "after" } 
+    );
+
+    if (!updatedCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    return res.status(200).json(updatedCategory);
+  } catch (error: any) {
+    return res.status(400).json({
+      message: "Error updating category",
+      error: error.message,
+    });
+  }
+};
 
 export const deleteCategory = async (req: Request, res: Response) => {
     try {

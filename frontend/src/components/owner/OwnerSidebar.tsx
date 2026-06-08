@@ -22,6 +22,7 @@ export const OwnerSidebar = () => {
     const navItems: NavItem[] = [
         { href: "/owner/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/owner/listings", label: "My Listings", icon: Package },
+        { href: "/owner/managecategory", label: "Manage Categories", icon: Package },
         { href: "/owner/bookings", label: "Bookings", icon: CalendarCheck, badge: 2 },
         { href: "/owner/earnings", label: "Earnings", icon: BarChart3 },
         { href: "/owner/reviews", label: "Reviews", icon: Star },
