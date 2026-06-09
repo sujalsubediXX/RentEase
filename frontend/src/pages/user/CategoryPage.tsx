@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Grid3X3, List, Star,
   Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
-  MapPin, Package, Home
+  MapPin, Package
 } from 'lucide-react';
-import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 import { ImageSlider } from './ImageSlider';
 
@@ -26,77 +25,6 @@ interface Product {
   location: string;
 }
 
-// ============ IMAGE SLIDER COMPONENT ============
-const ImageSliderComponent: React.FC<{ images: string[] }> = ({ images }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  if (!images || images.length === 0) {
-    return (
-      <div className="w-full h-full bg-stone-100 flex items-center justify-center">
-        <div className="text-stone-400 text-sm">No image</div>
-      </div>
-    );
-  }
-
-  const nextSlide = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-  };
-
-  const prevSlide = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
-  };
-
-  return (
-    <div className="relative w-full h-full group">
-      <img
-        src={images[currentIndex]}
-        alt={`Product image ${currentIndex + 1}`}
-        className="w-full h-full object-cover transition-opacity duration-300"
-      />
-
-      {images.length > 1 && (
-        <>
-          <button
-            onClick={prevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
-          >
-            <ChevronLeft size={16} className="text-stone-700" />
-          </button>
-
-          <button
-            onClick={nextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
-          >
-            <ChevronRight size={16} className="text-stone-700" />
-          </button>
-
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentIndex(index);
-                }}
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-                  index === currentIndex
-                    ? 'bg-white w-3'
-                    : 'bg-white/60 hover:bg-white/90'
-                }`}
-              />
-            ))}
-          </div>
-
-          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full z-10">
-            {currentIndex + 1} / {images.length}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 // Skeleton Loader Component
 const ProductSkeleton: React.FC = () => (
@@ -149,32 +77,20 @@ const ListItemSkeleton: React.FC = () => (
   </div>
 );
 
-// ============ HELPERS ============
 
-/**
- * Extracts the items array from any API response shape:
- *   { success, count, data: [...] }   ← your actual API
- *   [...]                             ← bare array
- *   { items: [...] }
- *   { data: [...] }
- */
 const extractItems = (responseData: any): { items: any[]; totalPages: number } => {
-  // Bare array
   if (Array.isArray(responseData)) {
     return { items: responseData, totalPages: 1 };
   }
 
-  // { success, count, data: [...] }  ← matches your real API
-  if (responseData?.success && Array.isArray(responseData?.data)) {
+    if (responseData?.success && Array.isArray(responseData?.data)) {
     return { items: responseData.data, totalPages: responseData.totalPages || 1 };
   }
 
-  // { items: [...] }
   if (Array.isArray(responseData?.items)) {
     return { items: responseData.items, totalPages: responseData.totalPages || 1 };
   }
 
-  // { data: [...] } (without success flag)
   if (Array.isArray(responseData?.data)) {
     return { items: responseData.data, totalPages: responseData.totalPages || 1 };
   }
@@ -182,10 +98,7 @@ const extractItems = (responseData: any): { items: any[]; totalPages: number } =
   return { items: [], totalPages: 1 };
 };
 
-/**
- * Maps a raw API item to the Product interface.
- * Handles both `name` and `title` fields, both `price` and `rentalPrice`.
- */
+
 const mapItemToProduct = (item: any, categoryId: string, API_BASE_URL: string): Product => {
   const buildImageUrl = (img: string): string => {
     if (!img) return '';
@@ -219,7 +132,6 @@ const mapItemToProduct = (item: any, categoryId: string, API_BASE_URL: string): 
   };
 };
 
-// ============ FILTER SIDEBAR (defined outside main component to prevent remount on re-render) ============
 interface FilterContentProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -348,7 +260,6 @@ const FilterContent: React.FC<FilterContentProps> = ({
 // ============ MAIN COMPONENT ============
 const CategoryPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const navigate = useNavigate();
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
