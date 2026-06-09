@@ -14,7 +14,7 @@ interface Category {
   featured?: boolean;
 }
 interface dbCategory {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   image: string;
@@ -145,7 +145,7 @@ export default function Body() {
               <option value="all">All Categories</option>
 
               {category.map((c) => (
-                <option key={c.id} value={c.name}>
+                <option key={c._id} value={c._id}>
                   {c.name}
                 </option>
               ))}
@@ -164,8 +164,6 @@ export default function Body() {
           </div>
         </div>
       </section>
-
-
 
       {/* CATEGORIES */}
       <section id="categories" className="py-24 px-[5vw] bg-gray-50">

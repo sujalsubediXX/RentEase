@@ -1,7 +1,7 @@
 import multer from "multer";
 import path from "path";
 
-const storage = multer.diskStorage({
+const categoryStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/categories");
   },
@@ -13,6 +13,18 @@ const storage = multer.diskStorage({
       )}`
     );
   },
+});
+
+const itemStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/items");   
+  },
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`
+    );
+  }
 });
 
 const fileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
@@ -31,10 +43,6 @@ const fileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
   }
 };
 
-export const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
-  },
-});
+export const uploadCategory = multer({ storage: categoryStorage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+
+export const uploadItem = multer({ storage: itemStorage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
