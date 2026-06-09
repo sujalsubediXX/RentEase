@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import ItemImage from "../models/itemsImage.model.ts";
 import Item from "../models/items.model.ts";
+import { Types } from "mongoose";
 export const createItem = async (req: Request, res: Response) => {
   try {
     const {
@@ -90,28 +91,62 @@ export const getItems = async (req: Request, res: Response) => {
 };
 
 
-export const getItemsByID = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-   
-    const item = await Item.findById(id).lean();
+import mongoose from "mongoose";
 
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found' });
+export const getItemsByCategoryId = async (req: Request, res: Response) => {
+  try {
+    const { categoryId } = req.params;
+
+    // req.params values can be string | string[] | undefined — normalize to a single string
+    const categoryIdStr = Array.isArray(categoryId) ? categoryId[0] : categoryId;
+
+    if (!categoryIdStr || !mongoose.Types.ObjectId.isValid(categoryIdStr)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category id"
+      });
     }
 
-   
-    const images = await ItemImage.find({
-      itemId: item._id
-    }).lean();
+    // 1. Find items under category
+    const items = await Item.find({ categoryId: categoryIdStr })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const result = {
-      ...item,
-      images: images.map((img) => img.imageUrl)  
-    };
+    const itemIds = items.map((item) => item._id);
 
-    res.json(result);  
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    // 2. Fetch images for all items
+    const images = await ItemImage.find({ itemId: { $in: itemIds } })
+      .sort({ displayOrder: 1 })
+      .lean();
+
+    // 3. Map images to items
+    const itemsWithImages = items.map((item) => {
+      const itemImages = images.filter(
+        (img) => img.itemId.toString() === item._id.toString()
+      );
+
+      const primaryImage =
+        itemImages.find((img) => img.isPrimary)?.imageUrl ||
+        itemImages[0]?.imageUrl ||
+        null;
+
+      return {
+        ...item,
+        images: itemImages.map((img) => img.imageUrl),
+        primaryImage
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: itemsWithImages.length,
+      data: itemsWithImages
+    });
+  } catch (error) {
+    console.error("getItemsByCategoryId error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 };

@@ -1,14 +1,13 @@
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Grid3X3, List, Star,
   Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
-  MapPin, Package
+  MapPin, Package, Home
 } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
-import { ImageSlider } from './ImageSlider'; // Import the ImageSlider component
+import { ImageSlider } from './ImageSlider';
 
 // ============ TYPES ============
 interface Product {
@@ -27,7 +26,79 @@ interface Product {
   location: string;
 }
 
-// Skeleton Loader Component (same as before)
+// ============ IMAGE SLIDER COMPONENT ============
+const ImageSliderComponent: React.FC<{ images: string[] }> = ({ images }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="w-full h-full bg-stone-100 flex items-center justify-center">
+        <div className="text-stone-400 text-sm">No image</div>
+      </div>
+    );
+  }
+
+  const nextSlide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+  };
+
+  const prevSlide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div className="relative w-full h-full group">
+      <img
+        src={images[currentIndex]}
+        alt={`Product image ${currentIndex + 1}`}
+        className="w-full h-full object-cover transition-opacity duration-300"
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prevSlide}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+          >
+            <ChevronLeft size={16} className="text-stone-700" />
+          </button>
+
+          <button
+            onClick={nextSlide}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+          >
+            <ChevronRight size={16} className="text-stone-700" />
+          </button>
+
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(index);
+                }}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                  index === currentIndex
+                    ? 'bg-white w-3'
+                    : 'bg-white/60 hover:bg-white/90'
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full z-10">
+            {currentIndex + 1} / {images.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Skeleton Loader Component
 const ProductSkeleton: React.FC = () => (
   <div className="group bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse">
     <div className="aspect-square bg-stone-100" />
@@ -78,6 +149,202 @@ const ListItemSkeleton: React.FC = () => (
   </div>
 );
 
+// ============ HELPERS ============
+
+/**
+ * Extracts the items array from any API response shape:
+ *   { success, count, data: [...] }   ← your actual API
+ *   [...]                             ← bare array
+ *   { items: [...] }
+ *   { data: [...] }
+ */
+const extractItems = (responseData: any): { items: any[]; totalPages: number } => {
+  // Bare array
+  if (Array.isArray(responseData)) {
+    return { items: responseData, totalPages: 1 };
+  }
+
+  // { success, count, data: [...] }  ← matches your real API
+  if (responseData?.success && Array.isArray(responseData?.data)) {
+    return { items: responseData.data, totalPages: responseData.totalPages || 1 };
+  }
+
+  // { items: [...] }
+  if (Array.isArray(responseData?.items)) {
+    return { items: responseData.items, totalPages: responseData.totalPages || 1 };
+  }
+
+  // { data: [...] } (without success flag)
+  if (Array.isArray(responseData?.data)) {
+    return { items: responseData.data, totalPages: responseData.totalPages || 1 };
+  }
+
+  return { items: [], totalPages: 1 };
+};
+
+/**
+ * Maps a raw API item to the Product interface.
+ * Handles both `name` and `title` fields, both `price` and `rentalPrice`.
+ */
+const mapItemToProduct = (item: any, categoryId: string, API_BASE_URL: string): Product => {
+  const buildImageUrl = (img: string): string => {
+    if (!img) return '';
+    if (img.startsWith('http')) return img;
+    if (img.startsWith('/')) return `${API_BASE_URL}${img}`;
+    return `${API_BASE_URL}/uploads/items/${img}`;
+  };
+
+  const imageUrls: string[] =
+    item.images && Array.isArray(item.images) && item.images.length > 0
+      ? item.images.map(buildImageUrl).filter(Boolean)
+      : ['https://picsum.photos/id/20/300/300'];
+
+  const rentalPrice = item.rentalPrice ?? item.price ?? 0;
+  const originalPrice = item.originalPrice ?? (rentalPrice ? Math.round(rentalPrice * 1.5) : undefined);
+
+  return {
+    id: item._id,
+    name: item.name || item.title || 'Unnamed Product',
+    description: item.description || 'No description available',
+    rentalPrice,
+    originalPrice,
+    images: imageUrls,
+    category: item.category || 'Products',
+    categoryId: item.categoryId || categoryId,
+    brand: item.brand || item.condition || 'General',
+    rating: item.rating ?? 4.0,
+    reviewCount: item.reviewCount ?? 0,
+    stock: item.stock ?? item.quantity ?? 5,
+    location: item.location || 'Kathmandu',
+  };
+};
+
+// ============ FILTER SIDEBAR (defined outside main component to prevent remount on re-render) ============
+interface FilterContentProps {
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  priceRange: [number, number];
+  setPriceRange: (v: [number, number]) => void;
+  availableBrands: string[];
+  selectedBrands: string[];
+  setSelectedBrands: React.Dispatch<React.SetStateAction<string[]>>;
+  minRating: number;
+  setMinRating: (v: number) => void;
+  activeFiltersCount: number;
+  clearAllFilters: () => void;
+}
+
+const FilterContent: React.FC<FilterContentProps> = ({
+  searchTerm, setSearchTerm,
+  priceRange, setPriceRange,
+  availableBrands, selectedBrands, setSelectedBrands,
+  minRating, setMinRating,
+  activeFiltersCount, clearAllFilters,
+}) => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <span className="text-sm font-semibold text-stone-800 uppercase tracking-wider">Filters</span>
+      {activeFiltersCount > 0 && (
+        <button
+          onClick={clearAllFilters}
+          className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+        >
+          <X size={12} /> Clear ({activeFiltersCount})
+        </button>
+      )}
+    </div>
+
+    <div>
+      <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Search</label>
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          placeholder="Search products..."
+          className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 placeholder-stone-400
+                     focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
+        Price per day (Rs.)
+      </label>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          value={priceRange[0]}
+          onChange={e => setPriceRange([Number(e.target.value), priceRange[1]])}
+          className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
+                     focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+          placeholder="Min"
+        />
+        <input
+          type="number"
+          value={priceRange[1]}
+          onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
+          className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
+                     focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+          placeholder="Max"
+        />
+      </div>
+    </div>
+
+    {availableBrands.length > 0 && (
+      <div>
+        <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Brands</label>
+        <div className="space-y-2">
+          {availableBrands.map(brand => (
+            <label key={brand} className="flex items-center gap-3 cursor-pointer group">
+              <div
+                className={`w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0
+                  ${selectedBrands.includes(brand)
+                    ? 'bg-stone-900 border-stone-900'
+                    : 'border-stone-300 group-hover:border-stone-400'}`}
+                onClick={() => {
+                  setSelectedBrands(prev =>
+                    prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
+                  );
+                }}
+              >
+                {selectedBrands.includes(brand) && (
+                  <svg className="w-2.5 h-2.5 text-amber-400" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <span className={`text-sm transition-colors ${selectedBrands.includes(brand) ? 'text-stone-800 font-medium' : 'text-stone-500 group-hover:text-stone-700'}`}>
+                {brand}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <div>
+      <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Min Rating</label>
+      <div className="flex gap-2">
+        {[0, 3, 4, 4.5].map(r => (
+          <button
+            key={r}
+            onClick={() => setMinRating(r)}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all
+              ${minRating === r
+                ? 'bg-stone-900 text-amber-400 shadow-sm'
+                : 'bg-white border border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'}`}
+          >
+            {r === 0 ? 'All' : `${r}★`}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 // ============ MAIN COMPONENT ============
 const CategoryPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -92,7 +359,7 @@ const CategoryPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
@@ -107,91 +374,73 @@ const CategoryPage: React.FC = () => {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const itemsPerPage = 8;
 
+  const showToastMessage = useCallback((message: string, type: string) => {
+    setShowToast({ message, type });
+    setTimeout(() => setShowToast(null), 2500);
+  }, []);
+
   // Fetch products from API
   const fetchProducts = useCallback(async (pageNum: number, reset: boolean = false) => {
     if (!categoryId) {
-      console.log('No categoryId provided');
+      setInitialLoading(false);
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
-      
-      const url = `${API_BASE_URL}/items/getitemsByID/${categoryId}`;
-      
-      const response = await axios.get(url);
-      
-      if (!response.data || !response.data.items) {
-        console.error('Invalid response format:', response.data);
-        setError('Invalid response format from server');
-        setLoading(false);
-        setInitialLoading(false);
-        return;
+
+      const url = `${API_BASE_URL}/items/getitemsbycategory/${categoryId}`;
+      console.log('Fetching:', url);
+
+      // Use plain fetch to avoid axios interceptors/headers causing 400
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server responded ${res.status}: ${text}`);
       }
-      
-      console.log(`Received ${response.data.items.length} items, page ${pageNum} of ${response.data.totalPages}`);
-      
-      if (response.data.items.length === 0 && reset) {
+
+      const responseData = await res.json();
+      console.log('API response:', responseData);
+
+      const { items: itemsArray, totalPages: pages } = extractItems(responseData);
+
+      if (itemsArray.length === 0 && reset) {
         setProducts([]);
         setHasMore(false);
-        setLoading(false);
-        setInitialLoading(false);
         return;
       }
-      
-      const newItems = response.data.items.map((item: any) => {
-        let imageUrls = [];
-        if (item.images && Array.isArray(item.images)) {
-          imageUrls = item.images.map((img: string) => 
-            img.startsWith('http') ? img : `http://localhost:3000${img}`
-          );
-        } else {
-          imageUrls = ['https://picsum.photos/id/20/300/300'];
-        }
-        
-        return {
-          id: item._id,
-          name: item.title || 'Unnamed Product',
-          description: item.description || 'No description available',
-          rentalPrice: item.price || 0,
-          originalPrice: item.originalPrice || (item.price ? item.price * 1.5 : 0),
-          images: imageUrls,
-          category: item.category || 'Category',
-          categoryId: item.categoryId || categoryId,
-          brand: item.brand || 'Generic',
-          rating: item.rating || 4.0,
-          reviewCount: item.reviewCount || 0,
-          stock: item.stock !== undefined ? item.stock : 5,
-          location: item.location || 'Kathmandu',
-        };
-      });
-      
+
+      const newItems = itemsArray.map((item: any) =>
+        mapItemToProduct(item, categoryId, "http://localhost:3000")
+      );
+
+      console.log(`Mapped ${newItems.length} products`);
+
       if (reset) {
         setProducts(newItems);
-        console.log('Reset products with:', newItems.length, 'items');
       } else {
-        setProducts(prev => {
-          const updated = [...prev, ...newItems];
-          console.log('Added more products. Total:', updated.length);
-          return updated;
-        });
+        setProducts(prev => [...prev, ...newItems]);
       }
-      
-      setTotalPages(response.data.totalPages || 1);
-      setHasMore(pageNum < (response.data.totalPages || 1));
-      
-    } catch (error: any) {
-      console.error('Error fetching products:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to load products');
+
+      setTotalPages(pages);
+      setHasMore(pageNum < pages);
+    } catch (err: any) {
+      console.error('Error fetching products:', err);
+      const message = err?.message || 'Failed to load products';
+      setError(message);
       showToastMessage('Failed to load products', 'error');
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [categoryId]);
+  }, [categoryId, showToastMessage]);
 
-  // Fetch products on component mount and category change
+  // Fetch on mount / category change
   useEffect(() => {
     if (categoryId) {
       setProducts([]);
@@ -201,6 +450,8 @@ const CategoryPage: React.FC = () => {
       setInitialLoading(true);
       setError(null);
       fetchProducts(1, true);
+    } else {
+      setInitialLoading(false);
     }
   }, [categoryId, fetchProducts]);
 
@@ -208,81 +459,60 @@ const CategoryPage: React.FC = () => {
   const lastProductElementRef = useCallback((node: HTMLDivElement | null) => {
     if (loading) return;
     if (observerRef.current) observerRef.current.disconnect();
-    
+
     observerRef.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore && !loading && !initialLoading && products.length > 0) {
         const nextPage = page + 1;
-        console.log('Loading more products, next page:', nextPage);
         setPage(nextPage);
         fetchProducts(nextPage, false);
       }
     }, { threshold: 0.1 });
-    
+
     if (node) observerRef.current.observe(node);
   }, [loading, hasMore, page, fetchProducts, initialLoading, products.length]);
 
-  // Filter and sort products locally
+  // Filter and sort
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
-    
+
     if (searchTerm) {
+      const q = searchTerm.toLowerCase();
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.brand.toLowerCase().includes(searchTerm.toLowerCase())
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q)
       );
     }
-    
-    filtered = filtered.filter(p => 
+
+    filtered = filtered.filter(p =>
       p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]
     );
-    
+
     if (selectedBrands.length > 0) {
       filtered = filtered.filter(p => selectedBrands.includes(p.brand));
     }
-    
+
     if (minRating > 0) {
       filtered = filtered.filter(p => p.rating >= minRating);
     }
-    
-    return filtered;
-  }, [products, searchTerm, priceRange, selectedBrands, minRating]);
-    
-    filtered = filtered.filter(p => 
-      p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]
-    );
-    
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter(p => selectedBrands.includes(p.brand));
-    }
-    
-    if (minRating > 0) {
-      filtered = filtered.filter(p => p.rating >= minRating);
-    }
-    
+
     return filtered;
   }, [products, searchTerm, priceRange, selectedBrands, minRating]);
 
   const sortedProducts = useMemo(() => {
-    const productsToSort = [...filteredProducts];
+    const arr = [...filteredProducts];
     switch (sortBy) {
-      case 'price_low': 
-        return productsToSort.sort((a, b) => a.rentalPrice - b.rentalPrice);
-      case 'price_high': 
-        return productsToSort.sort((a, b) => b.rentalPrice - a.rentalPrice);
-      case 'rating': 
-        return productsToSort.sort((a, b) => b.rating - a.rating);
-      case 'name_az': 
-        return productsToSort.sort((a, b) => a.name.localeCompare(b.name));
-      default: 
-        return productsToSort;
+      case 'price_low': return arr.sort((a, b) => a.rentalPrice - b.rentalPrice);
+      case 'price_high': return arr.sort((a, b) => b.rentalPrice - a.rentalPrice);
+      case 'rating': return arr.sort((a, b) => b.rating - a.rating);
+      case 'name_az': return arr.sort((a, b) => a.name.localeCompare(b.name));
+      default: return arr;
     }
   }, [filteredProducts, sortBy]);
 
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return sortedProducts.slice(start, end);
+    return sortedProducts.slice(start, start + itemsPerPage);
   }, [sortedProducts, currentPage, itemsPerPage]);
 
   const totalFilteredPages = Math.ceil(sortedProducts.length / itemsPerPage);
@@ -290,13 +520,10 @@ const CategoryPage: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
 
-  const availableBrands = useMemo(() => {
-    return [...new Set(products.map(p => p.brand))];
-  }, [products]);
+  const availableBrands = useMemo(() => (
+    [...new Set(products.map(p => p.brand))]
+  ), [products]);
 
   const toggleWishlist = (productId: string) => {
     if (wishlist.includes(productId)) {
@@ -308,11 +535,6 @@ const CategoryPage: React.FC = () => {
     }
   };
 
-  const showToastMessage = (message: string, type: string) => {
-    setShowToast({ message, type });
-    setTimeout(() => setShowToast(null), 2500);
-  };
-
   const clearAllFilters = () => {
     setSearchTerm('');
     setPriceRange([0, 50000]);
@@ -321,166 +543,42 @@ const CategoryPage: React.FC = () => {
     setSortBy('featured');
   };
 
-  const activeFiltersCount = (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
-  const activeFiltersCount = (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
+  const activeFiltersCount =
+    (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
 
-  // Filter Sidebar (same as before)
-  const FilterContent = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-stone-800 uppercase tracking-wider">Filters</span>
-        {activeFiltersCount > 0 && (
-          <button
-            onClick={clearAllFilters}
-            className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
-          >
-            <X size={12} /> Clear ({activeFiltersCount})
-          </button>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Search</label>
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search products..."
-            className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 placeholder-stone-400
-                       focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
-          Price per day (Rs.)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            value={priceRange[0]}
-            onChange={e => setPriceRange([Number(e.target.value), priceRange[1]])}
-            className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
-                       focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
-            placeholder="Min"
-          />
-          <input
-            type="number"
-            value={priceRange[1]}
-            onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
-            className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
-                       focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
-            placeholder="Max"
-          />
-        </div>
-      </div>
-
-      {availableBrands.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Brands</label>
-          <div className="space-y-2">
-            {availableBrands.map(brand => (
-              <label key={brand} className="flex items-center gap-3 cursor-pointer group">
-                <div
-                  className={`w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0
-                    ${selectedBrands.includes(brand)
-                      ? 'bg-stone-900 border-stone-900'
-                      : 'border-stone-300 group-hover:border-stone-400'}`}
-                  onClick={() => {
-                    setSelectedBrands(prev =>
-                      prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
-                    );
-                  }}
-                >
-                  {selectedBrands.includes(brand) && (
-                    <svg className="w-2.5 h-2.5 text-amber-400" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </div>
-                <span className={`text-sm transition-colors ${selectedBrands.includes(brand) ? 'text-stone-800 font-medium' : 'text-stone-500 group-hover:text-stone-700'}`}>
-                  {brand}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Min Rating</label>
-        <div className="flex gap-2">
-          {[0, 3, 4, 4.5].map(r => (
-            <button
-              key={r}
-              onClick={() => setMinRating(r)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all
-                ${minRating === r
-                  ? 'bg-stone-900 text-amber-400 shadow-sm'
-                  : 'bg-white border border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'}`}
-            >
-              {r === 0 ? 'All' : `${r}★`}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  // Updated Product Card with ImageSlider
+  // Product Card
   const ProductCard = ({ product, index }: { product: Product; index: number }) => {
     const isInWishlist = wishlist.includes(product.id);
     const discount = product.originalPrice
       ? Math.round(((product.originalPrice - product.rentalPrice) / product.originalPrice) * 100)
       : null;
-
-    const isLastItem = index === paginatedProducts.length - 1;
-    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'grid';
-
-    const isLastItem = index === paginatedProducts.length - 1;
-    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'grid';
+    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading && viewMode === 'grid';
 
     return (
       <div
         ref={shouldAttachRef ? lastProductElementRef : null}
         className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
       >
-        <div className="relative overflow-hidden">
-          <ImageSlider images={product.images}  />
-          
+        <div className="relative overflow-hidden aspect-square">
+          <ImageSlider images={product.images} />
+
           {discount && discount > 0 && (
-            <span className="absolute top-3 left-3 z-10 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-      <div
-        ref={shouldAttachRef ? lastProductElementRef : null}
-        className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
-      >
-        <div className="relative overflow-hidden">
-          <ImageSlider images={product.images}  />
-          
-          {discount && discount > 0 && (
-            <span className="absolute top-3 left-3 z-10 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute top-3 left-3 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
               -{discount}%
             </span>
           )}
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
-            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
               <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
                 Out of Stock
               </span>
             </div>
           )}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
             <button
               onClick={() => toggleWishlist(product.id)}
               className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-all
-                ${isInWishlist
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white text-stone-400 hover:text-red-500 hover:shadow-lg'}`}
+                ${isInWishlist ? 'bg-red-500 text-white' : 'bg-white text-stone-400 hover:text-red-500 hover:shadow-lg'}`}
             >
               <Heart size={14} fill={isInWishlist ? 'currentColor' : 'none'} />
             </button>
@@ -554,25 +652,18 @@ const CategoryPage: React.FC = () => {
     );
   };
 
-  // Updated List View Card with ImageSlider
+  // List View Card
   const ProductListItem = ({ product, index }: { product: Product; index: number }) => {
     const isInWishlist = wishlist.includes(product.id);
-    const isLastItem = index === paginatedProducts.length - 1;
-    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'list';
-    const isLastItem = index === paginatedProducts.length - 1;
-    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'list';
+    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading && viewMode === 'list';
 
     return (
       <div
         ref={shouldAttachRef ? lastProductElementRef : null}
         className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
       >
-      <div
-        ref={shouldAttachRef ? lastProductElementRef : null}
-        className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
-      >
-        <div className="w-full md:w-44 h-44 shrink-0 overflow-hidden bg-stone-100">
-          <ImageSlider images={product.images}  />
+        <div className="w-full md:w-44 h-44 shrink-0 overflow-hidden bg-stone-100 relative">
+          <ImageSlider images={product.images} />
         </div>
         <div className="flex-1 p-5 flex flex-col justify-between">
           <div>
@@ -648,28 +739,8 @@ const CategoryPage: React.FC = () => {
     );
   }
 
-  // Loading state
-  if (initialLoading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 w-48 bg-stone-200 rounded mb-4" />
-            <div className="h-4 w-96 bg-stone-200 rounded mb-8" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array(8).fill(0).map((_, i) => (
-                <ProductSkeleton key={i} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-white text-stone-800">
-      {/* Toast */}
+    <div className="min-h-screen bg-white text-stone-800 mt-12">
       {/* Toast */}
       {showToast && (
         <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
@@ -680,15 +751,10 @@ const CategoryPage: React.FC = () => {
                 ? 'bg-white border-red-200 text-red-600'
                 : 'bg-white border-stone-200 text-stone-600'}`}>
             {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
-              : showToast.type === 'error'
-                ? 'bg-white border-red-200 text-red-600'
-                : 'bg-white border-stone-200 text-stone-600'}`}>
-            {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
           </div>
         </div>
       )}
 
-      {/* Quick View Modal */}
       {/* Quick View Modal */}
       {quickViewProduct && (
         <div
@@ -713,7 +779,7 @@ const CategoryPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="rounded-xl overflow-hidden mb-5 bg-stone-100">
+              <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
                 <ImageSlider images={quickViewProduct.images} />
               </div>
 
@@ -747,7 +813,7 @@ const CategoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Category Hero - Simple version without category fetch */}
+      {/* Category Hero */}
       <div className="bg-white border-b border-stone-100">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-2 text-xs text-stone-400 mb-5">
@@ -756,17 +822,13 @@ const CategoryPage: React.FC = () => {
             <Link to="/categories" className="hover:text-stone-600 transition-colors">Categories</Link>
             <ChevronRight size={12} />
             <span className="text-stone-600">Products</span>
-            <span className="text-stone-600">Products</span>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0">
               📦
-              📦
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
-              <p className="text-stone-500 text-sm">Browse our collection of products</p>
               <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
               <p className="text-stone-500 text-sm">Browse our collection of products</p>
             </div>
@@ -775,18 +837,27 @@ const CategoryPage: React.FC = () => {
       </div>
 
       {/* Main Layout */}
-      {/* Main Layout */}
       <div className="container mx-auto px-4 py-7">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Desktop Filter Sidebar */}
-          {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white border border-stone-200 rounded-2xl p-5 sticky top-4">
-              <FilterContent />
+              <FilterContent
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                availableBrands={availableBrands}
+                selectedBrands={selectedBrands}
+                setSelectedBrands={setSelectedBrands}
+                minRating={minRating}
+                setMinRating={setMinRating}
+                activeFiltersCount={activeFiltersCount}
+                clearAllFilters={clearAllFilters}
+              />
             </div>
           </aside>
 
-          {/* Main Content */}
           {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Top Bar */}
@@ -812,7 +883,11 @@ const CategoryPage: React.FC = () => {
                   className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-medium text-stone-600 hover:border-stone-300 transition-all"
                 >
                   <SlidersHorizontal size={13} />
-                  Filters {activeFiltersCount > 0 && <span className="bg-stone-900 text-amber-400 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{activeFiltersCount}</span>}
+                  Filters {activeFiltersCount > 0 && (
+                    <span className="bg-stone-900 text-amber-400 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
+                      {activeFiltersCount}
+                    </span>
+                  )}
                 </button>
 
                 <span className="text-xs text-stone-400 hidden sm:block">
@@ -871,26 +946,7 @@ const CategoryPage: React.FC = () => {
               </div>
             )}
 
-            {/* Products - Empty State */}
-            {!error && !initialLoading && paginatedProducts.length === 0 && !loading && (
-            {/* Error State */}
-            {error && (
-              <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-5">
-                  <Package size={28} className="text-red-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-stone-700 mb-2">Error Loading Products</h3>
-                <p className="text-stone-400 text-sm mb-5">{error}</p>
-                <button
-                  onClick={() => fetchProducts(1, true)}
-                  className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
-                >
-                  Try Again
-                </button>
-              </div>
-            )}
-
-            {/* Products - Empty State */}
+            {/* Empty State */}
             {!error && !initialLoading && paginatedProducts.length === 0 && !loading && (
               <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-5">
@@ -907,7 +963,7 @@ const CategoryPage: React.FC = () => {
               </div>
             )}
 
-            {/* Products - Grid/List View */}
+            {/* Products */}
             {!error && !initialLoading && paginatedProducts.length > 0 && (
               viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -924,24 +980,7 @@ const CategoryPage: React.FC = () => {
               )
             )}
 
-            {/* Products - Grid/List View */}
-            {!error && !initialLoading && paginatedProducts.length > 0 && (
-              viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {paginatedProducts.map((product, index) => (
-                    <ProductCard key={product.id} product={product} index={index} />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {paginatedProducts.map((product, index) => (
-                    <ProductListItem key={product.id} product={product} index={index} />
-                  ))}
-                </div>
-              )
-            )}
-
-            {/* Loading More Indicator */}
+            {/* Loading more */}
             {loading && !initialLoading && (
               viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
@@ -954,22 +993,7 @@ const CategoryPage: React.FC = () => {
               )
             )}
 
-            {/* Pagination Controls */}
-            {!hasMore && totalFilteredPages > 1 && (
-            {/* Loading More Indicator */}
-            {loading && !initialLoading && (
-              viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
-                  {Array(3).fill(0).map((_, i) => <ProductSkeleton key={`loading-${i}`} />)}
-                </div>
-              ) : (
-                <div className="space-y-3 mt-4">
-                  {Array(2).fill(0).map((_, i) => <ListItemSkeleton key={`loading-${i}`} />)}
-                </div>
-              )
-            )}
-
-            {/* Pagination Controls */}
+            {/* Pagination */}
             {!hasMore && totalFilteredPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8">
                 <button
@@ -981,12 +1005,9 @@ const CategoryPage: React.FC = () => {
                 </button>
 
                 {[...Array(Math.min(totalFilteredPages, 5))].map((_, i) => {
-                {[...Array(Math.min(totalFilteredPages, 5))].map((_, i) => {
                   let pageNum: number;
                   if (totalFilteredPages <= 5) pageNum = i + 1;
-                  if (totalFilteredPages <= 5) pageNum = i + 1;
                   else if (currentPage <= 3) pageNum = i + 1;
-                  else if (currentPage >= totalFilteredPages - 2) pageNum = totalFilteredPages - 4 + i;
                   else if (currentPage >= totalFilteredPages - 2) pageNum = totalFilteredPages - 4 + i;
                   else pageNum = currentPage - 2 + i;
 
@@ -1007,8 +1028,6 @@ const CategoryPage: React.FC = () => {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
                   disabled={currentPage === totalFilteredPages}
-                  onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
-                  disabled={currentPage === totalFilteredPages}
                   className="p-2 rounded-xl bg-white border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronRight size={16} />
@@ -1016,14 +1035,6 @@ const CategoryPage: React.FC = () => {
               </div>
             )}
 
-            {/* End of products message */}
-            {!hasMore && sortedProducts.length > 0 && (
-              <div className="text-center mt-8 py-4 text-stone-400 text-sm">
-                You've reached the end of the products
-              </div>
-            )}
-
-            {/* End of products message */}
             {!hasMore && sortedProducts.length > 0 && (
               <div className="text-center mt-8 py-4 text-stone-400 text-sm">
                 You've reached the end of the products
@@ -1033,7 +1044,6 @@ const CategoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Filter Drawer */}
       {/* Mobile Filter Drawer */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -1049,7 +1059,19 @@ const CategoryPage: React.FC = () => {
                   <X size={16} />
                 </button>
               </div>
-              <FilterContent />
+              <FilterContent
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                availableBrands={availableBrands}
+                selectedBrands={selectedBrands}
+                setSelectedBrands={setSelectedBrands}
+                minRating={minRating}
+                setMinRating={setMinRating}
+                activeFiltersCount={activeFiltersCount}
+                clearAllFilters={clearAllFilters}
+              />
               <button
                 onClick={() => setShowMobileFilters(false)}
                 className="w-full mt-6 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all"

@@ -41,7 +41,7 @@ import CartPage from "./pages/user/CartPage";
 import UserSettingsPage from "./pages/user/UserSettingsPage";
 import KYCVerificationForm from "./pages/KYCVerificationForm";
 import CategoryManagement from "./pages/owner/CategoryManagement";
-import NEWCat from "./pages/user/NEWCat";
+
 
 
 const router = createBrowserRouter([
