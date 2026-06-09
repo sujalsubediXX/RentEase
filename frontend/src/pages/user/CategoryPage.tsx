@@ -1,10 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Grid3X3, List, Star,
   Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
-  MapPin, Package, Home
+  MapPin, Package
 } from 'lucide-react';
+import axios from 'axios';
+import API_BASE_URL from '../../config/api';
+import { ImageSlider } from './ImageSlider';
 
 // ============ TYPES ============
 interface Product {
@@ -23,208 +26,75 @@ interface Product {
   location: string;
 }
 
-const mockProducts: Product[] = [
-  // Cameras
-  {
-    id: '1',
-    name: 'Canon EOS 200D II Camera',
-    description: '24.1MP DSLR Camera with 18-55mm lens',
-    rentalPrice: 1500,
-    originalPrice: 2500,
-    images: ['https://picsum.photos/id/20/300/300'],
-    category: 'Cameras & Photography',
-    categoryId: 'camera',
-    brand: 'Canon',
-    rating: 4.5,
-    reviewCount: 128,
-    stock: 3,
-    location: 'Kathmandu',
-  },
-  {
-    id: '2',
-    name: 'Nikon D5600 Camera',
-    description: '24.2MP DSLR with Wi-Fi and Bluetooth',
-    rentalPrice: 1200,
-    originalPrice: 2200,
-    images: ['https://picsum.photos/id/21/300/300'],
-    category: 'Cameras & Photography',
-    categoryId: 'camera',
-    brand: 'Nikon',
-    rating: 4.3,
-    reviewCount: 95,
-    stock: 2,
-    location: 'Lalitpur',
-  },
-  {
-    id: '5',
-    name: 'Sony A7 III Camera',
-    description: 'Full-frame mirrorless camera',
-    rentalPrice: 2200,
-    originalPrice: 3800,
-    images: ['https://picsum.photos/id/22/300/300'],
-    category: 'Cameras & Photography',
-    categoryId: 'camera',
-    brand: 'Sony',
-    rating: 4.7,
-    reviewCount: 203,
-    stock: 4,
-    location: 'Kathmandu',
-  },
-  {
-    id: '9',
-    name: 'GoPro HERO11 Black',
-    description: 'Waterproof action camera',
-    rentalPrice: 900,
-    originalPrice: 2800,
-    images: ['https://picsum.photos/id/26/300/300'],
-    category: 'Cameras & Photography',
-    categoryId: 'camera',
-    brand: 'GoPro',
-    rating: 4.6,
-    reviewCount: 234,
-    stock: 8,
-    location: 'Kathmandu',
-  },
-  // Laptops
-  {
-    id: '3',
-    name: 'MacBook Pro 14"',
-    description: 'M2 Pro chip, 16GB RAM, 512GB SSD',
-    rentalPrice: 2500,
-    originalPrice: 4000,
-    images: ['https://picsum.photos/id/0/300/300'],
-    category: 'Laptops & Computers',
-    categoryId: 'technology',
-    brand: 'Apple',
-    rating: 4.8,
-    reviewCount: 256,
-    stock: 5,
-    location: 'Kathmandu',
-  },
-  {
-    id: '4',
-    name: 'Dell XPS 15',
-    description: 'Intel i7, 32GB RAM, 1TB SSD',
-    rentalPrice: 2000,
-    originalPrice: 3500,
-    images: ['https://picsum.photos/id/1/300/300'],
-    category: 'Laptops & Computers',
-    categoryId: 'technology',
-    brand: 'Dell',
-    rating: 4.4,
-    reviewCount: 89,
-    stock: 0,
-    location: 'Bhaktapur',
-  },
-  {
-    id: '12',
-    name: 'ASUS ROG Gaming Laptop',
-    description: 'RTX 4060, 16GB RAM, 1TB SSD',
-    rentalPrice: 2200,
-    originalPrice: 6500,
-    images: ['https://picsum.photos/id/3/300/300'],
-    category: 'Laptops & Computers',
-    categoryId: 'technology',
-    brand: 'ASUS',
-    rating: 4.5,
-    reviewCount: 189,
-    stock: 3,
-    location: 'Kathmandu',
-  },
-  // Dresses/Fashion
-  {
-    id: '6',
-    name: 'Designer Evening Dress',
-    description: 'Elegant red evening gown, size M',
-    rentalPrice: 800,
-    originalPrice: 5000,
-    images: ['https://picsum.photos/id/30/300/300'],
-    category: 'Dresses & Fashion',
-    categoryId: 'dress',
-    brand: 'Fashionista',
-    rating: 4.2,
-    reviewCount: 45,
-    stock: 6,
-    location: 'Lalitpur',
-  },
-  {
-    id: '7',
-    name: "Men's Formal Suit",
-    description: 'Formal black suit, size L',
-    rentalPrice: 1000,
-    originalPrice: 8000,
-    images: ['https://picsum.photos/id/31/300/300'],
-    category: 'Dresses & Fashion',
-    categoryId: 'dress',
-    brand: 'FormalWear',
-    rating: 4.6,
-    reviewCount: 78,
-    stock: 4,
-    location: 'Kathmandu',
-  },
-  {
-    id: '11',
-    name: 'Wedding Lehenga',
-    description: 'Traditional red bridal lehenga',
-    rentalPrice: 3000,
-    originalPrice: 25000,
-    images: ['https://picsum.photos/id/32/300/300'],
-    category: 'Dresses & Fashion',
-    categoryId: 'dress',
-    brand: 'TraditionalWear',
-    rating: 4.8,
-    reviewCount: 156,
-    stock: 2,
-    location: 'Kathmandu',
-  },
-  // Electronics
-  {
-    id: '8',
-    name: 'DJI Mavic Air 2 Drone',
-    description: '4K drone with 34 min flight time',
-    rentalPrice: 1800,
-    originalPrice: 4500,
-    images: ['https://picsum.photos/id/25/300/300'],
-    category: 'Technology',
-    categoryId: 'technology',
-    brand: 'DJI',
-    rating: 4.9,
-    reviewCount: 167,
-    stock: 2,
-    location: 'Pokhara',
-  },
-  {
-    id: '10',
-    name: 'iPad Pro 12.9"',
-    description: 'M2 chip, Wi-Fi + Cellular',
-    rentalPrice: 1800,
-    originalPrice: 5500,
-    images: ['https://picsum.photos/id/2/300/300'],
-    category: 'Technology',
-    categoryId: 'technology',
-    brand: 'Apple',
-    rating: 4.7,
-    reviewCount: 312,
-    stock: 5,
-    location: 'Lalitpur',
-  },
-];
+// Skeleton Loader Component
+const ProductSkeleton: React.FC = () => (
+  <div className="group bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse">
+    <div className="aspect-square bg-stone-100" />
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="h-3 w-16 bg-stone-200 rounded" />
+        <div className="h-3 w-12 bg-stone-200 rounded" />
+      </div>
+      <div className="h-4 w-3/4 bg-stone-200 rounded mb-2" />
+      <div className="h-3 w-24 bg-stone-200 rounded mb-3" />
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <div className="h-5 w-20 bg-stone-200 rounded" />
+          <div className="h-3 w-16 bg-stone-200 rounded mt-1" />
+        </div>
+        <div className="h-5 w-16 bg-stone-200 rounded" />
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1 h-8 bg-stone-200 rounded-xl" />
+        <div className="flex-1 h-8 bg-stone-200 rounded-xl" />
+      </div>
+    </div>
+  </div>
+);
 
-// ============ CATEGORY CONFIG ============
-const categoryConfig: Record<string, { title: string; description: string; icon: string }> = {
-  camera: { title: 'Cameras & Photography', description: 'Rent professional cameras, lenses, and photography equipment for your special moments', icon: '📷' },
-  technology: { title: 'Laptops & Computers', description: 'High-performance laptops and computers for work, study, and gaming', icon: '💻' },
-  dress: { title: 'Dresses & Fashion', description: 'Designer outfits, traditional wear, and fashion accessories for every occasion', icon: '👗' },
-  bag: { title: 'Bags & Luggage', description: 'Stylish bags and luggage for all your travel needs', icon: '👜' },
-  'camping gear': { title: 'Camping Gear', description: 'Essential gear for your outdoor adventures', icon: '🏕' },
-};
+const ListItemSkeleton: React.FC = () => (
+  <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse flex flex-col md:flex-row">
+    <div className="w-full md:w-44 h-44 bg-stone-100" />
+    <div className="flex-1 p-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="h-3 w-16 bg-stone-200 rounded" />
+        <div className="h-3 w-12 bg-stone-200 rounded" />
+      </div>
+      <div className="h-4 w-2/3 bg-stone-200 rounded mb-2" />
+      <div className="h-3 w-full bg-stone-200 rounded mb-2" />
+      <div className="h-3 w-1/2 bg-stone-200 rounded mb-3" />
+      <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+        <div>
+          <div className="h-5 w-24 bg-stone-200 rounded" />
+          <div className="h-3 w-16 bg-stone-200 rounded mt-1" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 w-24 bg-stone-200 rounded-xl" />
+          <div className="h-8 w-24 bg-stone-200 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 // ============ MAIN COMPONENT ============
 const CategoryPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const navigate = useNavigate();
 
+  // Data states
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  
+  // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('featured');
@@ -236,46 +106,178 @@ const CategoryPage: React.FC = () => {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const itemsPerPage = 8;
 
-  const categoryInfo = categoryId ? categoryConfig[categoryId] : null;
+  // Fetch products from API
+  const fetchProducts = useCallback(async (pageNum: number, reset: boolean = false) => {
+    if (!categoryId) {
+      console.log('No categoryId provided');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const url = `${API_BASE_URL}/items/getitemsByID/${categoryId}`;
+      
+      const response = await axios.get(url);
+      
+      if (!response.data || !response.data.items) {
+        console.error('Invalid response format:', response.data);
+        setError('Invalid response format from server');
+        setLoading(false);
+        setInitialLoading(false);
+        return;
+      }
+      
+      console.log(`Received ${response.data.items.length} items, page ${pageNum} of ${response.data.totalPages}`);
+      
+      if (response.data.items.length === 0 && reset) {
+        setProducts([]);
+        setHasMore(false);
+        setLoading(false);
+        setInitialLoading(false);
+        return;
+      }
+      
+      const newItems = response.data.items.map((item: any) => {
+        let imageUrls = [];
+        if (item.images && Array.isArray(item.images)) {
+          imageUrls = item.images.map((img: string) => 
+            img.startsWith('http') ? img : `http://localhost:3000${img}`
+          );
+        } else {
+          imageUrls = ['https://picsum.photos/id/20/300/300'];
+        }
+        
+        return {
+          id: item._id,
+          name: item.title || 'Unnamed Product',
+          description: item.description || 'No description available',
+          rentalPrice: item.price || 0,
+          originalPrice: item.originalPrice || (item.price ? item.price * 1.5 : 0),
+          images: imageUrls,
+          category: item.category || 'Category',
+          categoryId: item.categoryId || categoryId,
+          brand: item.brand || 'Generic',
+          rating: item.rating || 4.0,
+          reviewCount: item.reviewCount || 0,
+          stock: item.stock !== undefined ? item.stock : 5,
+          location: item.location || 'Kathmandu',
+        };
+      });
+      
+      if (reset) {
+        setProducts(newItems);
+        console.log('Reset products with:', newItems.length, 'items');
+      } else {
+        setProducts(prev => {
+          const updated = [...prev, ...newItems];
+          console.log('Added more products. Total:', updated.length);
+          return updated;
+        });
+      }
+      
+      setTotalPages(response.data.totalPages || 1);
+      setHasMore(pageNum < (response.data.totalPages || 1));
+      
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to load products');
+      showToastMessage('Failed to load products', 'error');
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  }, [categoryId]);
 
+  // Fetch products on component mount and category change
+  useEffect(() => {
+    if (categoryId) {
+      setProducts([]);
+      setPage(1);
+      setCurrentPage(1);
+      setHasMore(true);
+      setInitialLoading(true);
+      setError(null);
+      fetchProducts(1, true);
+    }
+  }, [categoryId, fetchProducts]);
+
+  // Infinite scroll observer
+  const lastProductElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading && !initialLoading && products.length > 0) {
+        const nextPage = page + 1;
+        console.log('Loading more products, next page:', nextPage);
+        setPage(nextPage);
+        fetchProducts(nextPage, false);
+      }
+    }, { threshold: 0.1 });
+    
+    if (node) observerRef.current.observe(node);
+  }, [loading, hasMore, page, fetchProducts, initialLoading, products.length]);
+
+  // Filter and sort products locally
   const filteredProducts = useMemo(() => {
-    let products = mockProducts.filter(p => p.categoryId === categoryId);
+    let filtered = [...products];
+    
     if (searchTerm) {
-      products = products.filter(p =>
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.brand.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    products = products.filter(p => p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]);
-    if (selectedBrands.length > 0) products = products.filter(p => selectedBrands.includes(p.brand));
-    if (minRating > 0) products = products.filter(p => p.rating >= minRating);
-    return products;
-  }, [categoryId, searchTerm, priceRange, selectedBrands, minRating]);
+    
+    filtered = filtered.filter(p => 
+      p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]
+    );
+    
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter(p => selectedBrands.includes(p.brand));
+    }
+    
+    if (minRating > 0) {
+      filtered = filtered.filter(p => p.rating >= minRating);
+    }
+    
+    return filtered;
+  }, [products, searchTerm, priceRange, selectedBrands, minRating]);
 
   const sortedProducts = useMemo(() => {
-    const products = [...filteredProducts];
+    const productsToSort = [...filteredProducts];
     switch (sortBy) {
-      case 'price_low': return products.sort((a, b) => a.rentalPrice - b.rentalPrice);
-      case 'price_high': return products.sort((a, b) => b.rentalPrice - a.rentalPrice);
-      case 'rating': return products.sort((a, b) => b.rating - a.rating);
-      case 'name_az': return products.sort((a, b) => a.name.localeCompare(b.name));
-      default: return products;
+      case 'price_low': 
+        return productsToSort.sort((a, b) => a.rentalPrice - b.rentalPrice);
+      case 'price_high': 
+        return productsToSort.sort((a, b) => b.rentalPrice - a.rentalPrice);
+      case 'rating': 
+        return productsToSort.sort((a, b) => b.rating - a.rating);
+      case 'name_az': 
+        return productsToSort.sort((a, b) => a.name.localeCompare(b.name));
+      default: 
+        return productsToSort;
     }
   }, [filteredProducts, sortBy]);
 
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return sortedProducts.slice(start, end);
+  }, [sortedProducts, currentPage, itemsPerPage]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
+  const totalFilteredPages = Math.ceil(sortedProducts.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
 
   const availableBrands = useMemo(() => {
-    const products = mockProducts.filter(p => p.categoryId === categoryId);
     return [...new Set(products.map(p => p.brand))];
-  }, [categoryId]);
+  }, [products]);
 
   const toggleWishlist = (productId: string) => {
     if (wishlist.includes(productId)) {
@@ -294,48 +296,17 @@ const CategoryPage: React.FC = () => {
 
   const clearAllFilters = () => {
     setSearchTerm('');
-    setPriceRange([0, 5000]);
+    setPriceRange([0, 50000]);
     setSelectedBrands([]);
     setMinRating(0);
     setSortBy('featured');
   };
 
-  const activeFiltersCount =
-    (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
+  const activeFiltersCount = (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
 
-  // ── 404 state ──
-  if (!categoryId || !categoryInfo) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center p-8">
-          <div className="w-20 h-20 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-6">
-            <Search size={32} className="text-stone-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-stone-800 mb-2">Category Not Found</h1>
-          <p className="text-stone-500 mb-8">The category you're looking for doesn't exist.</p>
-          <div className="flex gap-3 justify-center">
-            <Link
-              to="/"
-              className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all"
-            >
-              <Home size={15} /> Go Home
-            </Link>
-            <Link
-              to="/categories"
-              className="flex items-center gap-2 px-5 py-2.5 border border-stone-300 text-stone-600 rounded-xl text-sm hover:border-stone-400 hover:text-stone-800 transition-all"
-            >
-              Browse Categories
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Filter Sidebar (shared between desktop + mobile drawer) ──
+  // Filter Sidebar
   const FilterContent = () => (
     <div className="space-y-6">
-      {/* Header row */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-stone-800 uppercase tracking-wider">Filters</span>
         {activeFiltersCount > 0 && (
@@ -348,7 +319,6 @@ const CategoryPage: React.FC = () => {
         )}
       </div>
 
-      {/* Search */}
       <div>
         <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Search</label>
         <div className="relative">
@@ -364,7 +334,6 @@ const CategoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Price Range */}
       <div>
         <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
           Price per day (Rs.)
@@ -389,7 +358,6 @@ const CategoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Brands */}
       {availableBrands.length > 0 && (
         <div>
           <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Brands</label>
@@ -422,7 +390,6 @@ const CategoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Min Rating */}
       <div>
         <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Min Rating</label>
         <div className="flex gap-2">
@@ -443,39 +410,37 @@ const CategoryPage: React.FC = () => {
     </div>
   );
 
-  // ── Product Card ──
-  const ProductCard = ({ product }: { product: Product }) => {
+  // Product Card with ImageSlider
+  const ProductCard = ({ product, index }: { product: Product; index: number }) => {
     const isInWishlist = wishlist.includes(product.id);
     const discount = product.originalPrice
       ? Math.round(((product.originalPrice - product.rentalPrice) / product.originalPrice) * 100)
       : null;
 
+    const isLastItem = index === paginatedProducts.length - 1;
+    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'grid';
+
     return (
-      <div className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300">
-        {/* Image */}
-        <div className="relative overflow-hidden aspect-square bg-stone-100">
-          <img
-            src={product.images[0]}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
-          {/* Discount badge */}
-          {discount && (
-            <span className="absolute top-3 left-3 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+      <div
+        ref={shouldAttachRef ? lastProductElementRef : null}
+        className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
+      >
+        <div className="relative overflow-hidden">
+          <ImageSlider images={product.images}  />
+          
+          {discount && discount > 0 && (
+            <span className="absolute top-3 left-3 z-10 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
               -{discount}%
             </span>
           )}
-          {/* Out of stock overlay */}
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
               <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
                 Out of Stock
               </span>
             </div>
           )}
-          {/* Action buttons */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
             <button
               onClick={() => toggleWishlist(product.id)}
               className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-all
@@ -494,7 +459,6 @@ const CategoryPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.brand}</span>
@@ -556,14 +520,19 @@ const CategoryPage: React.FC = () => {
     );
   };
 
-  // ── List View Card ──
-  const ProductListItem = ({ product }: { product: Product }) => {
+  // List View Card with ImageSlider
+  const ProductListItem = ({ product, index }: { product: Product; index: number }) => {
     const isInWishlist = wishlist.includes(product.id);
+    const isLastItem = index === paginatedProducts.length - 1;
+    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'list';
 
     return (
-      <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row">
+      <div
+        ref={shouldAttachRef ? lastProductElementRef : null}
+        className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
+      >
         <div className="w-full md:w-44 h-44 shrink-0 overflow-hidden bg-stone-100">
-          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+          <ImageSlider images={product.images} />
         </div>
         <div className="flex-1 p-5 flex flex-col justify-between">
           <div>
@@ -620,21 +589,42 @@ const CategoryPage: React.FC = () => {
     );
   };
 
+  // Loading state
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-stone-200 rounded mb-4" />
+            <div className="h-4 w-96 bg-stone-200 rounded mb-8" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array(8).fill(0).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-stone-800">
-      {/* ── Toast ── */}
+      {/* Toast */}
       {showToast && (
         <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
           <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
             ${showToast.type === 'success'
               ? 'bg-white border-emerald-200 text-emerald-700'
-              : 'bg-white border-stone-200 text-stone-600'}`}>
-            {showToast.type === 'success' ? '✓' : 'ℹ'} {showToast.message}
+              : showToast.type === 'error'
+                ? 'bg-white border-red-200 text-red-600'
+                : 'bg-white border-stone-200 text-stone-600'}`}>
+            {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
           </div>
         </div>
       )}
 
-      {/* ── Quick View Modal ── */}
+      {/* Quick View Modal */}
       {quickViewProduct && (
         <div
           className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -658,12 +648,8 @@ const CategoryPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
-                <img
-                  src={quickViewProduct.images[0]}
-                  alt={quickViewProduct.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="rounded-xl overflow-hidden mb-5 bg-stone-100">
+                <ImageSlider images={quickViewProduct.images} />
               </div>
 
               <p className="text-stone-500 mb-5 text-sm leading-relaxed">{quickViewProduct.description}</p>
@@ -696,47 +682,44 @@ const CategoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Category Hero ── */}
+      {/* Category Hero */}
       <div className="bg-white border-b border-stone-100">
         <div className="container mx-auto px-4 py-8">
-          {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs text-stone-400 mb-5">
             <Link to="/" className="hover:text-stone-600 transition-colors">Home</Link>
             <ChevronRight size={12} />
             <Link to="/categories" className="hover:text-stone-600 transition-colors">Categories</Link>
             <ChevronRight size={12} />
-            <span className="text-stone-600">{categoryInfo.title}</span>
+            <span className="text-stone-600">Products</span>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0">
-              {categoryInfo.icon}
+              📦
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">{categoryInfo.title}</h1>
-              <p className="text-stone-500 text-sm">{categoryInfo.description}</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
+              <p className="text-stone-500 text-sm">Browse our collection of products</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Main Layout ── */}
+      {/* Main Layout */}
       <div className="container mx-auto px-4 py-7">
         <div className="flex flex-col lg:flex-row gap-6">
-
-          {/* ── Desktop Filter Sidebar ── */}
+          {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white border border-stone-200 rounded-2xl p-5 sticky top-4">
               <FilterContent />
             </div>
           </aside>
 
-          {/* ── Main Content ── */}
+          {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Top Bar */}
             <div className="bg-white border border-stone-200 rounded-2xl px-4 py-3 mb-5 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {/* View mode toggles */}
                 <div className="flex bg-stone-100 rounded-xl p-1 gap-0.5">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -752,7 +735,6 @@ const CategoryPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Mobile filter button */}
                 <button
                   onClick={() => setShowMobileFilters(true)}
                   className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-medium text-stone-600 hover:border-stone-300 transition-all"
@@ -791,12 +773,6 @@ const CategoryPage: React.FC = () => {
                     <button onClick={() => setSearchTerm('')} className="hover:text-amber-300 transition-colors"><X size={11} /></button>
                   </span>
                 )}
-                {selectedBrands.map(brand => (
-                  <span key={brand} className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-amber-400 rounded-full text-xs font-medium">
-                    {brand}
-                    <button onClick={() => setSelectedBrands(prev => prev.filter(b => b !== brand))} className="hover:text-amber-300"><X size={11} /></button>
-                  </span>
-                ))}
                 {minRating > 0 && (
                   <span className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-amber-400 rounded-full text-xs font-medium">
                     {minRating}+ Stars
@@ -806,8 +782,25 @@ const CategoryPage: React.FC = () => {
               </div>
             )}
 
-            {/* Products */}
-            {paginatedProducts.length === 0 ? (
+            {/* Error State */}
+            {error && (
+              <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-5">
+                  <Package size={28} className="text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-stone-700 mb-2">Error Loading Products</h3>
+                <p className="text-stone-400 text-sm mb-5">{error}</p>
+                <button
+                  onClick={() => fetchProducts(1, true)}
+                  className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {/* Products - Empty State */}
+            {!error && !initialLoading && paginatedProducts.length === 0 && !loading && (
               <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-5">
                   <Package size={28} className="text-stone-400" />
@@ -821,22 +814,40 @@ const CategoryPage: React.FC = () => {
                   Clear all filters
                 </button>
               </div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {paginatedProducts.map(product => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {paginatedProducts.map(product => (
-                  <ProductListItem key={product.id} product={product} />
-                ))}
-              </div>
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
+            {/* Products - Grid/List View */}
+            {!error && !initialLoading && paginatedProducts.length > 0 && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductCard key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductListItem key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Loading More Indicator */}
+            {loading && !initialLoading && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                  {Array(3).fill(0).map((_, i) => <ProductSkeleton key={`loading-${i}`} />)}
+                </div>
+              ) : (
+                <div className="space-y-3 mt-4">
+                  {Array(2).fill(0).map((_, i) => <ListItemSkeleton key={`loading-${i}`} />)}
+                </div>
+              )
+            )}
+
+            {/* Pagination Controls */}
+            {!hasMore && totalFilteredPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -846,11 +857,11 @@ const CategoryPage: React.FC = () => {
                   <ChevronLeft size={16} />
                 </button>
 
-                {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+                {[...Array(Math.min(totalFilteredPages, 5))].map((_, i) => {
                   let pageNum: number;
-                  if (totalPages <= 5) pageNum = i + 1;
+                  if (totalFilteredPages <= 5) pageNum = i + 1;
                   else if (currentPage <= 3) pageNum = i + 1;
-                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else if (currentPage >= totalFilteredPages - 2) pageNum = totalFilteredPages - 4 + i;
                   else pageNum = currentPage - 2 + i;
 
                   return (
@@ -868,19 +879,26 @@ const CategoryPage: React.FC = () => {
                 })}
 
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
+                  disabled={currentPage === totalFilteredPages}
                   className="p-2 rounded-xl bg-white border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronRight size={16} />
                 </button>
               </div>
             )}
+
+            {/* End of products message */}
+            {!hasMore && sortedProducts.length > 0 && (
+              <div className="text-center mt-8 py-4 text-stone-400 text-sm">
+                You've reached the end of the products
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Mobile Filter Drawer ── */}
+      {/* Mobile Filter Drawer */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setShowMobileFilters(false)} />

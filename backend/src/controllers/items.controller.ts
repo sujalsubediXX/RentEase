@@ -50,54 +50,67 @@ export const createItem = async (req: Request, res: Response) => {
 
 
 
-
-
 export const getItems = async (req: Request, res: Response) => {
   try {
-    const categoryId = req.query.categoryId as string;
-    const search = (req.query.search as string) || "";
+    const items = await Item.aggregate([
+      {
+        $lookup: {
+          from: "itemimages",
+          localField: "_id",
+          foreignField: "itemId",
+          as: "image",
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          price: 1,
+          categoryId: 1,
+          ownerId: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          image: {
+            $map: {
+              input: "$image",
+              as: "img",
+              in: "$$img.imageUrl",
+            },
+          },
+        },
+      },
+    ]);
 
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    res.status(200).json(items);
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
 
-    const skip = (page - 1) * limit;
 
-    const query: any = {};
+export const getItemsByID = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+   
+    const item = await Item.findById(id).lean();
 
-    if (categoryId) {
-      query.categoryId = categoryId;
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    if (search) {
-      query.title = { $regex: search, $options: "i" };
-    }
-
-    const items = await Item.find(query)
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const itemIds = items.map((i) => i._id);
-
+   
     const images = await ItemImage.find({
-      itemId: { $in: itemIds }
+      itemId: item._id
     }).lean();
 
-    const result = items.map((item: any) => ({
+    const result = {
       ...item,
-      images: images
-        .filter((img) => img.itemId.toString() === item._id.toString())
-        .map((img) => img.imageUrl)
-    }));
+      images: images.map((img) => img.imageUrl)  
+    };
 
-    const total = await Item.countDocuments(query);
-
-    res.json({
-      items: result,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    });
+    res.json(result);  
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }

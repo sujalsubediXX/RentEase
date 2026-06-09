@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
 interface Category {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   image: string;
@@ -46,8 +46,8 @@ const CategoriesPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((category) => (
             <Link
-              key={category.id}
-              to={`/categories/${category.name.toLowerCase()}`} // Link to category page
+              key={category._id}
+              to={`/categories/${category._id}`} // Link to category page
               className="group block bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
             >
               {/* Category Image */}
