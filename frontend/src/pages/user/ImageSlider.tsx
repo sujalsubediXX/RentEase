@@ -3,12 +3,12 @@ import "swiper/css";
 
 export const ImageSlider = ({ images }: { images: string[] }) => {
   return (
-    <Swiper spaceBetween={10} slidesPerView={1} >
+    <Swiper spaceBetween={10} slidesPerView={1} className="w-full h-full" >
       {images.map((img, i) => (
         <SwiperSlide key={i}>
           <img
             src={img}
-            className="w-full object-cover rounded-xl "
+            className="w-full h-fullobject-cover rounded-xl "
           />
         </SwiperSlide>
       ))}

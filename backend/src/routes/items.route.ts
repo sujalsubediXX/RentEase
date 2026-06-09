@@ -1,4 +1,4 @@
-import {createItem, getItems} from "../controllers/items.controller.ts";
+import {createItem, getItems, getItemsByID} from "../controllers/items.controller.ts";
 import express from "express";
 const router = express.Router();
 import {uploadItem} from "../config/upload.ts"
@@ -8,4 +8,5 @@ router.post(
   createItem
 );
 router.get("/getitems", getItems);
+router.get("/getitemsByID/:id", getItemsByID);
 export default router;

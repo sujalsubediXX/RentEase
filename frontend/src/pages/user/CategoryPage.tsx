@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Grid3X3, List, Star,
   Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
-  MapPin, Package, Home
+  MapPin, Package
 } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
@@ -118,8 +118,8 @@ const CategoryPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const url = `${API_BASE_URL}/items/getitems?categoryId=${categoryId}&page=${pageNum}&limit=12`;
-          
+      const url = `${API_BASE_URL}/items/getitemsByID/${categoryId}`;
+      
       const response = await axios.get(url);
       
       if (!response.data || !response.data.items) {
@@ -129,6 +129,8 @@ const CategoryPage: React.FC = () => {
         setInitialLoading(false);
         return;
       }
+      
+      console.log(`Received ${response.data.items.length} items, page ${pageNum} of ${response.data.totalPages}`);
       
       if (response.data.items.length === 0 && reset) {
         setProducts([]);
@@ -167,6 +169,7 @@ const CategoryPage: React.FC = () => {
       
       if (reset) {
         setProducts(newItems);
+        console.log('Reset products with:', newItems.length, 'items');
       } else {
         setProducts(prev => {
           const updated = [...prev, ...newItems];
@@ -244,6 +247,21 @@ const CategoryPage: React.FC = () => {
     
     return filtered;
   }, [products, searchTerm, priceRange, selectedBrands, minRating]);
+    
+    filtered = filtered.filter(p => 
+      p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]
+    );
+    
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter(p => selectedBrands.includes(p.brand));
+    }
+    
+    if (minRating > 0) {
+      filtered = filtered.filter(p => p.rating >= minRating);
+    }
+    
+    return filtered;
+  }, [products, searchTerm, priceRange, selectedBrands, minRating]);
 
   const sortedProducts = useMemo(() => {
     const productsToSort = [...filteredProducts];
@@ -269,6 +287,9 @@ const CategoryPage: React.FC = () => {
 
   const totalFilteredPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
@@ -300,6 +321,7 @@ const CategoryPage: React.FC = () => {
     setSortBy('featured');
   };
 
+  const activeFiltersCount = (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
   const activeFiltersCount = (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
 
   // Filter Sidebar (same as before)
@@ -418,7 +440,19 @@ const CategoryPage: React.FC = () => {
     const isLastItem = index === paginatedProducts.length - 1;
     const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'grid';
 
+    const isLastItem = index === paginatedProducts.length - 1;
+    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'grid';
+
     return (
+      <div
+        ref={shouldAttachRef ? lastProductElementRef : null}
+        className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
+      >
+        <div className="relative overflow-hidden">
+          <ImageSlider images={product.images}  />
+          
+          {discount && discount > 0 && (
+            <span className="absolute top-3 left-3 z-10 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
       <div
         ref={shouldAttachRef ? lastProductElementRef : null}
         className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
@@ -433,11 +467,13 @@ const CategoryPage: React.FC = () => {
           )}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
               <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
                 Out of Stock
               </span>
             </div>
           )}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
           <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
             <button
               onClick={() => toggleWishlist(product.id)}
@@ -523,8 +559,14 @@ const CategoryPage: React.FC = () => {
     const isInWishlist = wishlist.includes(product.id);
     const isLastItem = index === paginatedProducts.length - 1;
     const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'list';
+    const isLastItem = index === paginatedProducts.length - 1;
+    const shouldAttachRef = isLastItem && hasMore && !loading && viewMode === 'list';
 
     return (
+      <div
+        ref={shouldAttachRef ? lastProductElementRef : null}
+        className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
+      >
       <div
         ref={shouldAttachRef ? lastProductElementRef : null}
         className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
@@ -606,8 +648,28 @@ const CategoryPage: React.FC = () => {
     );
   }
 
+  // Loading state
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-stone-200 rounded mb-4" />
+            <div className="h-4 w-96 bg-stone-200 rounded mb-8" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array(8).fill(0).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-stone-800">
+      {/* Toast */}
       {/* Toast */}
       {showToast && (
         <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
@@ -618,10 +680,15 @@ const CategoryPage: React.FC = () => {
                 ? 'bg-white border-red-200 text-red-600'
                 : 'bg-white border-stone-200 text-stone-600'}`}>
             {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
+              : showToast.type === 'error'
+                ? 'bg-white border-red-200 text-red-600'
+                : 'bg-white border-stone-200 text-stone-600'}`}>
+            {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
           </div>
         </div>
       )}
 
+      {/* Quick View Modal */}
       {/* Quick View Modal */}
       {quickViewProduct && (
         <div
@@ -646,12 +713,8 @@ const CategoryPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
-                <img
-                  src={quickViewProduct.images[0] || 'https://picsum.photos/id/20/300/300'}
-                  alt={quickViewProduct.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="rounded-xl overflow-hidden mb-5 bg-stone-100">
+                <ImageSlider images={quickViewProduct.images} />
               </div>
 
               <p className="text-stone-500 mb-5 text-sm leading-relaxed">{quickViewProduct.description}</p>
@@ -693,13 +756,17 @@ const CategoryPage: React.FC = () => {
             <Link to="/categories" className="hover:text-stone-600 transition-colors">Categories</Link>
             <ChevronRight size={12} />
             <span className="text-stone-600">Products</span>
+            <span className="text-stone-600">Products</span>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0">
               📦
+              📦
             </div>
             <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
+              <p className="text-stone-500 text-sm">Browse our collection of products</p>
               <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
               <p className="text-stone-500 text-sm">Browse our collection of products</p>
             </div>
@@ -708,8 +775,10 @@ const CategoryPage: React.FC = () => {
       </div>
 
       {/* Main Layout */}
+      {/* Main Layout */}
       <div className="container mx-auto px-4 py-7">
         <div className="flex flex-col lg:flex-row gap-6">
+          {/* Desktop Filter Sidebar */}
           {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white border border-stone-200 rounded-2xl p-5 sticky top-4">
@@ -717,6 +786,7 @@ const CategoryPage: React.FC = () => {
             </div>
           </aside>
 
+          {/* Main Content */}
           {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Top Bar */}
@@ -803,6 +873,25 @@ const CategoryPage: React.FC = () => {
 
             {/* Products - Empty State */}
             {!error && !initialLoading && paginatedProducts.length === 0 && !loading && (
+            {/* Error State */}
+            {error && (
+              <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-5">
+                  <Package size={28} className="text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-stone-700 mb-2">Error Loading Products</h3>
+                <p className="text-stone-400 text-sm mb-5">{error}</p>
+                <button
+                  onClick={() => fetchProducts(1, true)}
+                  className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {/* Products - Empty State */}
+            {!error && !initialLoading && paginatedProducts.length === 0 && !loading && (
               <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-5">
                   <Package size={28} className="text-stone-400" />
@@ -816,6 +905,23 @@ const CategoryPage: React.FC = () => {
                   Clear all filters
                 </button>
               </div>
+            )}
+
+            {/* Products - Grid/List View */}
+            {!error && !initialLoading && paginatedProducts.length > 0 && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductCard key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductListItem key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              )
             )}
 
             {/* Products - Grid/List View */}
@@ -850,6 +956,21 @@ const CategoryPage: React.FC = () => {
 
             {/* Pagination Controls */}
             {!hasMore && totalFilteredPages > 1 && (
+            {/* Loading More Indicator */}
+            {loading && !initialLoading && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                  {Array(3).fill(0).map((_, i) => <ProductSkeleton key={`loading-${i}`} />)}
+                </div>
+              ) : (
+                <div className="space-y-3 mt-4">
+                  {Array(2).fill(0).map((_, i) => <ListItemSkeleton key={`loading-${i}`} />)}
+                </div>
+              )
+            )}
+
+            {/* Pagination Controls */}
+            {!hasMore && totalFilteredPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -860,9 +981,12 @@ const CategoryPage: React.FC = () => {
                 </button>
 
                 {[...Array(Math.min(totalFilteredPages, 5))].map((_, i) => {
+                {[...Array(Math.min(totalFilteredPages, 5))].map((_, i) => {
                   let pageNum: number;
                   if (totalFilteredPages <= 5) pageNum = i + 1;
+                  if (totalFilteredPages <= 5) pageNum = i + 1;
                   else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalFilteredPages - 2) pageNum = totalFilteredPages - 4 + i;
                   else if (currentPage >= totalFilteredPages - 2) pageNum = totalFilteredPages - 4 + i;
                   else pageNum = currentPage - 2 + i;
 
@@ -883,6 +1007,8 @@ const CategoryPage: React.FC = () => {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
                   disabled={currentPage === totalFilteredPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
+                  disabled={currentPage === totalFilteredPages}
                   className="p-2 rounded-xl bg-white border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronRight size={16} />
@@ -896,10 +1022,18 @@ const CategoryPage: React.FC = () => {
                 You've reached the end of the products
               </div>
             )}
+
+            {/* End of products message */}
+            {!hasMore && sortedProducts.length > 0 && (
+              <div className="text-center mt-8 py-4 text-stone-400 text-sm">
+                You've reached the end of the products
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Mobile Filter Drawer */}
       {/* Mobile Filter Drawer */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">

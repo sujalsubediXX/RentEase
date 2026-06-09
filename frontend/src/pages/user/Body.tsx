@@ -5,7 +5,8 @@ import API_BASE_URL from "../../config/api";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
 import { useNavigate } from "react-router-dom"
-
+import { ImageSlider } from "./ImageSlider.tsx";
+const BASE_URL = "http://localhost:3000";
 interface Category {
   icon: string;
   name: string;
@@ -21,14 +22,20 @@ interface dbCategory {
 }
 
 interface RentalItem {
-  icon: string;
-  cat: string;
-  name: string;
-  rating: string;
-  reviews: number;
-  loc: string;
-  price: string;
-  bg: string;
+  _id: string;
+  title: string;
+  description: string;
+  location: string;
+  price: number;
+  categoryId: string;
+  ownerId: string;
+  condition: string;
+  availability: string;
+  securityDeposit: number;
+  quantity: number;
+  image: string[];
+  isApproved: boolean;
+  isActive: boolean;
 }
 
 interface Testimonial {
@@ -80,7 +87,16 @@ export default function Body() {
   const [category, setCategory] = useState<dbCategory[]>([]);
   const navigate = useNavigate();
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/items`).then((res) => setItems(res.data));
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/items/getitems`);
+        setItems(res.data);
+      } catch (err) {
+        console.log(err);
+      }
+
+    }
+    fetchItems();
   }, []);
   useEffect(() => {
     const fetchCategory = async () => {
@@ -221,8 +237,8 @@ export default function Body() {
             {items.map((item, i) => (
               <Reveal key={i} delay={(i % 3) * 0.1}>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-amber-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
-                  <div className="w-full aspect-4/3 flex items-center justify-center text-[64px] relative" style={{ background: item.bg }}>
-                    {item.icon}
+                  {/* <div className="w-full aspect-4/3 flex items-center justify-center text-[64px] relative" style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+                  
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.3))" }} />
                     <span className="absolute top-3 left-3 bg-green-50 border border-green-200 text-green-600 text-[11px] px-2.5 py-1 rounded-full">
                       Available Now
@@ -234,17 +250,43 @@ export default function Body() {
                     >
                       {favs[i] ? "♥" : "♡"}
                     </button>
+                  </div> */}
+                  <div className="w-full aspect-4/3 relative overflow-hidden">
+                    <ImageSlider
+                      images={(item.image || []).map((img) => `${BASE_URL}${img}`)}
+                    />
+
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.3))",
+                      }}
+                    />
+
+                    <span className="absolute top-3 left-3 bg-green-50 border border-green-200 text-green-600 text-[11px] px-2.5 py-1 rounded-full z-10">
+                      Available Now
+                    </span>
+
+                    <button
+                      onClick={() => toggleFav(i)}
+                      className="absolute top-3 right-3 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-[16px] border border-gray-200 hover:border-amber-300 transition-all duration-200 z-10"
+                      style={{ color: favs[i] ? AMBER : "#aaa" }}
+                    >
+                      {favs[i] ? "♥" : "♡"}
+                    </button>
                   </div>
+
                   <div className="p-5">
                     <div className="text-[11px] tracking-widest uppercase font-medium mb-1.5" style={{ color: AMBER }}>
-                      {item.cat}
+                      {item.description}
                     </div>
-                    <div className="font-display text-[20px] text-gray-800 mb-2">{item.name}</div>
+                    <div className="font-display text-[20px] text-gray-800 mb-2">{item.title}</div>
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="flex items-center gap-1 text-[13px] text-gray-500">
+                      {/* <div className="flex items-center gap-1 text-[13px] text-gray-500">
                         <span style={{ color: AMBER }}>★</span> {item.rating} ({item.reviews} reviews)
-                      </div>
-                      <div className="text-[12px] text-gray-400">📍 {item.loc}</div>
+                      </div> */}
+                      <div className="text-[12px] text-gray-400">📍 {item.location}</div>
                     </div>
                     <div className="flex items-center justify-between pt-3.5 border-t border-gray-100">
                       <div className="font-display">
@@ -260,6 +302,8 @@ export default function Body() {
               </Reveal>
             ))}
           </div>
+
+
         </div>
       </section>
 
