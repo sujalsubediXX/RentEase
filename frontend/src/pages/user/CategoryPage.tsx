@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link ,useNavigate} from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Grid3X3, List, Star,
   Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
@@ -270,7 +270,7 @@ const CategoryPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-
+const navigate = useNavigate();
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
@@ -550,6 +550,7 @@ const CategoryPage: React.FC = () => {
             </button>
             <button
               disabled={product.stock === 0}
+              onClick={() => navigate('/checkout', { state: { product } })}
               className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all
                 ${product.stock > 0
                   ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
@@ -616,6 +617,7 @@ const CategoryPage: React.FC = () => {
               </button>
               <button
                 disabled={product.stock === 0}
+                onClick={() => navigate('/checkout', { state: { product } })}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all
                   ${product.stock > 0
                     ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
@@ -712,6 +714,7 @@ const CategoryPage: React.FC = () => {
 
               <button
                 disabled={quickViewProduct.stock === 0}
+                onClick={() => navigate('/checkout', { state: { product: quickViewProduct } })}
                 className={`w-full py-3 rounded-xl font-bold text-sm transition-all
                   ${quickViewProduct.stock > 0
                     ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'

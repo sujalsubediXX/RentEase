@@ -41,6 +41,10 @@ import CartPage from "./pages/user/CartPage";
 import UserSettingsPage from "./pages/user/UserSettingsPage";
 import KYCVerificationForm from "./pages/KYCVerificationForm";
 import CategoryManagement from "./pages/owner/CategoryManagement";
+import CheckoutPage from "./pages/user/CheckoutPage";
+import ConfirmBookingPage from "./pages/user/ConfirmBookingPage";
+import PaymentSuccessPage from "./pages/user/PaymentSuccessPage";
+import PaymentFailurePage from "./pages/user/PaymentFailurePage";
 
 
 
@@ -64,12 +68,28 @@ const router = createBrowserRouter([
         // element: <NEWCat/>,
       },
       {
+        path: "/confirm-booking",
+        element: <ConfirmBookingPage />,
+      },
+      {
         path: "/categories",
         element: <CategoriesPage />,
       },
       {
         path: "/about",
         element: <About/>,
+      },
+      {
+        path: "/checkout",
+        element: <CheckoutPage/>,
+      },
+      {
+        path: "/payment-success",
+        element: <PaymentSuccessPage/>,
+      },
+      {
+        path: "/payment-failure",
+        element: <PaymentFailurePage/>,
       },
       {
         path: "/contact",
