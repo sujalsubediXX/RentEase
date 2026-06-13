@@ -1,18 +1,14 @@
-// src/pages/user/CategoryPage.tsx
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link ,useNavigate} from 'react-router-dom';
 import {
   Search, SlidersHorizontal, Grid3X3, List, Star,
   Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
-  MapPin, Package, Loader2,
+  MapPin, Package
 } from 'lucide-react';
-import axios from 'axios'
-import { useCart } from '../../hooks/useCart';
-import { useWishlist } from '../../hooks/useWishlist';
+import API_BASE_URL from '../../config/api';
 import { ImageSlider } from './ImageSlider';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
+// ============ TYPES ============
 interface Product {
   id: string;
   name: string;
@@ -29,23 +25,26 @@ interface Product {
   location: string;
 }
 
-// ─── Skeletons ────────────────────────────────────────────────────────────────
 
+// Skeleton Loader Component
 const ProductSkeleton: React.FC = () => (
-  <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse">
+  <div className="group bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse">
     <div className="aspect-square bg-stone-100" />
-    <div className="p-4 space-y-2">
-      <div className="flex justify-between">
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="h-3 w-16 bg-stone-200 rounded" />
         <div className="h-3 w-12 bg-stone-200 rounded" />
       </div>
-      <div className="h-4 w-3/4 bg-stone-200 rounded" />
-      <div className="h-3 w-24 bg-stone-200 rounded" />
-      <div className="flex justify-between pt-1">
-        <div className="h-5 w-20 bg-stone-200 rounded" />
+      <div className="h-4 w-3/4 bg-stone-200 rounded mb-2" />
+      <div className="h-3 w-24 bg-stone-200 rounded mb-3" />
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <div className="h-5 w-20 bg-stone-200 rounded" />
+          <div className="h-3 w-16 bg-stone-200 rounded mt-1" />
+        </div>
         <div className="h-5 w-16 bg-stone-200 rounded" />
       </div>
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2">
         <div className="flex-1 h-8 bg-stone-200 rounded-xl" />
         <div className="flex-1 h-8 bg-stone-200 rounded-xl" />
       </div>
@@ -53,38 +52,75 @@ const ProductSkeleton: React.FC = () => (
   </div>
 );
 
-// ─── Data helpers ─────────────────────────────────────────────────────────────
+const ListItemSkeleton: React.FC = () => (
+  <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden animate-pulse flex flex-col md:flex-row">
+    <div className="w-full md:w-44 h-44 bg-stone-100" />
+    <div className="flex-1 p-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="h-3 w-16 bg-stone-200 rounded" />
+        <div className="h-3 w-12 bg-stone-200 rounded" />
+      </div>
+      <div className="h-4 w-2/3 bg-stone-200 rounded mb-2" />
+      <div className="h-3 w-full bg-stone-200 rounded mb-2" />
+      <div className="h-3 w-1/2 bg-stone-200 rounded mb-3" />
+      <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+        <div>
+          <div className="h-5 w-24 bg-stone-200 rounded" />
+          <div className="h-3 w-16 bg-stone-200 rounded mt-1" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 w-24 bg-stone-200 rounded-xl" />
+          <div className="h-8 w-24 bg-stone-200 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-const extractItems = (data: any): { items: any[]; totalPages: number } => {
-  if (Array.isArray(data)) return { items: data, totalPages: 1 };
-  if (data?.success && Array.isArray(data?.data)) return { items: data.data, totalPages: data.totalPages || 1 };
-  if (Array.isArray(data?.items)) return { items: data.items, totalPages: data.totalPages || 1 };
-  if (Array.isArray(data?.data)) return { items: data.data, totalPages: data.totalPages || 1 };
+const extractItems = (responseData: any): { items: any[]; totalPages: number } => {
+  if (Array.isArray(responseData)) {
+    return { items: responseData, totalPages: 1 };
+  }
+
+    if (responseData?.success && Array.isArray(responseData?.data)) {
+    return { items: responseData.data, totalPages: responseData.totalPages || 1 };
+  }
+
+  if (Array.isArray(responseData?.items)) {
+    return { items: responseData.items, totalPages: responseData.totalPages || 1 };
+  }
+
+  if (Array.isArray(responseData?.data)) {
+    return { items: responseData.data, totalPages: responseData.totalPages || 1 };
+  }
+
   return { items: [], totalPages: 1 };
 };
 
-const buildImageUrl = (img: string): string => {
-  if (!img) return '';
-  if (img.startsWith('http')) return img;
-  if (img.startsWith('/')) return `${API_BASE}${img}`;
-  return `${API_BASE}/uploads/items/${img}`;
-};
 
-const mapItem = (item: any, categoryId: string): Product => {
-  const imageUrls =
-    item.images?.length > 0
+const mapItemToProduct = (item: any, categoryId: string, API_BASE_URL: string): Product => {
+  const buildImageUrl = (img: string): string => {
+    if (!img) return '';
+    if (img.startsWith('http')) return img;
+    if (img.startsWith('/')) return `${API_BASE_URL}${img}`;
+    return `${API_BASE_URL}/uploads/items/${img}`;
+  };
+
+  const imageUrls: string[] =
+    item.images && Array.isArray(item.images) && item.images.length > 0
       ? item.images.map(buildImageUrl).filter(Boolean)
       : ['https://picsum.photos/id/20/300/300'];
 
   const rentalPrice = item.rentalPrice ?? item.price ?? 0;
+  const originalPrice = item.originalPrice ?? (rentalPrice ? Math.round(rentalPrice * 1.5) : undefined);
+
   return {
     id: item._id,
     name: item.name || item.title || 'Unnamed Product',
     description: item.description || 'No description available',
     rentalPrice,
-    originalPrice: item.originalPrice ?? (rentalPrice ? Math.round(rentalPrice * 1.5) : undefined),
+    originalPrice,
     images: imageUrls,
     category: item.category || 'Products',
     categoryId: item.categoryId || categoryId,
@@ -96,39 +132,48 @@ const mapItem = (item: any, categoryId: string): Product => {
   };
 };
 
-// ─── Filter sidebar ───────────────────────────────────────────────────────────
-
 interface FilterContentProps {
-  searchTerm: string; setSearchTerm: (v: string) => void;
-  priceRange: [number, number]; setPriceRange: (v: [number, number]) => void;
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  priceRange: [number, number];
+  setPriceRange: (v: [number, number]) => void;
   availableBrands: string[];
-  selectedBrands: string[]; setSelectedBrands: React.Dispatch<React.SetStateAction<string[]>>;
-  minRating: number; setMinRating: (v: number) => void;
-  activeFiltersCount: number; clearAllFilters: () => void;
+  selectedBrands: string[];
+  setSelectedBrands: React.Dispatch<React.SetStateAction<string[]>>;
+  minRating: number;
+  setMinRating: (v: number) => void;
+  activeFiltersCount: number;
+  clearAllFilters: () => void;
 }
 
 const FilterContent: React.FC<FilterContentProps> = ({
-  searchTerm, setSearchTerm, priceRange, setPriceRange,
+  searchTerm, setSearchTerm,
+  priceRange, setPriceRange,
   availableBrands, selectedBrands, setSelectedBrands,
-  minRating, setMinRating, activeFiltersCount, clearAllFilters,
+  minRating, setMinRating,
+  activeFiltersCount, clearAllFilters,
 }) => (
   <div className="space-y-6">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-stone-800 uppercase tracking-wider">Filters</span>
       {activeFiltersCount > 0 && (
-        <button onClick={clearAllFilters} className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
+        <button
+          onClick={clearAllFilters}
+          className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+        >
           <X size={12} /> Clear ({activeFiltersCount})
         </button>
       )}
     </div>
 
-    {/* Search */}
     <div>
       <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Search</label>
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
         <input
-          type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+          type="text"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
           placeholder="Search products..."
           className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 placeholder-stone-400
                      focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
@@ -136,36 +181,47 @@ const FilterContent: React.FC<FilterContentProps> = ({
       </div>
     </div>
 
-    {/* Price */}
     <div>
-      <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Price per day (Rs.)</label>
+      <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
+        Price per day (Rs.)
+      </label>
       <div className="flex gap-2">
-        {(['Min', 'Max'] as const).map((label, i) => (
-          <input key={label} type="number" placeholder={label}
-            value={priceRange[i]}
-            onChange={e => {
-              const v = Number(e.target.value);
-              setPriceRange(i === 0 ? [v, priceRange[1]] : [priceRange[0], v]);
-            }}
-            className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
-                       focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
-          />
-        ))}
+        <input
+          type="number"
+          value={priceRange[0]}
+          onChange={e => setPriceRange([Number(e.target.value), priceRange[1]])}
+          className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
+                     focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+          placeholder="Min"
+        />
+        <input
+          type="number"
+          value={priceRange[1]}
+          onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
+          className="w-1/2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700
+                     focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+          placeholder="Max"
+        />
       </div>
     </div>
 
-    {/* Brands */}
     {availableBrands.length > 0 && (
       <div>
         <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Brands</label>
         <div className="space-y-2">
           {availableBrands.map(brand => (
-            <label key={brand} className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => setSelectedBrands(prev =>
-                prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
-              )}>
-              <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0
-                ${selectedBrands.includes(brand) ? 'bg-stone-900 border-stone-900' : 'border-stone-300 group-hover:border-stone-400'}`}>
+            <label key={brand} className="flex items-center gap-3 cursor-pointer group">
+              <div
+                className={`w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0
+                  ${selectedBrands.includes(brand)
+                    ? 'bg-stone-900 border-stone-900'
+                    : 'border-stone-300 group-hover:border-stone-400'}`}
+                onClick={() => {
+                  setSelectedBrands(prev =>
+                    prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
+                  );
+                }}
+              >
                 {selectedBrands.includes(brand) && (
                   <svg className="w-2.5 h-2.5 text-amber-400" viewBox="0 0 10 10" fill="none">
                     <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -181,14 +237,18 @@ const FilterContent: React.FC<FilterContentProps> = ({
       </div>
     )}
 
-    {/* Rating */}
     <div>
       <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Min Rating</label>
       <div className="flex gap-2">
         {[0, 3, 4, 4.5].map(r => (
-          <button key={r} onClick={() => setMinRating(r)}
+          <button
+            key={r}
+            onClick={() => setMinRating(r)}
             className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all
-              ${minRating === r ? 'bg-stone-900 text-amber-400 shadow-sm' : 'bg-white border border-stone-200 text-stone-500 hover:border-stone-300'}`}>
+              ${minRating === r
+                ? 'bg-stone-900 text-amber-400 shadow-sm'
+                : 'bg-white border border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'}`}
+          >
             {r === 0 ? 'All' : `${r}★`}
           </button>
         ))}
@@ -197,33 +257,21 @@ const FilterContent: React.FC<FilterContentProps> = ({
   </div>
 );
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-interface ToastState { message: string; type: 'success' | 'error' | 'info' }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
+// ============ MAIN COMPONENT ============
 const CategoryPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const navigate = useNavigate();
 
-  // Real cart + wishlist via hooks
-  const cart = useCart();
-  const wishlist = useWishlist();
-
-  // Track per-item loading so buttons show spinners independently
-  const [cartLoading, setCartLoading] = useState<Record<string, boolean>>({});
-  const [wishlistLoading, setWishlistLoading] = useState<Record<string, boolean>>({});
-
-  // Products
+  // Data states
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [fetchLoading, setFetchLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const apiPageRef = useRef(1);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-
-  // Filters
+const navigate = useNavigate();
+  // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -232,117 +280,166 @@ const CategoryPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [showToast, setShowToast] = useState<{ message: string; type: string } | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [toast, setToast] = useState<ToastState | null>(null);
   const itemsPerPage = 8;
 
-  const showToast = useCallback((message: string, type: ToastState['type'] = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 2500);
+  const showToastMessage = useCallback((message: string, type: string) => {
+    setShowToast({ message, type });
+    setTimeout(() => setShowToast(null), 2500);
   }, []);
 
-  // Fetch products via axios
-  const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
-    if (!categoryId) { setInitialLoading(false); return; }
-    try {
-      reset ? setInitialLoading(true) : setFetchLoading(true);
-      const { data: responseData } = await axios.get(
-        `/items/getitemsbycategory/${categoryId}`,
-        { params: { page: pageNum, limit: 20 } }
-      );
-      const { items: rawItems, totalPages } = extractItems(responseData);
-      const mapped = rawItems.map((i: any) => mapItem(i, categoryId));
-      setProducts(prev => reset ? mapped : [...prev, ...mapped]);
-      setHasMore(pageNum < totalPages);
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to load products', 'error');
-    } finally {
+  // Fetch products from API
+  const fetchProducts = useCallback(async (pageNum: number, reset: boolean = false) => {
+    if (!categoryId) {
       setInitialLoading(false);
-      setFetchLoading(false);
+      return;
     }
-  }, [categoryId, showToast]);
 
-  // Init
+    try {
+      setLoading(true);
+      setError(null);
+
+      const url = `${API_BASE_URL}/items/getitemsbycategory/${categoryId}`;
+      console.log('Fetching:', url);
+
+      // Use plain fetch to avoid axios interceptors/headers causing 400
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server responded ${res.status}: ${text}`);
+      }
+
+      const responseData = await res.json();
+      console.log('API response:', responseData);
+
+      const { items: itemsArray, totalPages: pages } = extractItems(responseData);
+
+      if (itemsArray.length === 0 && reset) {
+        setProducts([]);
+        setHasMore(false);
+        return;
+      }
+
+      const newItems = itemsArray.map((item: any) =>
+        mapItemToProduct(item, categoryId, "http://localhost:3000")
+      );
+
+      console.log(`Mapped ${newItems.length} products`);
+
+      if (reset) {
+        setProducts(newItems);
+      } else {
+        setProducts(prev => [...prev, ...newItems]);
+      }
+
+      setTotalPages(pages);
+      setHasMore(pageNum < pages);
+    } catch (err: any) {
+      console.error('Error fetching products:', err);
+      const message = err?.message || 'Failed to load products';
+      setError(message);
+      showToastMessage('Failed to load products', 'error');
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  }, [categoryId, showToastMessage]);
+
+  // Fetch on mount / category change
   useEffect(() => {
-    if (!categoryId) { setInitialLoading(false); return; }
-    setProducts([]);
-    apiPageRef.current = 1;
-    setCurrentPage(1);
-    setHasMore(true);
-    fetchProducts(1, true);
-    wishlist.fetchWishlist();
-    cart.fetchCart();
-  }, [categoryId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (categoryId) {
+      setProducts([]);
+      setPage(1);
+      setCurrentPage(1);
+      setHasMore(true);
+      setInitialLoading(true);
+      setError(null);
+      fetchProducts(1, true);
+    } else {
+      setInitialLoading(false);
+    }
+  }, [categoryId, fetchProducts]);
 
-  // Cleanup observer on unmount
-  useEffect(() => () => { observerRef.current?.disconnect(); }, []);
+  const addToCart = async (product: Product) => {
+    try {
+      const today = new Date();
+      const end = new Date();
+      end.setDate(today.getDate() + 1);
 
-  // Infinite scroll sentinel
-  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
-    if (fetchLoading) return;
-    observerRef.current?.disconnect();
+      const payload = {
+        itemId: product.id,
+        quantity: 1,
+        rentalDays: 1,
+        startDate: today.toISOString().split("T")[0],
+        endDate: end.toISOString().split("T")[0],
+      };
+
+      const res = await fetch(`${API_BASE_URL}/cart/add/6a2d05276369192a17ffac52`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to add to cart");
+      }
+
+      showToastMessage("Added to cart", "success");
+    } catch (err) {
+      console.log(err);
+      showToastMessage("Failed to add to cart", "error");
+    }
+  };
+  // Infinite scroll observer
+  const lastProductElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
     observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !fetchLoading) {
-        const next = apiPageRef.current + 1;
-        apiPageRef.current = next;
-        fetchProducts(next, false);
+      if (entries[0].isIntersecting && hasMore && !loading && !initialLoading && products.length > 0) {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchProducts(nextPage, false);
       }
     }, { threshold: 0.1 });
+
     if (node) observerRef.current.observe(node);
-  }, [fetchLoading, hasMore, fetchProducts]);
+  }, [loading, hasMore, page, fetchProducts, initialLoading, products.length]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  const handleAddToCart = async (product: Product) => {
-    if (product.stock === 0) return;
-    setCartLoading(prev => ({ ...prev, [product.id]: true }));
-    try {
-      const message = await cart.addItem(product.id, 1, 1);
-      showToast(message, 'success');
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setCartLoading(prev => ({ ...prev, [product.id]: false }));
-    }
-  };
-
-  const handleRentNow = async (product: Product) => {
-    if (product.stock === 0) return;
-    setCartLoading(prev => ({ ...prev, [product.id]: true }));
-    try {
-      await cart.addItem(product.id, 1, 1);
-      navigate('/checkout', { state: { product } });
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setCartLoading(prev => ({ ...prev, [product.id]: false }));
-    }
-  };
-
-  const handleToggleWishlist = async (productId: string) => {
-    setWishlistLoading(prev => ({ ...prev, [productId]: true }));
-    try {
-      const { message } = await wishlist.toggle(productId);
-      showToast(message, 'success');
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setWishlistLoading(prev => ({ ...prev, [productId]: false }));
-    }
-  };
-
-  // ── Filter / sort / paginate ──────────────────────────────────────────────
-
+  // Filter and sort
   const filteredProducts = useMemo(() => {
-    let f = [...products];
+    let filtered = [...products];
+
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      f = f.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q)
+      );
     }
-    f = f.filter(p => p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]);
-    if (selectedBrands.length > 0) f = f.filter(p => selectedBrands.includes(p.brand));
-    if (minRating > 0) f = f.filter(p => p.rating >= minRating);
-    return f;
+
+    filtered = filtered.filter(p =>
+      p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]
+    );
+
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter(p => selectedBrands.includes(p.brand));
+    }
+
+    if (minRating > 0) {
+      filtered = filtered.filter(p => p.rating >= minRating);
+    }
+
+    return filtered;
   }, [products, searchTerm, priceRange, selectedBrands, minRating]);
 
   const sortedProducts = useMemo(() => {
@@ -356,81 +453,58 @@ const CategoryPage: React.FC = () => {
     }
   }, [filteredProducts, sortBy]);
 
-  const totalFilteredPages = Math.max(1, Math.ceil(sortedProducts.length / itemsPerPage));
-
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return sortedProducts.slice(start, start + itemsPerPage);
   }, [sortedProducts, currentPage, itemsPerPage]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
+  const totalFilteredPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
-  const availableBrands = useMemo(() => [...new Set(products.map(p => p.brand))], [products]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
+
+  const availableBrands = useMemo(() => (
+    [...new Set(products.map(p => p.brand))]
+  ), [products]);
+
+  const toggleWishlist = (productId: string) => {
+    if (wishlist.includes(productId)) {
+      setWishlist(prev => prev.filter(id => id !== productId));
+      showToastMessage('Removed from wishlist', 'info');
+    } else {
+      setWishlist(prev => [...prev, productId]);
+      showToastMessage('Added to wishlist', 'success');
+    }
+  };
 
   const clearAllFilters = () => {
-    setSearchTerm(''); setPriceRange([0, 50000]);
-    setSelectedBrands([]); setMinRating(0); setSortBy('featured');
+    setSearchTerm('');
+    setPriceRange([0, 50000]);
+    setSelectedBrands([]);
+    setMinRating(0);
+    setSortBy('featured');
   };
 
-  const activeFiltersCount = (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
+  const activeFiltersCount =
+    (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
 
-  // ── Sub-components ────────────────────────────────────────────────────────
-
-  const ActionButtons = ({ product, compact = false }: { product: Product; compact?: boolean }) => {
-    const inWishlist = wishlist.isInWishlist(product.id);
-    const inCart = cart.isInCart(product.id);
-    const wLoading = wishlistLoading[product.id];
-    const cLoading = cartLoading[product.id];
-    const outOfStock = product.stock === 0;
-
-    return (
-      <div className={`flex gap-2 ${compact ? '' : 'w-full'}`}>
-        {/* Wishlist toggle */}
-        <button
-          onClick={() => handleToggleWishlist(product.id)}
-          disabled={wLoading}
-          className={`${compact ? 'w-8 h-8 rounded-xl shadow-md' : 'flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium'}
-            flex items-center justify-center transition-all
-            ${inWishlist ? 'bg-red-500 text-white border-red-500' : 'bg-white text-stone-400 border-stone-200 hover:text-red-500 hover:border-red-200 hover:shadow-md'}`}
-        >
-          {wLoading
-            ? <Loader2 size={compact ? 13 : 13} className="animate-spin" />
-            : <Heart size={compact ? 14 : 13} fill={inWishlist ? 'currentColor' : 'none'} />}
-          {!compact && <span>{inWishlist ? 'Wishlisted' : 'Wishlist'}</span>}
-        </button>
-
-        {/* Add to cart */}
-        <button
-          onClick={() => handleAddToCart(product)}
-          disabled={outOfStock || cLoading}
-          className={`${compact ? 'w-8 h-8 rounded-xl shadow-md' : 'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold'}
-            flex items-center justify-center transition-all
-            ${outOfStock
-              ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
-              : inCart
-                ? 'bg-amber-500 text-stone-950'
-                : 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'}`}
-        >
-          {cLoading
-            ? <Loader2 size={13} className="animate-spin" />
-            : <ShoppingBag size={compact ? 14 : 13} />}
-          {!compact && <span>{inCart ? 'In Cart' : 'Add to Cart'}</span>}
-        </button>
-      </div>
-    );
-  };
-
+  // Product Card
   const ProductCard = ({ product, index }: { product: Product; index: number }) => {
+    const isInWishlist = wishlist.includes(product.id);
     const discount = product.originalPrice
       ? Math.round(((product.originalPrice - product.rentalPrice) / product.originalPrice) * 100)
       : null;
-    const isLast = index === paginatedProducts.length - 1 && hasMore && !fetchLoading && viewMode === 'grid';
+    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading && viewMode === 'grid';
 
     return (
-      <div ref={isLast ? sentinelRef : null}
-        className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300">
+      <div
+        ref={shouldAttachRef ? lastProductElementRef : null}
+        className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
+      >
         <div className="relative overflow-hidden aspect-square">
           <ImageSlider images={product.images} />
+
           {discount && discount > 0 && (
             <span className="absolute top-3 left-3 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
               -{discount}%
@@ -438,14 +512,23 @@ const CategoryPage: React.FC = () => {
           )}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
-              <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">Out of Stock</span>
+              <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
+                Out of Stock
+              </span>
             </div>
           )}
-          {/* Compact icon buttons overlaid on image */}
           <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
-            <ActionButtons product={product} compact />
-            <button onClick={() => setQuickViewProduct(product)}
-              className="w-8 h-8 rounded-xl bg-white text-stone-400 hover:text-stone-700 hover:shadow-lg flex items-center justify-center shadow-md transition-all">
+            <button
+              onClick={() => toggleWishlist(product.id)}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-all
+                ${isInWishlist ? 'bg-red-500 text-white' : 'bg-white text-stone-400 hover:text-red-500 hover:shadow-lg'}`}
+            >
+              <Heart size={14} fill={isInWishlist ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              onClick={() => setQuickViewProduct(product)}
+              className="w-8 h-8 rounded-xl bg-white text-stone-400 hover:text-stone-700 hover:shadow-lg flex items-center justify-center shadow-md transition-all"
+            >
               <Eye size={14} />
             </button>
           </div>
@@ -460,11 +543,14 @@ const CategoryPage: React.FC = () => {
               <span className="text-xs text-stone-400">({product.reviewCount})</span>
             </div>
           </div>
+
           <h3 className="font-semibold text-stone-800 mb-1 line-clamp-1 text-sm">{product.name}</h3>
+
           <div className="flex items-center gap-1 mb-3">
             <MapPin size={11} className="text-stone-400 shrink-0" />
             <span className="text-[11px] text-stone-400">{product.location}</span>
           </div>
+
           <div className="flex items-end justify-between mb-3">
             <div>
               <div className="flex items-baseline gap-1">
@@ -472,38 +558,55 @@ const CategoryPage: React.FC = () => {
                 <span className="text-xs text-stone-400">/day</span>
               </div>
               {product.originalPrice && (
-                <span className="text-xs text-stone-400 line-through">Rs. {product.originalPrice.toLocaleString()}</span>
+                <span className="text-xs text-stone-400 line-through">
+                  Rs. {product.originalPrice.toLocaleString()}
+                </span>
               )}
             </div>
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full
-              ${product.stock > 3 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                : product.stock > 0 ? 'bg-amber-50 text-amber-600 border border-amber-200'
+              ${product.stock > 3
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                : product.stock > 0
+                  ? 'bg-amber-50 text-amber-600 border border-amber-200'
                   : 'bg-red-50 text-red-500 border border-red-200'}`}>
               {product.stock > 3 ? 'Available' : product.stock > 0 ? `${product.stock} left` : 'Unavailable'}
             </span>
           </div>
-          {/* Full-width Rent Now at the bottom */}
-          <button
-            disabled={product.stock === 0 || cartLoading[product.id]}
-            onClick={() => handleRentNow(product)}
-            className={`w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5
-              ${product.stock > 0
-                ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm'
-                : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
-          >
-            {cartLoading[product.id] ? <Loader2 size={13} className="animate-spin" /> : null}
-            Rent Now
-          </button>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => addToCart(product)}
+            disabled={product.stock === 0}
+              className="flex-1 px-3 py-2 border border-stone-200 text-stone-500 rounded-xl hover:border-stone-300 hover:text-stone-700 transition-all text-xs font-medium"
+            >
+              Add to Cart
+            </button>
+            <button
+              disabled={product.stock === 0}
+              onClick={() => navigate('/checkout', { state: { product } })}
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all
+                ${product.stock > 0
+                  ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
+                  : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
+            >
+              Rent Now
+            </button>
+          </div>
         </div>
       </div>
     );
   };
 
+  // List View Card
   const ProductListItem = ({ product, index }: { product: Product; index: number }) => {
-    const isLast = index === paginatedProducts.length - 1 && hasMore && !fetchLoading && viewMode === 'list';
+    const isInWishlist = wishlist.includes(product.id);
+    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading && viewMode === 'list';
+
     return (
-      <div ref={isLast ? sentinelRef : null}
-        className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md transition-all duration-300 flex flex-col md:flex-row">
+      <div
+        ref={shouldAttachRef ? lastProductElementRef : null}
+        className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
+      >
         <div className="w-full md:w-44 h-44 shrink-0 overflow-hidden bg-stone-100 relative">
           <ImageSlider images={product.images} />
         </div>
@@ -534,17 +637,26 @@ const CategoryPage: React.FC = () => {
                 <span className="text-xs text-stone-400 line-through">Rs. {product.originalPrice.toLocaleString()}</span>
               )}
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <ActionButtons product={product} />
+            <div className="flex gap-2">
               <button
-                disabled={product.stock === 0 || cartLoading[product.id]}
-                onClick={() => handleRentNow(product)}
+                onClick={() => toggleWishlist(product.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all
+                  ${isInWishlist
+                    ? 'border-red-200 bg-red-50 text-red-500'
+                    : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'}`}
+              >
+                <Heart size={13} fill={isInWishlist ? 'currentColor' : 'none'} />
+                {isInWishlist ? 'Wishlisted' : 'Wishlist'}
+              </button>
+              <button
+                disabled={product.stock === 0}
+                onClick={() => navigate('/checkout', { state: { product } })}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all
                   ${product.stock > 0
-                    ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm'
+                    ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
                     : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
               >
-                {cartLoading[product.id] ? <Loader2 size={13} className="animate-spin" /> : <ShoppingBag size={13} />}
+                <ShoppingBag size={13} />
                 Rent Now
               </button>
             </div>
@@ -554,61 +666,72 @@ const CategoryPage: React.FC = () => {
     );
   };
 
-  // ── Initial skeleton ──────────────────────────────────────────────────────
-
+  // Loading state
   if (initialLoading) {
     return (
       <div className="min-h-screen bg-white">
         <div className="container mx-auto px-4 py-8">
-          <div className="h-8 w-48 bg-stone-200 rounded mb-4 animate-pulse" />
-          <div className="h-4 w-72 bg-stone-200 rounded mb-8 animate-pulse" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array(8).fill(0).map((_, i) => <ProductSkeleton key={i} />)}
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-stone-200 rounded mb-4" />
+            <div className="h-4 w-96 bg-stone-200 rounded mb-8" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array(8).fill(0).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="min-h-screen bg-white text-stone-800 mt-12">
-
       {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-5 right-5 z-50">
+      {showToast && (
+        <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
           <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
-            ${toast.type === 'success' ? 'bg-white border-emerald-200 text-emerald-700'
-              : toast.type === 'error' ? 'bg-white border-red-200 text-red-600'
+            ${showToast.type === 'success'
+              ? 'bg-white border-emerald-200 text-emerald-700'
+              : showToast.type === 'error'
+                ? 'bg-white border-red-200 text-red-600'
                 : 'bg-white border-stone-200 text-stone-600'}`}>
-            {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✗' : 'ℹ'} {toast.message}
+            {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
           </div>
         </div>
       )}
 
       {/* Quick View Modal */}
       {quickViewProduct && (
-        <div className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setQuickViewProduct(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl"
-            onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setQuickViewProduct(null)}
+        >
+          <div
+            className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="p-6">
               <div className="flex justify-between items-start mb-5">
                 <div>
                   <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.brand}</span>
                   <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
                 </div>
-                <button onClick={() => setQuickViewProduct(null)}
-                  className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:bg-stone-200 flex items-center justify-center transition-all">
+                <button
+                  onClick={() => setQuickViewProduct(null)}
+                  className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all"
+                >
                   <X size={16} />
                 </button>
               </div>
+
               <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
                 <ImageSlider images={quickViewProduct.images} />
               </div>
+
               <p className="text-stone-500 mb-5 text-sm leading-relaxed">{quickViewProduct.description}</p>
-              <div className="grid grid-cols-2 gap-3 mb-5">
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 {[
                   { label: 'Brand', value: quickViewProduct.brand },
                   { label: 'Rating', value: `${quickViewProduct.rating} ★` },
@@ -621,55 +744,23 @@ const CategoryPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-              {/* Cart + Wishlist actions inside quick view */}
-              <div className="flex gap-3">
-                <ActionButtons product={quickViewProduct} />
-                <button
-                  disabled={quickViewProduct.stock === 0 || cartLoading[quickViewProduct.id]}
-                  onClick={() => handleRentNow(quickViewProduct)}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2
-                    ${quickViewProduct.stock > 0
-                      ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm'
-                      : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}>
-                  {cartLoading[quickViewProduct.id] ? <Loader2 size={14} className="animate-spin" /> : null}
-                  Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Mobile Filter Drawer */}
-      {showMobileFilters && (
-        <div className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
-          onClick={() => setShowMobileFilters(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm max-h-[85vh] overflow-auto p-5 shadow-2xl"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-bold text-stone-800">Filters</span>
-              <button onClick={() => setShowMobileFilters(false)}
-                className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:bg-stone-200 flex items-center justify-center">
-                <X size={16} />
+              <button
+                disabled={quickViewProduct.stock === 0}
+                onClick={() => navigate('/checkout', { state: { product: quickViewProduct } })}
+                className={`w-full py-3 rounded-xl font-bold text-sm transition-all
+                  ${quickViewProduct.stock > 0
+                    ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
+                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
+              >
+                Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
               </button>
             </div>
-            <FilterContent
-              searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-              priceRange={priceRange} setPriceRange={setPriceRange}
-              availableBrands={availableBrands}
-              selectedBrands={selectedBrands} setSelectedBrands={setSelectedBrands}
-              minRating={minRating} setMinRating={setMinRating}
-              activeFiltersCount={activeFiltersCount} clearAllFilters={clearAllFilters}
-            />
-            <button onClick={() => setShowMobileFilters(false)}
-              className="mt-5 w-full py-2.5 bg-stone-900 text-amber-400 font-bold rounded-xl text-sm">
-              Apply Filters
-            </button>
           </div>
         </div>
       )}
 
-      {/* Hero */}
+      {/* Category Hero */}
       <div className="bg-white border-b border-stone-100">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-2 text-xs text-stone-400 mb-5">
@@ -679,115 +770,285 @@ const CategoryPage: React.FC = () => {
             <ChevronRight size={12} />
             <span className="text-stone-600">Products</span>
           </div>
+
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0">📦</div>
+            <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0">
+              📦
+            </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
-              <p className="text-stone-500 text-sm">Browse and rent from our curated collection</p>
+              <p className="text-stone-500 text-sm">Browse our collection of products</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Layout */}
+      {/* Main Layout */}
       <div className="container mx-auto px-4 py-7">
         <div className="flex flex-col lg:flex-row gap-6">
-
-          {/* Desktop sidebar */}
+          {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
             <div className="bg-white border border-stone-200 rounded-2xl p-5 sticky top-4">
               <FilterContent
-                searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-                priceRange={priceRange} setPriceRange={setPriceRange}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
                 availableBrands={availableBrands}
-                selectedBrands={selectedBrands} setSelectedBrands={setSelectedBrands}
-                minRating={minRating} setMinRating={setMinRating}
-                activeFiltersCount={activeFiltersCount} clearAllFilters={clearAllFilters}
+                selectedBrands={selectedBrands}
+                setSelectedBrands={setSelectedBrands}
+                minRating={minRating}
+                setMinRating={setMinRating}
+                activeFiltersCount={activeFiltersCount}
+                clearAllFilters={clearAllFilters}
               />
             </div>
           </aside>
 
-          {/* Content */}
+          {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Toolbar */}
+            {/* Top Bar */}
             <div className="bg-white border border-stone-200 rounded-2xl px-4 py-3 mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-2 text-xs font-semibold px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 hover:bg-stone-100">
-                  <SlidersHorizontal size={14} /> Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-stone-100 rounded-xl p-1 gap-0.5">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-stone-900 text-amber-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  >
+                    <Grid3X3 size={15} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-stone-900 text-amber-400 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  >
+                    <List size={15} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowMobileFilters(true)}
+                  className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-medium text-stone-600 hover:border-stone-300 transition-all"
+                >
+                  <SlidersHorizontal size={13} />
+                  Filters {activeFiltersCount > 0 && (
+                    <span className="bg-stone-900 text-amber-400 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
+                      {activeFiltersCount}
+                    </span>
+                  )}
                 </button>
-                <span className="text-xs text-stone-500 font-medium hidden sm:inline">
-                  {sortedProducts.length} result{sortedProducts.length !== 1 ? 's' : ''}
+
+                <span className="text-xs text-stone-400 hidden sm:block">
+                  {sortedProducts.length} item{sortedProducts.length !== 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="flex items-center gap-4 ml-auto sm:ml-0">
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                  className="text-xs font-semibold px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 focus:outline-none">
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-stone-400">Sort by</span>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-600 focus:outline-none focus:border-amber-500 transition-all cursor-pointer"
+                >
                   <option value="featured">Featured</option>
                   <option value="price_low">Price: Low to High</option>
                   <option value="price_high">Price: High to Low</option>
                   <option value="rating">Highest Rated</option>
                   <option value="name_az">Name: A–Z</option>
                 </select>
-                <div className="flex items-center gap-1 border border-stone-200 bg-stone-50 rounded-xl p-0.5">
-                  {(['grid', 'list'] as const).map(mode => (
-                    <button key={mode} onClick={() => setViewMode(mode)}
-                      className={`p-1.5 rounded-lg transition-all ${viewMode === mode ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}>
-                      {mode === 'grid' ? <Grid3X3 size={14} /> : <List size={14} />}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 
-            {/* Empty state */}
-            {sortedProducts.length === 0 && !initialLoading ? (
-              <div className="text-center py-16 bg-stone-50 border border-stone-200 rounded-2xl">
-                <Package className="mx-auto text-stone-300 mb-3" size={40} />
-                <h3 className="text-base font-bold text-stone-700 mb-1">No matches found</h3>
-                <p className="text-xs text-stone-400 max-w-xs mx-auto mb-4">Try adjusting your filters or search terms.</p>
-                {activeFiltersCount > 0 && (
-                  <button onClick={clearAllFilters} className="text-xs px-4 py-2 bg-stone-900 text-amber-400 font-bold rounded-xl hover:bg-stone-800">
-                    Clear Filters
-                  </button>
+            {/* Active filter chips */}
+            {activeFiltersCount > 0 && (
+              <div className="flex flex-wrap gap-2 mb-5">
+                {searchTerm && (
+                  <span className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-amber-400 rounded-full text-xs font-medium">
+                    Search: {searchTerm}
+                    <button onClick={() => setSearchTerm('')} className="hover:text-amber-300 transition-colors"><X size={11} /></button>
+                  </span>
                 )}
-              </div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {paginatedProducts.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {paginatedProducts.map((p, i) => <ProductListItem key={p.id} product={p} index={i} />)}
+                {minRating > 0 && (
+                  <span className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-amber-400 rounded-full text-xs font-medium">
+                    {minRating}+ Stars
+                    <button onClick={() => setMinRating(0)} className="hover:text-amber-300"><X size={11} /></button>
+                  </span>
+                )}
               </div>
             )}
 
-            {/* Infinite scroll loading indicator */}
-            {fetchLoading && (
-              <div className="flex items-center justify-center gap-2 mt-6 text-xs text-stone-400 font-medium">
-                <Loader2 size={14} className="animate-spin" /> Loading more...
+            {/* Error State */}
+            {error && (
+              <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-5">
+                  <Package size={28} className="text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-stone-700 mb-2">Error Loading Products</h3>
+                <p className="text-stone-400 text-sm mb-5">{error}</p>
+                <button
+                  onClick={() => fetchProducts(1, true)}
+                  className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
+                >
+                  Try Again
+                </button>
               </div>
+            )}
+
+            {/* Empty State */}
+            {!error && !initialLoading && paginatedProducts.length === 0 && !loading && (
+              <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-5">
+                  <Package size={28} className="text-stone-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-stone-700 mb-2">No products found</h3>
+                <p className="text-stone-400 text-sm mb-5">Try adjusting your filters or search term</p>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            )}
+
+            {/* Products */}
+            {!error && !initialLoading && paginatedProducts.length > 0 && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductCard key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductListItem key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Loading more */}
+            {loading && !initialLoading && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                  {Array(3).fill(0).map((_, i) => <ProductSkeleton key={`loading-${i}`} />)}
+                </div>
+              ) : (
+                <div className="space-y-3 mt-4">
+                  {Array(2).fill(0).map((_, i) => <ListItemSkeleton key={`loading-${i}`} />)}
+                </div>
+              )
             )}
 
             {/* Pagination */}
-            {totalFilteredPages > 1 && (
+            {!hasMore && totalFilteredPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8">
-                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  className="w-8 h-8 rounded-xl border border-stone-200 flex items-center justify-center text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-stone-50 transition-all">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-xl bg-white border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
                   <ChevronLeft size={16} />
                 </button>
-                <span className="text-xs font-semibold text-stone-600 px-2">
-                  Page {currentPage} of {totalFilteredPages}
-                </span>
-                <button disabled={currentPage === totalFilteredPages} onClick={() => setCurrentPage(p => Math.min(totalFilteredPages, p + 1))}
-                  className="w-8 h-8 rounded-xl border border-stone-200 flex items-center justify-center text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-stone-50 transition-all">
+
+                {[...Array(Math.min(totalFilteredPages, 5))].map((_, i) => {
+                  let pageNum: number;
+                  if (totalFilteredPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalFilteredPages - 2) pageNum = totalFilteredPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-9 h-9 rounded-xl text-sm font-medium transition-all
+                        ${currentPage === pageNum
+                          ? 'bg-stone-900 text-amber-400 shadow-md shadow-stone-900/10'
+                          : 'bg-white border border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
+                  disabled={currentPage === totalFilteredPages}
+                  className="p-2 rounded-xl bg-white border border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
                   <ChevronRight size={16} />
                 </button>
+              </div>
+            )}
+
+            {!hasMore && sortedProducts.length > 0 && (
+              <div className="text-center mt-8 py-4 text-stone-400 text-sm">
+                You've reached the end of the products
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mobile Filter Drawer */}
+      {showMobileFilters && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setShowMobileFilters(false)} />
+          <div className="absolute right-0 top-0 h-full w-80 bg-white border-l border-stone-200 overflow-auto shadow-2xl">
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-6">
+                <span className="font-semibold text-stone-800">Filters</span>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <FilterContent
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                availableBrands={availableBrands}
+                selectedBrands={selectedBrands}
+                setSelectedBrands={setSelectedBrands}
+                minRating={minRating}
+                setMinRating={setMinRating}
+                activeFiltersCount={activeFiltersCount}
+                clearAllFilters={clearAllFilters}
+              />
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="w-full mt-6 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-up {
+          from { transform: translateY(16px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+        .line-clamp-1 {
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,39 +1,110 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import API_BASE_URL from "../../config/api";
+const userId = "6a2d05276369192a17ffac52";
+
 interface CartItem {
-  id: number;
-  name: string;
-  pricePerDay: number;
-  days: number;
-  image: string;
+  _id: string;
+  itemId: {
+    _id: string;
+    title: string;
+    price: number;
+  };
+  quantity: number;
+  rentalDays: number;
   startDate: string;
   endDate: string;
 }
-const mockCart: CartItem[] = [
-  { id: 1, name: "Sony A7III Camera", pricePerDay: 850, days: 3, image: "📷", startDate: "Jun 10", endDate: "Jun 13" },
-  { id: 3, name: "4-Person Camping Tent", pricePerDay: 400, days: 5, image: "⛺", startDate: "Jun 15", endDate: "Jun 20" },
-];
 
-function CartPage() {
-  const [cart, setCart] = useState(mockCart);
+export default function CartPage() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const updateDays = (id: number, delta: number) => {
-    setCart((c) =>
-      c.map((item) =>
-        item.id === id ? { ...item, days: Math.max(1, item.days + delta) } : item
-      )
-    );
+  // =========================
+  // FETCH CART
+  // =========================
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_BASE_URL}/cart/${userId}`);
+      setCart(res.data.cart.items || []);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
   };
-  const remove = (id: number) => setCart((c) => c.filter((i) => i.id !== id));
 
-  const subtotal = cart.reduce((acc, i) => acc + i.pricePerDay * i.days, 0);
-  const serviceFee = Math.round(subtotal * 0.05);
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+
+  const calcDays = (start: string, end: string) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(1, diff);
+  };
+
+  // =========================
+  // REMOVE ITEM
+  // =========================
+  const removeItem = async (cartItemId: string) => {
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/cart/remove/${userId}/${cartItemId}`
+      );
+      fetchCart();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // CALCULATIONS
+  // =========================
+  const subtotal = useMemo(() => {
+    return cart.reduce(
+      (acc, item) => acc + item.itemId.price * item.rentalDays,
+      0
+    );
+  }, [cart]);
+
+  const serviceFee = subtotal * 0.05;
   const total = subtotal + serviceFee;
 
+  const updateDates = async (
+    cartItemId: string,
+    startDate: string,
+    endDate: string
+  ) => {
+    try {
+      await axios.put(
+        `${API_BASE_URL}/cart/update-dates/${userId}/${cartItemId}`,
+        {
+          startDate,
+          endDate,
+        }
+      );
+
+      fetchCart();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 mt-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-stone-900 font-serif">My Cart</h1>
-        <p className="text-stone-500 mt-1 text-sm">{cart.length} item{cart.length !== 1 ? "s" : ""} ready to book</p>
+        <h1 className="text-3xl font-bold text-stone-900 font-serif">
+          My Cart
+        </h1>
+        <p className="text-stone-500 mt-1 text-sm">
+          {cart.length} item{cart.length !== 1 ? "s" : ""} ready to book
+        </p>
       </div>
 
       {cart.length === 0 ? (
@@ -46,46 +117,82 @@ function CartPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
+          {/* CART ITEMS */}
           <div className="lg:col-span-2 space-y-4">
             {cart.map((item) => (
-              <div key={item.id} className="bg-white border border-stone-200 rounded-2xl p-5 hover:border-amber-300 hover:shadow-md transition-all">
+              <div
+                key={item._id}
+                className="bg-white border border-stone-200 rounded-2xl p-5 hover:border-amber-300 hover:shadow-md transition-all"
+              >
                 <div className="flex gap-4">
                   <div className="w-16 h-16 rounded-xl bg-amber-50 flex items-center justify-center text-3xl shrink-0">
-                    {item.image}
+                    📦
                   </div>
+
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-stone-900 text-sm">{item.name}</h3>
-                      <button onClick={() => remove(item.id)} className="text-stone-300 hover:text-red-400 transition-colors ml-2">
+                      <h3 className="font-bold text-stone-900 text-sm">
+                        {item.itemId.title}
+                      </h3>
+
+                      <button
+                        onClick={() => removeItem(item._id)}
+                        className="text-stone-300 hover:text-red-500 ml-2"
+                      >
                         ✕
                       </button>
                     </div>
-                    <p className="text-xs text-stone-500 mt-0.5">{item.startDate} → {item.endDate}</p>
+
+                    <div className="flex items-center gap-3 mt-2">
+                      {/* START DATE */}
+                      <input
+                        type="date"
+                        value={item.startDate?.split("T")[0] || ""}
+                        onChange={(e) => {
+                          const newStart = e.target.value;
+                          const end = item.endDate;
+
+                          updateDates(item._id, newStart, end);
+                        }}
+                        className="text-xs border border-stone-200 rounded-lg px-2 py-1"
+                      />
+
+                      <span className="text-stone-400 text-xs">→</span>
+
+                      {/* END DATE */}
+                      <input
+                        type="date"
+                        value={item.endDate?.split("T")[0] || ""}
+                        onChange={(e) => {
+                          const newEnd = e.target.value;
+                          const start = item.startDate;
+
+                          updateDates(item._id, start, newEnd);
+                        }}
+                        className="text-xs border border-stone-200 rounded-lg px-2 py-1"
+                      />
+                    </div>
+
                     <div className="flex items-center justify-between mt-3">
-                      {/* Day counter */}
+                      {/* DAYS CONTROL */}
                       <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => updateDays(item.id, -1)}
-                          className="w-7 h-7 rounded-lg bg-stone-100 hover:bg-amber-100 text-stone-700 font-bold text-sm flex items-center justify-center transition-colors"
-                        >
-                          −
-                        </button>
-                        <span className="font-semibold text-stone-900 text-sm w-12 text-center">
-                          {item.days} {item.days === 1 ? "day" : "days"}
+
+                        <span className="text-sm font-semibold">
+                          {calcDays(item.startDate, item.endDate)} days
                         </span>
-                        <button
-                          onClick={() => updateDays(item.id, 1)}
-                          className="w-7 h-7 rounded-lg bg-stone-100 hover:bg-amber-100 text-stone-700 font-bold text-sm flex items-center justify-center transition-colors"
-                        >
-                          +
-                        </button>
+
                       </div>
+
                       <div className="text-right">
-                        <span className="font-bold text-stone-900">
-                          Rs. {(item.pricePerDay * item.days).toLocaleString()}
-                        </span>
-                        <p className="text-xs text-stone-400">Rs. {item.pricePerDay}/day</p>
+                        <div className="font-bold">
+                          Rs.{" "}
+                          {(
+                            item.itemId.price * item.rentalDays
+                          ).toLocaleString()}
+                        </div>
+                        <p className="text-xs text-stone-400">
+                          Rs. {item.itemId.price}/day
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -94,43 +201,45 @@ function CartPage() {
             ))}
           </div>
 
-          {/* Order Summary */}
+          {/* SUMMARY */}
           <div className="lg:col-span-1">
-            <div className="bg-stone-900 rounded-2xl p-6 text-white sticky top-24">
+            <div className="bg-stone-900 text-white rounded-2xl p-6 sticky top-24">
               <h2 className="font-bold text-lg mb-5">Order Summary</h2>
+
               <div className="space-y-3 text-sm">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between text-stone-300">
-                    <span className="truncate mr-2">{item.name} ×{item.days}d</span>
-                    <span className="shrink-0">Rs. {(item.pricePerDay * item.days).toLocaleString()}</span>
+                  <div
+                    key={item._id}
+                    className="flex justify-between text-stone-300"
+                  >
+                    <span className="truncate">
+                      {item.itemId.title} × {item.rentalDays}
+                    </span>
+                    <span>
+                      Rs.{" "}
+                      {(
+                        item.itemId.price * item.rentalDays
+                      ).toLocaleString()}
+                    </span>
                   </div>
                 ))}
-                <div className="border-t border-stone-700 pt-3 flex justify-between text-stone-300">
+
+                <div className="border-t border-stone-700 pt-3 flex justify-between">
                   <span>Service Fee (5%)</span>
                   <span>Rs. {serviceFee.toLocaleString()}</span>
                 </div>
-                <div className="border-t border-stone-700 pt-3 flex justify-between font-bold text-lg text-white">
+
+                <div className="border-t border-stone-700 pt-3 flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-amber-400">Rs. {total.toLocaleString()}</span>
+                  <span className="text-amber-400">
+                    Rs. {total.toLocaleString()}
+                  </span>
                 </div>
               </div>
 
-              {/* Payment Methods */}
-              <div className="mt-5">
-                <p className="text-xs text-stone-400 mb-3 font-medium">Pay via</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {["eSewa", "Khalti", "Cash", "Bank"].map((m) => (
-                    <button key={m} className="bg-stone-800 hover:bg-amber-500 hover:text-stone-900 text-stone-300 text-xs font-semibold py-2 rounded-lg transition-colors border border-stone-700 hover:border-amber-500">
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button className="w-full mt-5 bg-amber-500 text-stone-900 font-bold py-3.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
+              <button className="w-full mt-5 bg-amber-500 text-stone-900 font-bold py-3 rounded-xl">
                 Confirm Booking →
               </button>
-              <p className="text-center text-xs text-stone-500 mt-3">KYC verification required to book</p>
             </div>
           </div>
         </div>
@@ -138,4 +247,3 @@ function CartPage() {
     </div>
   );
 }
-export default CartPage;
