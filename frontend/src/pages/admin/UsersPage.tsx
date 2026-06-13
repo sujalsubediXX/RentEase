@@ -1,23 +1,18 @@
+import axios from "axios";
 import { Download, Search, Eye, Ban, CheckCircle } from "lucide-react";
-import  { useState } from "react";
+import  {  useEffect, useState } from "react";
+import API_BASE_URL from "../../config/api";
 
 interface User {
   id: string;
-  name: string;
+  fullname: string;
   email: string;
   role: "user" | "owner";
-  status: "active" | "suspended" | "pending";
+  status: "active" | "suspended" | "inactive";
   joined: string;
   avatar: string;
 }
-const USERS: User[] = [
-  { id: "U001", name: "Aarav Sharma", email: "aarav@mail.com", role: "user", status: "active", joined: "Jan 12, 2025", avatar: "AS" },
-  { id: "U002", name: "Priya Thapa", email: "priya@mail.com", role: "owner", status: "active", joined: "Feb 03, 2025", avatar: "PT" },
-  { id: "U003", name: "Rohan Kc", email: "rohan@mail.com", role: "user", status: "suspended", joined: "Mar 18, 2025", avatar: "RK" },
-  { id: "U004", name: "Sita Rai", email: "sita@mail.com", role: "owner", status: "pending", joined: "Apr 01, 2025", avatar: "SR" },
-  { id: "U005", name: "Bikash Magar", email: "bikash@mail.com", role: "user", status: "active", joined: "Apr 22, 2025", avatar: "BM" },
-  { id: "U006", name: "Anita Gurung", email: "anita@mail.com", role: "owner", status: "active", joined: "May 05, 2025", avatar: "AG" },
-];
+
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     active: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
@@ -42,10 +37,23 @@ const avatarColor = (initials: string) => {
 export const UsersPage: React.FC<{ roleFilter?: "user" | "owner" }> = ({ roleFilter }) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [user,setUsers] = useState<User[]>([]);
 
-  const filtered = USERS.filter(u => {
+  useEffect(()=>{
+    const fetchUser = async()=>{
+      try {
+        const res = await axios.get(`${API_BASE_URL}/user/getUser/role=user`)
+        setUsers(res.data)
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    fetchUser()
+    },[])
+
+  const filtered = user.filter(u => {
     const matchRole = roleFilter ? u.role === roleFilter : true;
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = u.fullname.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || u.status === statusFilter;
     return matchRole && matchSearch && matchStatus;
   });
@@ -99,7 +107,7 @@ export const UsersPage: React.FC<{ roleFilter?: "user" | "owner" }> = ({ roleFil
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-xl ${avatarColor(u.avatar)} flex items-center justify-center text-xs font-bold text-white`}>{u.avatar}</div>
-                    <span className="text-stone-200 font-medium">{u.name}</span>
+                    <span className="text-stone-200 font-medium">{u.fullname}</span>
                   </div>
                 </td>
                 <td className="px-5 py-3.5 text-stone-400">{u.email}</td>

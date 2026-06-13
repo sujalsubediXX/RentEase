@@ -31,7 +31,7 @@ connectDB().then(() => {
   console.error("Database connection error:", err);
   process.exit(1);
 });
-app.use("/api", userrouter)
+app.use("/api/user", userrouter)
 app.use("/api/category", categoryrouter)
 app.use("/api/items", itemrouter)
 app.use("/api/payment", checkoutroute)
