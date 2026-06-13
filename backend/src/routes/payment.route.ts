@@ -1,4 +1,4 @@
-import { initiatePayment,verifyPayment } from "../controllers/checkout.controller.ts";
+import { initiatePayment,verifyPayment } from "../controllers/payment.controller.ts";
 import express from "express";
 const router = express.Router();
 

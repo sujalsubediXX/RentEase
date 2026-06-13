@@ -4,6 +4,28 @@ import User from "../models/Users.model.ts";
 const allowedRoles = ["user", "owner", "admin"] as const;
 type AllowedRole = (typeof allowedRoles)[number];
 
+export const addUser=async (req: Request, res: Response) => {
+  try {
+    console.log("hi")
+    const { fullname, email, phone, password, role } = req.body;
+
+    const user = await User.create({
+      fullname,
+      email,
+      phone,
+      password,
+      role: role || "user",
+      status:"active"
+    });
+
+    res.status(201).json(user);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal server error";
+    res.status(500).json({ message });
+  }
+}
+
+
 export const getUsersByRole = async (req: Request, res: Response)=> {
     try {
         const roleParam = req.params.role;

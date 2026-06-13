@@ -1,6 +1,6 @@
 import {createItem, getItems, getItemsByCategoryId } from "../controllers/items.controller.ts";
-import express from "express";
-const router = express.Router();
+import {Router} from "express";
+const router = Router();
 import {uploadItem} from "../config/upload.ts"
 router.post(
   "/additems",
