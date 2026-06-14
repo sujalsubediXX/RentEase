@@ -11,7 +11,7 @@ import itemrouter from "./routes/items.route.ts"
 import paymentroute from "./routes/payment.route.ts"
 import cartroute from "./routes/cart.route.ts"
 import path from "path";
-import type { Express } from "express-serve-static-core";
+import wishlistroute from "./routes/wishlist.route.ts"
 const PORT: number = Number(process.env.PORT) || 3000;
 
 
@@ -31,6 +31,7 @@ app.use("/api/category", categoryrouter)
 app.use("/api/items", itemrouter)
 app.use("/api/payment", paymentroute)
 app.use("/api/cart", cartroute)
+app.use("/api/wishlist", wishlistroute)
 
 
 

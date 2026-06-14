@@ -237,20 +237,7 @@ export default function Body() {
             {items.map((item, i) => (
               <Reveal key={i} delay={(i % 3) * 0.1}>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-amber-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
-                  {/* <div className="w-full aspect-4/3 flex items-center justify-center text-[64px] relative" style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}>
-                  
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.3))" }} />
-                    <span className="absolute top-3 left-3 bg-green-50 border border-green-200 text-green-600 text-[11px] px-2.5 py-1 rounded-full">
-                      Available Now
-                    </span>
-                    <button
-                      onClick={() => toggleFav(i)}
-                      className="absolute top-3 right-3 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-[16px] border border-gray-200 hover:border-amber-300 transition-all duration-200"
-                      style={{ color: favs[i] ? AMBER : "#aaa" }}
-                    >
-                      {favs[i] ? "♥" : "♡"}
-                    </button>
-                  </div> */}
+                
                   <div className="w-full aspect-4/3 relative overflow-hidden">
                     <ImageSlider
                       images={(item.image || []).map((img) => `${BASE_URL}${img}`)}

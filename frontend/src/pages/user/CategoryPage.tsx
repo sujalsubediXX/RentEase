@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import { ImageSlider } from './ImageSlider';
-
+import axios from 'axios';
+const temp_userID = "6a2d05276369192a17ffac52";
 // ============ TYPES ============
 interface Product {
   id: string;
@@ -375,7 +376,7 @@ const navigate = useNavigate();
         endDate: end.toISOString().split("T")[0],
       };
 
-      const res = await fetch(`${API_BASE_URL}/cart/add/6a2d05276369192a17ffac52`, {
+      const res = await fetch(`${API_BASE_URL}/cart/add/${temp_userID}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -463,14 +464,19 @@ const navigate = useNavigate();
     [...new Set(products.map(p => p.brand))]
   ), [products]);
 
-  const toggleWishlist = (productId: string) => {
-    if (wishlist.includes(productId)) {
-      setWishlist(prev => prev.filter(id => id !== productId));
-      showToastMessage('Removed from wishlist', 'info');
-    } else {
-      setWishlist(prev => [...prev, productId]);
-      showToastMessage('Added to wishlist', 'success');
+  const toggleWishlist =async (productId: string) => {
+    console.log(productId)
+    try {
+      const res = await axios.post(`${API_BASE_URL}/wishlist/add/${temp_userID}`,{
+      "itemId":productId
+      })
+      if(res.status==200){
+        showToastMessage('Added to wishlist', 'success');
+      }
+    } catch (error) {
+        showToastMessage('failed  to add wishlist', 'fail')
     }
+   
   };
 
   const clearAllFilters = () => {

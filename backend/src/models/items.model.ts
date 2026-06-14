@@ -73,5 +73,12 @@ const itemSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+itemSchema.virtual("images", {
+  ref: "ItemImage",
+  localField: "_id",
+  foreignField: "itemId"
+});
 
+itemSchema.set("toJSON", { virtuals: true });
+itemSchema.set("toObject", { virtuals: true });
 export default mongoose.model("Item", itemSchema);
