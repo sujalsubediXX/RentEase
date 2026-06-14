@@ -65,7 +65,7 @@ const router = createBrowserRouter([
       {
         path: "/categories/:categoryId",
         element: <CategoryPage />,
-        // element: <NEWCat/>,
+    
       },
       {
         path: "/confirm-booking",

@@ -1,352 +1,558 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Calendar, MapPin, CreditCard, User, Phone, ShieldCheck, ShoppingBag } from 'lucide-react';
+import {
+  ChevronLeft, Calendar, MapPin, CreditCard,
+  User, Phone, ShieldCheck, ShoppingBag, Package
+} from 'lucide-react';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Shape of a single product coming from CategoryPage's "Rent Now" */
 interface Product {
-    id: string;
-    name: string;
-    description: string;
-    rentalPrice: number;
-    originalPrice?: number;
-    images: string[];
-    category: string;
-    brand: string;
-    location: string;
+  id: string;
+  name: string;
+  description?: string;
+  rentalPrice: number;
+  originalPrice?: number;
+  images: string[];
+  category?: string;
+  brand?: string;
+  location?: string;
 }
 
+/**
+ * Shape of an item coming from CartPage.
+ * The backend returns nested itemId with title/price.
+ */
+interface CartItem {
+  _id: string;
+  itemId: {
+    _id: string;
+    title: string;
+    price: number;
+  };
+  quantity: number;
+  rentalDays: number;
+  startDate: string;
+  endDate: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const calcDays = (start: string, end: string): number => {
+  if (!start || !end) return 1;
+  const diff = Math.ceil(
+    (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return Math.max(1, diff);
+};
+
+const today = new Date().toISOString().split('T')[0];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const SectionHeader = ({
+  icon,
+  label,
+}: {
+  icon: React.ReactNode;
+  label: string;
+}) => (
+  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-stone-100">
+    <span className="text-amber-600">{icon}</span>
+    <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider">
+      {label}
+    </h2>
+  </div>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const CheckoutPage: React.FC = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    // Extract product passed from state
-    const product = location.state?.product as Product;
+  /**
+   * Two flows arrive here:
+   *
+   * 1. SINGLE (from CategoryPage "Rent Now"):
+   *    { type: "single", items: [{ item: Product, quantity: number }] }
+   *
+   * 2. CART (from CartPage "Confirm Booking"):
+   *    { type: "cart", items: CartItem[] }
+   */
+  const checkoutType: 'single' | 'cart' = location.state?.type ?? 'single';
+  const rawItems: any[] = location.state?.items ?? [];
 
-    // Form states
-    const [startDate, setStartDate] = useState<string>('');
-    const [endDate, setEndDate] = useState<string>('');
-    const [fullName, setFullName] = useState<string>('');
-    const [phoneNumber, setPhoneNumber] = useState<string>('');
-    const [deliveryAddress, setDeliveryAddress] = useState<string>('');
-    const [paymentMethod, setPaymentMethod] = useState<string>('cod');
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // ── Derive normalised line items ─────────────────────────────────────────
 
-    // Calculate rental duration in days
-    const rentalDays = useMemo(() => {
-        if (!startDate || !endDate) return 1;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const differenceInTime = end.getTime() - start.getTime();
-        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-        return differenceInDays > 0 ? differenceInDays : 1;
-    }, [startDate, endDate]);
+  // For single flow: product info without dates (user picks dates below)
+  const singleProduct: Product | null =
+    checkoutType === 'single' && rawItems.length > 0
+      ? (rawItems[0].item as Product)
+      : null;
 
-    // Order summary calculations
-    const subtotal = product ? product.rentalPrice * rentalDays : 0;
-    const securityDeposit = product ? Math.round(product.rentalPrice * 1.5) : 0; // Configurable deposit rule
-    const deliveryFee = 150; // Flat fee structure example
-    const totalAmount = subtotal + securityDeposit + deliveryFee;
+  // For cart flow: already have dates per item from CartPage
+  const cartItems: CartItem[] =
+    checkoutType === 'cart' ? (rawItems as CartItem[]) : [];
 
-    const handlePlaceOrder = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!product) return;
+  // ── Form state ───────────────────────────────────────────────────────────
 
-        if (paymentMethod === 'digital') {
-            // Forward everything directly to the eSewa Confirm Booking gateway page
-            navigate('/confirm-booking', {
-                state: {
-                    product,
-                    startDate,
-                    endDate,
-                    fullName,
-                    phoneNumber,
-                    deliveryAddress,
-                    rentalDays
-                }
-            });
-        } else {
-            // Handle Cash on Delivery (COD) process right here
-            setIsSubmitting(true);
-            setTimeout(() => {
-                setIsSubmitting(false);
-                alert('Order placed successfully via Cash on Delivery! Redirecting you to home.');
-                navigate('/');
-            }, 2000);
-        }
+  // Date pickers are only shown for single flow
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Calculations ─────────────────────────────────────────────────────────
+
+  /** Rental days for the single-item flow, driven by the date pickers */
+  const singleRentalDays = useMemo(
+    () => calcDays(startDate, endDate),
+    [startDate, endDate]
+  );
+
+  /**
+   * Subtotal:
+   * - single: price × days chosen by user
+   * - cart:   sum of each item's (price × rentalDays) — already stored in cart
+   */
+  const subtotal = useMemo(() => {
+    if (checkoutType === 'single') {
+      return singleProduct ? singleProduct.rentalPrice * singleRentalDays : 0;
+    }
+    return cartItems.reduce(
+      (acc, item) => acc + item.itemId.price * item.rentalDays,
+      0
+    );
+  }, [checkoutType, singleProduct, singleRentalDays, cartItems]);
+
+  /**
+   * Security deposit:
+   * - single: 1.5× daily rate
+   * - cart:   sum of 1.5× daily rate for each item
+   */
+  const securityDeposit = useMemo(() => {
+    if (checkoutType === 'single') {
+      return singleProduct ? Math.round(singleProduct.rentalPrice * 1.5) : 0;
+    }
+    return cartItems.reduce(
+      (acc, item) => acc + Math.round(item.itemId.price * 1.5),
+      0
+    );
+  }, [checkoutType, singleProduct, cartItems]);
+
+  const deliveryFee = 150;
+  const totalAmount = subtotal + securityDeposit + deliveryFee;
+
+  // ── Guard: nothing to checkout ───────────────────────────────────────────
+
+  const hasItems =
+    checkoutType === 'single' ? !!singleProduct : cartItems.length > 0;
+
+  if (!hasItems) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-stone-500">
+        <ShoppingBag size={40} className="text-stone-300" />
+        <p className="text-base font-medium">No items found for checkout.</p>
+        <Link
+          to="/"
+          className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl text-sm font-semibold hover:bg-amber-500 hover:text-stone-950 transition-all"
+        >
+          Browse Items
+        </Link>
+      </div>
+    );
+  }
+
+  // ── Submit handler ───────────────────────────────────────────────────────
+
+  const handlePlaceOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate dates for single flow
+    if (checkoutType === 'single' && (!startDate || !endDate)) return;
+
+    const orderData = {
+      type: checkoutType,
+      // normalise to a unified shape for the confirmation page
+      items:
+        checkoutType === 'single'
+          ? [
+              {
+                id: singleProduct!.id,
+                name: singleProduct!.name,
+                images: singleProduct!.images,
+                rentalPrice: singleProduct!.rentalPrice,
+                startDate,
+                endDate,
+                rentalDays: singleRentalDays,
+                quantity: 1,
+              },
+            ]
+          : cartItems.map((ci) => ({
+              id: ci.itemId._id,
+              name: ci.itemId.title,
+              images: [],
+              rentalPrice: ci.itemId.price,
+              startDate: ci.startDate,
+              endDate: ci.endDate,
+              rentalDays: ci.rentalDays,
+              quantity: ci.quantity,
+            })),
+      customer: { fullName, phoneNumber, deliveryAddress },
+      paymentMethod,
+      subtotal,
+      securityDeposit,
+      deliveryFee,
+      totalAmount,
     };
 
-    // Fallback state if user visits /checkout without picking an item
-    if (!product) {
-        return (
-            <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-                <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mb-5">
-                    <ShoppingBag size={28} className="text-stone-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-stone-700 mb-2">No item selected for checkout</h3>
-                <p className="text-stone-400 text-sm mb-5">Please browse our collection and select a product to rent.</p>
-                <Link
-                    to="/"
-                    className="px-5 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
-                >
-                    Go to Home
-                </Link>
-            </div>
-        );
+    if (paymentMethod === 'digital') {
+      navigate('/confirm-booking', { state: orderData });
+      return;
     }
 
-    return (
-        <div className="min-h-screen bg-stone-50/50 text-stone-800 pt-20 pb-12">
-            <div className="container mx-auto px-4 max-w-5xl">
-                {/* Back Link */}
-                <button
-                    onClick={() => navigate(-1)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors mb-6"
-                >
-                    <ChevronLeft size={14} /> Back to Products
-                </button>
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      alert('Order placed successfully!');
+      navigate('/');
+    }, 1500);
+  };
 
-                <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-8 tracking-tight">Secure Checkout</h1>
+  // ── Render ───────────────────────────────────────────────────────────────
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Checkout Forms */}
-                    <form onSubmit={handlePlaceOrder} className="lg:col-span-7 space-y-6">
+  return (
+    <div className="min-h-screen bg-stone-50/50 text-stone-800 pt-20 pb-12">
+      <div className="container mx-auto px-4 max-w-5xl">
 
-                        {/* Rental Duration */}
-                        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-stone-100">
-                                <Calendar size={16} className="text-amber-600" />
-                                <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider">Rental Period</h2>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">Start Date</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        min={new Date().toISOString().split('T')[0]}
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">End Date</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        disabled={!startDate}
-                                        min={startDate}
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    />
-                                </div>
-                            </div>
-                            {startDate && endDate && (
-                                <p className="mt-3 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg w-max">
-                                    Total Booking Duration: {rentalDays} {rentalDays === 1 ? 'day' : 'days'}
-                                </p>
-                            )}
-                        </div>
+        {/* Back */}
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors mb-6"
+        >
+          <ChevronLeft size={14} /> Back
+        </button>
 
-                        {/* Delivery Information */}
-                        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-stone-100">
-                                <User size={16} className="text-amber-600" />
-                                <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider">Delivery Details</h2>
-                            </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">Full Name</label>
-                                    <div className="relative">
-                                        <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="John Doe"
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
-                                        />
-                                    </div>
-                                </div>
+        <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-8 tracking-tight">
+          Secure Checkout
+        </h1>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">Phone Number</label>
-                                        <div className="relative">
-                                            <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                                            <input
-                                                type="tel"
-                                                required
-                                                placeholder="98XXXXXXXX"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                                className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">City Location</label>
-                                        <div className="relative">
-                                            <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                                            <input
-                                                type="text"
-                                                disabled
-                                                value={product.location}
-                                                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500 cursor-not-allowed"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                                <div>
-                                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">Delivery Address</label>
-                                    <textarea
-                                        required
-                                        rows={3}
-                                        placeholder="Street name, building identity, house number..."
-                                        value={deliveryAddress}
-                                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all resize-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+          {/* ── Left: Form ── */}
+          <form
+            onSubmit={handlePlaceOrder}
+            className="lg:col-span-7 space-y-6"
+          >
 
-                        {/* Payment Method */}
-                        <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-stone-100">
-                                <CreditCard size={16} className="text-amber-600" />
-                                <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider">Payment Options</h2>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-stone-900 bg-stone-50/50' : 'border-stone-200 hover:border-stone-300'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="cod"
-                                            checked={paymentMethod === 'cod'}
-                                            onChange={() => setPaymentMethod('cod')}
-                                            className="accent-stone-900"
-                                        />
-                                        <div>
-                                            <p className="text-sm font-semibold text-stone-800">Cash on Delivery</p>
-                                            <p className="text-[11px] text-stone-400">Pay when item arrives</p>
-                                        </div>
-                                    </div>
-                                </label>
+            {/* ── Date picker (single flow only) ── */}
+            {checkoutType === 'single' && (
+              <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
+                <SectionHeader
+                  icon={<Calendar size={16} />}
+                  label="Rental Period"
+                />
 
-                                <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'digital' ? 'border-stone-900 bg-stone-50/50' : 'border-stone-200 hover:border-stone-300'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="digital"
-                                            checked={paymentMethod === 'digital'}
-                                            onChange={() => setPaymentMethod('digital')}
-                                            className="accent-stone-900"
-                                        />
-                                        <div>
-                                            <p className="text-sm font-semibold text-stone-800">Digital Wallet</p>
-                                            <p className="text-[11px] text-stone-400">Fonepay / eSewa / Khalti</p>
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
+            
 
-                        {/* Submit Button for Mobile View visibility integration */}
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full lg:hidden py-3.5 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting 
-                                ? 'Processing Order...' 
-                                : paymentMethod === 'digital'
-                                    ? `Proceed to Confirmation — Rs. ${totalAmount.toLocaleString()}`
-                                    : `Confirm COD Order — Rs. ${totalAmount.toLocaleString()}`
-                            }
-                        </button>
-                    </form>
-
-                    {/* Sticky Side Order Summary Panel */}
-                    <div className="lg:col-span-5 sticky top-24">
-                        <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
-                            <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider mb-4 pb-2 border-b border-stone-100">
-                                Order Summary
-                            </h2>
-
-                            {/* Product brief layout */}
-                            <div className="flex gap-4 mb-5 pb-5 border-b border-stone-100">
-                                <div className="w-20 h-20 bg-stone-100 border border-stone-100 rounded-xl overflow-hidden shrink-0">
-                                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                                </div>
-                                <div>
-                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{product.brand}</span>
-                                    <h3 className="font-semibold text-stone-800 text-sm line-clamp-1 mb-1">{product.name}</h3>
-                                    <div className="flex items-center gap-1 text-stone-400">
-                                        <MapPin size={11} />
-                                        <span className="text-[11px]">{product.location}</span>
-                                    </div>
-                                    <p className="text-xs font-bold text-stone-900 mt-2">Rs. {product.rentalPrice.toLocaleString()}/day</p>
-                                </div>
-                            </div>
-
-                            {/* Calculation Line Items */}
-                            <div className="space-y-3 text-sm pb-4 border-b border-stone-100">
-                                <div className="flex justify-between text-stone-500">
-                                    <span>Rental Fees ({rentalDays} {rentalDays === 1 ? 'day' : 'days'})</span>
-                                    <span className="font-medium text-stone-800">Rs. {subtotal.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-stone-500">
-                                    <span>Refundable Security Deposit</span>
-                                    <span className="font-medium text-stone-800">Rs. {securityDeposit.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-stone-500">
-                                    <span>Delivery Charge</span>
-                                    <span className="font-medium text-stone-800">Rs. {deliveryFee.toLocaleString()}</span>
-                                </div>
-                            </div>
-
-                            {/* Grand Total */}
-                            <div className="flex justify-between items-baseline pt-4 mb-6">
-                                <span className="text-sm font-semibold text-stone-800">Total Amount</span>
-                                <span className="text-xl font-black text-stone-900">Rs. {totalAmount.toLocaleString()}</span>
-                            </div>
-
-                            {/* Protection badge info */}
-                            <div className="flex gap-2.5 bg-stone-50 border border-stone-100 rounded-xl p-3 mb-6">
-                                <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-stone-500 leading-relaxed">
-                                    Your security deposit is entirely refundable and will be transferred immediately back to your original source upon item pickup check parameters verification.
-                                </p>
-                            </div>
-
-                            {/* Desktop submit handle */}
-                            <button
-                                disabled={isSubmitting}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    const form = document.querySelector('form');
-                                    if (form) form.requestSubmit();
-                                }}
-                                className="hidden lg:block w-full py-3.5 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting 
-                                    ? 'Processing Order...' 
-                                    : paymentMethod === 'digital'
-                                        ? 'Review & Pay with eSewa'
-                                        : 'Confirm COD Order'
-                                }
-                            </button>
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      min={today}
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        // reset end date if it's before new start
+                        if (endDate && e.target.value > endDate) setEndDate('');
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                      Return Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      disabled={!startDate}
+                      min={startDate || today}
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
                 </div>
+
+                {startDate && endDate && (
+                  <p className="mt-3 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg w-max">
+                    {singleRentalDays} {singleRentalDays === 1 ? 'day' : 'days'} rental ·
+                    Rs. {(singleProduct!.rentalPrice * singleRentalDays).toLocaleString()} rental fee
+                  </p>
+                )}
+              </div>
+            )}
+
+        
+          
+
+            {/* ── Delivery Details ── */}
+            <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
+              <SectionHeader icon={<User size={16} />} label="Delivery Details" />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                      <input
+                        type="tel"
+                        required
+                        placeholder="98XXXXXXXX"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                      City
+                    </label>
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                      <input
+                        type="text"
+                        placeholder="Kathmandu"
+                        className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                    Delivery Address
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="Street name, building, house number..."
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all resize-none"
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* ── Payment Method ── */}
+            <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
+              <SectionHeader icon={<CreditCard size={16} />} label="Payment Options" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* COD */}
+                <label
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                    paymentMethod === 'cod'
+                      ? 'border-stone-900 bg-stone-50/50'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cod"
+                    checked={paymentMethod === 'cod'}
+                    onChange={() => setPaymentMethod('cod')}
+                    className="accent-stone-900"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-stone-800">Cash on Delivery</p>
+                    <p className="text-[11px] text-stone-400">Pay when item arrives</p>
+                  </div>
+                </label>
+
+                {/* Digital */}
+                <label
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                    paymentMethod === 'digital'
+                      ? 'border-stone-900 bg-stone-50/50'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="digital"
+                    checked={paymentMethod === 'digital'}
+                    onChange={() => setPaymentMethod('digital')}
+                    className="accent-stone-900"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-stone-800">Digital Wallet</p>
+                    <p className="text-[11px] text-stone-400">eSewa / Khalti / Fonepay</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Mobile submit */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full lg:hidden py-3.5 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting
+                ? 'Processing…'
+                : paymentMethod === 'digital'
+                ? `Pay with eSewa — Rs. ${totalAmount.toLocaleString()}`
+                : `Confirm COD Order — Rs. ${totalAmount.toLocaleString()}`}
+            </button>
+          </form>
+
+          {/* ── Right: Order Summary ── */}
+          <div className="lg:col-span-5 sticky top-24">
+            <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
+              <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider mb-4 pb-2 border-b border-stone-100">
+                Order Summary
+              </h2>
+                  {singleProduct && (
+                  <div className="flex items-center gap-3 mb-4 p-3 bg-stone-50 border border-stone-100 rounded-xl">
+                    {singleProduct.images?.[0] ? (
+                      <img
+                        src={singleProduct.images[0]}
+                        alt={singleProduct.name}
+                        className="w-12 h-12 rounded-lg object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                        <Package size={20} className="text-amber-400" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-stone-800 truncate">
+                        {singleProduct.name}
+                      </p>
+                      <p className="text-xs text-stone-400">
+                        Rs. {singleProduct.rentalPrice.toLocaleString()}/day
+                      </p>
+                    </div>
+                  </div>
+                )}
+          
+
+              {/* Line items */}
+              <div className="space-y-2 text-sm pb-4 border-b border-stone-100">
+                {checkoutType === 'single' && singleProduct && (
+                  <div className="flex justify-between text-stone-500">
+                    <span>
+                      {singleProduct.name}{' '}
+                      <span className="text-stone-400">
+                        × {singleRentalDays} {singleRentalDays === 1 ? 'day' : 'days'}
+                      </span>
+                    </span>
+                    <span className="font-medium text-stone-800">
+                      Rs. {(singleProduct.rentalPrice * singleRentalDays).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {checkoutType === 'cart' &&
+                  cartItems.map((item) => (
+                    <div key={item._id} className="flex justify-between text-stone-500">
+                      <span className="truncate max-w-[60%]">
+                        {item.itemId.title}{' '}
+                        <span className="text-stone-400">× {item.rentalDays}d</span>
+                      </span>
+                      <span className="font-medium text-stone-800">
+                        Rs. {(item.itemId.price * item.rentalDays).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+
+                <div className="flex justify-between text-stone-500 pt-1">
+                  <span>Refundable Security Deposit</span>
+                  <span className="font-medium text-stone-800">
+                    Rs. {securityDeposit.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-stone-500">
+                  <span>Delivery Charge</span>
+                  <span className="font-medium text-stone-800">
+                    Rs. {deliveryFee.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Grand total */}
+              <div className="flex justify-between items-baseline pt-4 mb-5">
+                <span className="text-sm font-semibold text-stone-800">Total Amount</span>
+                <span className="text-xl font-black text-stone-900">
+                  Rs. {totalAmount.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Security badge */}
+              <div className="flex gap-2.5 bg-stone-50 border border-stone-100 rounded-xl p-3 mb-5">
+                <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Your security deposit is fully refundable and returned immediately after
+                  the item is checked back in.
+                </p>
+              </div>
+
+              {/* Desktop submit */}
+              <button
+                disabled={isSubmitting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const form = document.querySelector('form');
+                  if (form) form.requestSubmit();
+                }}
+                className="hidden lg:block w-full py-3.5 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting
+                  ? 'Processing…'
+                  : paymentMethod === 'digital'
+                  ? 'Review & Pay with eSewa'
+                  : 'Confirm COD Order'}
+              </button>
+            </div>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default CheckoutPage;

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
+import { ImageSlider } from "./ImageSlider";
 const userId = "6a2d05276369192a17ffac52";
-
+const BASE_URL = "http://localhost:3000";
 interface CartItem {
   _id: string;
   itemId: {
     _id: string;
     title: string;
     price: number;
+    images:string[];
   };
   quantity: number;
   rentalDays: number;
@@ -19,7 +22,7 @@ interface CartItem {
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-
+ const navigate = useNavigate();
   // =========================
   // FETCH CART
   // =========================
@@ -27,6 +30,7 @@ export default function CartPage() {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/cart/${userId}`);
+      console.log(res.data)
       setCart(res.data.cart.items || []);
     } catch (err) {
       console.log(err);
@@ -51,10 +55,12 @@ export default function CartPage() {
   // REMOVE ITEM
   // =========================
   const removeItem = async (cartItemId: string) => {
+
     try {
       await axios.delete(
         `${API_BASE_URL}/cart/remove/${userId}/${cartItemId}`
       );
+
       fetchCart();
     } catch (err) {
       console.log(err);
@@ -125,8 +131,8 @@ export default function CartPage() {
                 className="bg-white border border-stone-200 rounded-2xl p-5 hover:border-amber-300 hover:shadow-md transition-all"
               >
                 <div className="flex gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-amber-50 flex items-center justify-center text-3xl shrink-0">
-                    📦
+                  <div className="w-28 h-28 rounded-xl  flex items-center justify-center text-3xl shrink-0">
+                   <ImageSlider images={(item.itemId.images).map((img)=>`${BASE_URL}${img}`)} />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -237,13 +243,20 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button className="w-full mt-5 bg-amber-500 text-stone-900 font-bold py-3 rounded-xl">
-                Confirm Booking →
-              </button>
-            </div>
+              <button onClick={() => navigate("/checkout", {
+                state: {
+                  type: "cart",
+                  items: cart
+                }
+              })}
+              className="w-full mt-5 bg-amber-500 text-stone-900 font-bold py-3 rounded-xl">
+              Confirm Booking →
+            </button>
           </div>
         </div>
-      )}
-    </div>
+        </div>
+  )
+}
+    </div >
   );
 }

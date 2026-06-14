@@ -30,9 +30,9 @@ export default function Header() {
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-[5vw] transition-all duration-300 ${scrolled ? "h-15 bg-white/95 shadow-sm" : "h-17.5 bg-white/85"
           } backdrop-blur-md border-b border-amber-100`}
       >
-        <div className="font-display text-[26px] font-medium tracking-wide text-gray-900">
+        <Link to="/" className="font-display text-[26px] font-medium tracking-wide text-gray-900">
           Rent<span style={{ color: AMBER }}>Ease</span>
-        </div>
+        </Link>
         <ul className="hidden md:flex gap-9 list-none">
           {navLinks.map((l) => (
             <li key={l.label}>

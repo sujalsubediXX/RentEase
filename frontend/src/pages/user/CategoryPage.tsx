@@ -302,9 +302,7 @@ const navigate = useNavigate();
       setError(null);
 
       const url = `${API_BASE_URL}/items/getitemsbycategory/${categoryId}`;
-      console.log('Fetching:', url);
 
-      // Use plain fetch to avoid axios interceptors/headers causing 400
       const res = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
@@ -316,7 +314,6 @@ const navigate = useNavigate();
       }
 
       const responseData = await res.json();
-      console.log('API response:', responseData);
 
       const { items: itemsArray, totalPages: pages } = extractItems(responseData);
 
@@ -329,8 +326,6 @@ const navigate = useNavigate();
       const newItems = itemsArray.map((item: any) =>
         mapItemToProduct(item, categoryId, "http://localhost:3000")
       );
-
-      console.log(`Mapped ${newItems.length} products`);
 
       if (reset) {
         setProducts(newItems);
@@ -583,7 +578,14 @@ const navigate = useNavigate();
             </button>
             <button
               disabled={product.stock === 0}
-              onClick={() => navigate('/checkout', { state: { product } })}
+              onClick={() =>
+                navigate("/checkout", {
+                  state: {
+                    type: "single",
+                    items: [{ item: product, quantity: 1 }],
+                  },
+                })
+              }
               className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all
                 ${product.stock > 0
                   ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
@@ -650,7 +652,14 @@ const navigate = useNavigate();
               </button>
               <button
                 disabled={product.stock === 0}
-                onClick={() => navigate('/checkout', { state: { product } })}
+                onClick={() =>
+                  navigate('/checkout', {
+                    state: {
+                      type: 'single',
+                      items: [{ item: product, quantity: 1 }],
+                    },
+                  })
+                }
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all
                   ${product.stock > 0
                     ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
