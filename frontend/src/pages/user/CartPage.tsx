@@ -117,7 +117,7 @@ export default function CartPage() {
         <div className="text-center py-24 text-stone-400">
           <div className="text-6xl mb-4">🛒</div>
           <p className="text-lg font-medium">Your cart is empty</p>
-          <button className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
+          <button onClick={()=>navigate("/categories")} className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
             Browse Items
           </button>
         </div>

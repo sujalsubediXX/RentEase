@@ -1,16 +1,12 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link ,useNavigate} from 'react-router-dom';
-import {
-  Search, SlidersHorizontal, Grid3X3, List, Star,
-  Heart, Eye, ShoppingBag, X, ChevronLeft, ChevronRight,
-  MapPin, Package
-} from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import {  Search, SlidersHorizontal, Grid3X3, List,  X, ChevronLeft, ChevronRight, Package} from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import { ImageSlider } from './ImageSlider';
 import axios from 'axios';
-const temp_userID = "6a2d05276369192a17ffac52";
-// ============ TYPES ============
-interface Product {
+import { ProductCard } from '../../components/user/ProductCard';
+import { ProductListItem } from '../../components/user/ProductListItem';
+export interface Product {
   id: string;
   name: string;
   description: string;
@@ -26,6 +22,9 @@ interface Product {
   location: string;
 }
 
+const temp_userID = "6a2d05276369192a17ffac52";
+
+// ============ TYPES ============
 
 // Skeleton Loader Component
 const ProductSkeleton: React.FC = () => (
@@ -78,27 +77,21 @@ const ListItemSkeleton: React.FC = () => (
   </div>
 );
 
-
 const extractItems = (responseData: any): { items: any[]; totalPages: number } => {
   if (Array.isArray(responseData)) {
     return { items: responseData, totalPages: 1 };
   }
-
-    if (responseData?.success && Array.isArray(responseData?.data)) {
+  if (responseData?.success && Array.isArray(responseData?.data)) {
     return { items: responseData.data, totalPages: responseData.totalPages || 1 };
   }
-
   if (Array.isArray(responseData?.items)) {
     return { items: responseData.items, totalPages: responseData.totalPages || 1 };
   }
-
   if (Array.isArray(responseData?.data)) {
     return { items: responseData.data, totalPages: responseData.totalPages || 1 };
   }
-
   return { items: [], totalPages: 1 };
 };
-
 
 const mapItemToProduct = (item: any, categoryId: string, API_BASE_URL: string): Product => {
   const buildImageUrl = (img: string): string => {
@@ -271,7 +264,8 @@ const CategoryPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-const navigate = useNavigate();
+  const navigate = useNavigate();
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
@@ -282,6 +276,7 @@ const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
   const [showToast, setShowToast] = useState<{ message: string; type: string } | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const itemsPerPage = 8;
@@ -290,6 +285,26 @@ const navigate = useNavigate();
     setShowToast({ message, type });
     setTimeout(() => setShowToast(null), 2500);
   }, []);
+
+  // Fetch wishlist on mount
+  const fetchWishlist = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${temp_userID}`);
+      const data = res.data;
+      // data.items is an array of populated Item objects OR ObjectId strings
+      const ids: string[] = (data.items ?? []).map((item: any) =>
+        typeof item === 'string' ? item : (item._id ?? item.id ?? '')
+      ).filter(Boolean);
+      setWishlist(ids);
+    } catch (err) {
+      // Silently fail — wishlist just won't be pre-populated
+      console.error('Failed to fetch wishlist:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
 
   // Fetch products from API
   const fetchProducts = useCallback(async (pageNum: number, reset: boolean = false) => {
@@ -315,7 +330,6 @@ const navigate = useNavigate();
       }
 
       const responseData = await res.json();
-
       const { items: itemsArray, totalPages: pages } = extractItems(responseData);
 
       if (itemsArray.length === 0 && reset) {
@@ -394,6 +408,44 @@ const navigate = useNavigate();
       showToastMessage("Failed to add to cart", "error");
     }
   };
+
+  const toggleWishlist = async (productId: string) => {
+    // Prevent double-clicks while request is in flight
+    if (wishlistLoading.has(productId)) return;
+
+    const isInWishlist = wishlist.includes(productId);
+
+    // Optimistic UI update
+    setWishlist(prev =>
+      isInWishlist ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+    setWishlistLoading(prev => new Set(prev).add(productId));
+
+    try {
+      if (isInWishlist) {
+        // Remove from wishlist
+        await axios.delete(`${API_BASE_URL}/wishlist/remove/${temp_userID}/${productId}`);
+        showToastMessage('Removed from wishlist', 'info');
+      } else {
+        // Add to wishlist
+        await axios.post(`${API_BASE_URL}/wishlist/add/${temp_userID}`, { itemId: productId });
+        showToastMessage('Added to wishlist', 'success');
+      }
+    } catch (error) {
+      // Revert optimistic update on failure
+      setWishlist(prev =>
+        isInWishlist ? [...prev, productId] : prev.filter(id => id !== productId)
+      );
+      showToastMessage('Failed to update wishlist', 'error');
+    } finally {
+      setWishlistLoading(prev => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
   // Infinite scroll observer
   const lastProductElementRef = useCallback((node: HTMLDivElement | null) => {
     if (loading) return;
@@ -464,21 +516,6 @@ const navigate = useNavigate();
     [...new Set(products.map(p => p.brand))]
   ), [products]);
 
-  const toggleWishlist =async (productId: string) => {
-    console.log(productId)
-    try {
-      const res = await axios.post(`${API_BASE_URL}/wishlist/add/${temp_userID}`,{
-      "itemId":productId
-      })
-      if(res.status==200){
-        showToastMessage('Added to wishlist', 'success');
-      }
-    } catch (error) {
-        showToastMessage('failed  to add wishlist', 'fail')
-    }
-   
-  };
-
   const clearAllFilters = () => {
     setSearchTerm('');
     setPriceRange([0, 50000]);
@@ -490,195 +527,14 @@ const navigate = useNavigate();
   const activeFiltersCount =
     (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
 
-  // Product Card
-  const ProductCard = ({ product, index }: { product: Product; index: number }) => {
-    const isInWishlist = wishlist.includes(product.id);
-    const discount = product.originalPrice
-      ? Math.round(((product.originalPrice - product.rentalPrice) / product.originalPrice) * 100)
-      : null;
-    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading && viewMode === 'grid';
-
-    return (
-      <div
-        ref={shouldAttachRef ? lastProductElementRef : null}
-        className="group bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300"
-      >
-        <div className="relative overflow-hidden aspect-square">
-          <ImageSlider images={product.images} />
-
-          {discount && discount > 0 && (
-            <span className="absolute top-3 left-3 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              -{discount}%
-            </span>
-          )}
-          {product.stock === 0 && (
-            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
-              <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
-                Out of Stock
-              </span>
-            </div>
-          )}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
-            <button
-              onClick={() => toggleWishlist(product.id)}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-all
-                ${isInWishlist ? 'bg-red-500 text-white' : 'bg-white text-stone-400 hover:text-red-500 hover:shadow-lg'}`}
-            >
-              <Heart size={14} fill={isInWishlist ? 'currentColor' : 'none'} />
-            </button>
-            <button
-              onClick={() => setQuickViewProduct(product)}
-              className="w-8 h-8 rounded-xl bg-white text-stone-400 hover:text-stone-700 hover:shadow-lg flex items-center justify-center shadow-md transition-all"
-            >
-              <Eye size={14} />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.brand}</span>
-            <div className="flex items-center gap-1">
-              <Star size={11} className="text-amber-400 fill-amber-400" />
-              <span className="text-xs text-stone-700 font-medium">{product.rating}</span>
-              <span className="text-xs text-stone-400">({product.reviewCount})</span>
-            </div>
-          </div>
-
-          <h3 className="font-semibold text-stone-800 mb-1 line-clamp-1 text-sm">{product.name}</h3>
-
-          <div className="flex items-center gap-1 mb-3">
-            <MapPin size={11} className="text-stone-400 shrink-0" />
-            <span className="text-[11px] text-stone-400">{product.location}</span>
-          </div>
-
-          <div className="flex items-end justify-between mb-3">
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-bold text-stone-900">Rs. {product.rentalPrice.toLocaleString()}</span>
-                <span className="text-xs text-stone-400">/day</span>
-              </div>
-              {product.originalPrice && (
-                <span className="text-xs text-stone-400 line-through">
-                  Rs. {product.originalPrice.toLocaleString()}
-                </span>
-              )}
-            </div>
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full
-              ${product.stock > 3
-                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                : product.stock > 0
-                  ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                  : 'bg-red-50 text-red-500 border border-red-200'}`}>
-              {product.stock > 3 ? 'Available' : product.stock > 0 ? `${product.stock} left` : 'Unavailable'}
-            </span>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => addToCart(product)}
-            disabled={product.stock === 0}
-              className="flex-1 px-3 py-2 border border-stone-200 text-stone-500 rounded-xl hover:border-stone-300 hover:text-stone-700 transition-all text-xs font-medium"
-            >
-              Add to Cart
-            </button>
-            <button
-              disabled={product.stock === 0}
-              onClick={() =>
-                navigate("/checkout", {
-                  state: {
-                    type: "single",
-                    items: [{ item: product, quantity: 1 }],
-                  },
-                })
-              }
-              className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all
-                ${product.stock > 0
-                  ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
-                  : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
-            >
-              Rent Now
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // List View Card
-  const ProductListItem = ({ product, index }: { product: Product; index: number }) => {
-    const isInWishlist = wishlist.includes(product.id);
-    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading && viewMode === 'list';
-
-    return (
-      <div
-        ref={shouldAttachRef ? lastProductElementRef : null}
-        className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/60 transition-all duration-300 flex flex-col md:flex-row"
-      >
-        <div className="w-full md:w-44 h-44 shrink-0 overflow-hidden bg-stone-100 relative">
-          <ImageSlider images={product.images} />
-        </div>
-        <div className="flex-1 p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.brand}</span>
-              <div className="flex items-center gap-1">
-                <Star size={11} className="text-amber-400 fill-amber-400" />
-                <span className="text-xs text-stone-700">{product.rating}</span>
-                <span className="text-xs text-stone-400">({product.reviewCount})</span>
-              </div>
-            </div>
-            <h3 className="text-base font-semibold text-stone-800 mb-1">{product.name}</h3>
-            <p className="text-sm text-stone-500 mb-2 line-clamp-2">{product.description}</p>
-            <div className="flex items-center gap-1">
-              <MapPin size={11} className="text-stone-400" />
-              <span className="text-xs text-stone-400">{product.location}</span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-stone-900">Rs. {product.rentalPrice.toLocaleString()}</span>
-                <span className="text-sm text-stone-400">/day</span>
-              </div>
-              {product.originalPrice && (
-                <span className="text-xs text-stone-400 line-through">Rs. {product.originalPrice.toLocaleString()}</span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => toggleWishlist(product.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all
-                  ${isInWishlist
-                    ? 'border-red-200 bg-red-50 text-red-500'
-                    : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'}`}
-              >
-                <Heart size={13} fill={isInWishlist ? 'currentColor' : 'none'} />
-                {isInWishlist ? 'Wishlisted' : 'Wishlist'}
-              </button>
-              <button
-                disabled={product.stock === 0}
-                onClick={() =>
-                  navigate('/checkout', {
-                    state: {
-                      type: 'single',
-                      items: [{ item: product, quantity: 1 }],
-                    },
-                  })
-                }
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all
-                  ${product.stock > 0
-                    ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
-                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
-              >
-                <ShoppingBag size={13} />
-                Rent Now
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Handler for "Rent Now" from product cards
+  const handleRentNow = (product: Product) => {
+    navigate("/checkout", {
+      state: {
+        type: "single",
+        items: [{ item: product, quantity: 1 }],
+      },
+    });
   };
 
   // Loading state
@@ -925,19 +781,43 @@ const navigate = useNavigate();
               </div>
             )}
 
-            {/* Products */}
+            {/* Products - Using extracted components */}
             {!error && !initialLoading && paginatedProducts.length > 0 && (
               viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {paginatedProducts.map((product, index) => (
-                    <ProductCard key={product.id} product={product} index={index} />
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {paginatedProducts.map((product, index) => {
+                    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading;
+                    return (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        index={index}
+                        isInWishlist={wishlist.includes(product.id)}
+                        onToggleWishlist={toggleWishlist}
+                        onQuickView={setQuickViewProduct}
+                        onAddToCart={addToCart}
+                        onRentNow={handleRentNow}
+                        cardRef={shouldAttachRef ? lastProductElementRef : undefined}
+                      />
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {paginatedProducts.map((product, index) => (
-                    <ProductListItem key={product.id} product={product} index={index} />
-                  ))}
+                  {paginatedProducts.map((product, index) => {
+                    const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading;
+                    return (
+                      <ProductListItem
+                        key={product.id}
+                        product={product}
+                        index={index}
+                        isInWishlist={wishlist.includes(product.id)}
+                        onToggleWishlist={toggleWishlist}
+                        onRentNow={handleRentNow}
+                        listRef={shouldAttachRef ? lastProductElementRef : undefined}
+                      />
+                    );
+                  })}
                 </div>
               )
             )}

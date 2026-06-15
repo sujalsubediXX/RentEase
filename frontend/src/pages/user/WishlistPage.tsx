@@ -1,7 +1,9 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../../config/api";
-import { ImageSlider } from "./ImageSlider";
+import { ProductCard, type Product } from "../../components/user/ProductCard";
+
 interface ItemImage {
   _id: string;
   imageUrl: string;
@@ -10,106 +12,140 @@ interface ItemImage {
 
 interface WishlistItem {
   _id: string;
+  id: string;
   title: string;
   description: string;
   price: number;
   images: ItemImage[];
   availability: "available" | "unavailable" | "rented";
   quantity: number;
-  condition: "new" | "like new" | "used";
-  location: string;
-  // Category
-  categoryId?: string;
-  categoryName?: string;
 }
 
 const USER_ID = "6a2d05276369192a17ffac52";
 
+// Map the API wishlist shape → ProductCard's Product shape
+const mapWishlistItemToProduct = (item: WishlistItem): Product => ({
+  id: item._id,
+  name: item.title,
+  description: item.description,
+  rentalPrice: item.price,
+  images: item.images.map(img => `http://localhost:3000${img.imageUrl}`),
+  category: "",
+  categoryId: "",
+  brand: "",
+  rating: 0,
+  reviewCount: 0,
+  stock: item.availability === "available" ? item.quantity : 0,
+  location: "Kathmandu",
+});
+
 function WishlistPage() {
+  const navigate = useNavigate();
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [clearingAll, setClearingAll] = useState(false);
 
-  // ── Fetch wishlist on mount ────────────────────────────────────────────────
   useEffect(() => {
-    const fetchWishlist = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/wishlist/${USER_ID}`);
-        setWishlist(res.data?.items || []);
-        console.log(res.data)
-      } catch (err) {
-        console.error(err);
-        setError("Could not load your wishlist. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchWishlist();
   }, []);
 
-  // ── Remove single item ─────────────────────────────────────────────────────
-  const remove = async (itemId: string) => {
-    if (removingId) return;
-    setRemovingId(itemId);
-
-    const snapshot = [...wishlist];
-    setWishlist((prev) => prev.filter((i) => i._id !== itemId)); // Optimistic
-
+  const fetchWishlist = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/wishlist/${USER_ID}/${itemId}`);
+      setLoading(true);
+      setError(null);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${USER_ID}`);
+      setWishlist(res.data?.items || []);
     } catch (err) {
       console.error(err);
-      setWishlist(snapshot); // Rollback
+      setError("Failed to load wishlist");
     } finally {
-      setRemovingId(null);
+      setLoading(false);
     }
   };
 
-  // ── Clear all items ────────────────────────────────────────────────────────
+  // Called by ProductCard's heart button — always removes (it's already in wishlist)
+  const handleToggleWishlist = async (productId: string) => {
+    if (removingIds.has(productId)) return;
+
+    setRemovingIds(prev => new Set(prev).add(productId));
+    const snapshot = [...wishlist];
+    setWishlist(prev => prev.filter(item => item._id !== productId));
+
+    try {
+      await axios.delete(`${API_BASE_URL}/wishlist/remove/${USER_ID}/${productId}`);
+    } catch (err) {
+      console.error(err);
+      setWishlist(snapshot);
+    } finally {
+      setRemovingIds(prev => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
   const clearAll = async () => {
     if (!wishlist.length || clearingAll) return;
     setClearingAll(true);
-
     const snapshot = [...wishlist];
-    setWishlist([]); // Optimistic
-
+    setWishlist([]);
     try {
       await Promise.all(
-        snapshot.map((item) =>
-          axios.delete(`${API_BASE_URL}/wishlist/${USER_ID}/${item._id}`)
+        snapshot.map(item =>
+          axios.delete(`${API_BASE_URL}/wishlist/remove/${USER_ID}/${item._id}`)
         )
       );
     } catch (err) {
       console.error(err);
-      setWishlist(snapshot); // Rollback
+      setWishlist(snapshot);
     } finally {
       setClearingAll(false);
     }
   };
 
+  const handleAddToCart = async (product: Product) => {
+    try {
+      const today = new Date();
+      const end = new Date();
+      end.setDate(today.getDate() + 1);
+      await axios.post(`${API_BASE_URL}/cart/add/${USER_ID}`, {
+        itemId: product.id,
+        quantity: 1,
+        rentalDays: 1,
+        startDate: today.toISOString().split("T")[0],
+        endDate: end.toISOString().split("T")[0],
+      });
+    } catch (err) {
+      console.error("Failed to add to cart:", err);
+    }
+  };
+
+  const handleRentNow = (product: Product) => {
+    navigate("/checkout", {
+      state: {
+        type: "single",
+        items: [{ item: product, quantity: 1 }],
+      },
+    });
+  };
+
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-10 mt-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="h-8 w-40 bg-stone-200 rounded-lg animate-pulse" />
-            <div className="h-4 w-24 bg-stone-100 rounded mt-2 animate-pulse" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
-              <div className="h-40 bg-stone-100 animate-pulse" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 w-20 bg-stone-100 rounded animate-pulse" />
-                <div className="h-5 w-full bg-stone-100 rounded animate-pulse" />
-                <div className="h-4 w-12 bg-stone-100 rounded animate-pulse" />
-                <div className="flex justify-between mt-3">
-                  <div className="h-6 w-24 bg-stone-100 rounded animate-pulse" />
-                  <div className="h-8 w-24 bg-stone-100 rounded-xl animate-pulse" />
+      <div className="max-w-7xl mx-auto p-6 mt-10">
+        <div className="h-36 rounded-3xl bg-stone-100 animate-pulse mb-8" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-stone-200">
+              <div className="aspect-square bg-stone-100 animate-pulse" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 bg-stone-100 rounded animate-pulse" />
+                <div className="h-4 bg-stone-100 rounded animate-pulse w-2/3" />
+                <div className="flex gap-2 mt-4">
+                  <div className="flex-1 h-8 bg-stone-100 rounded-xl animate-pulse" />
+                  <div className="flex-1 h-8 bg-stone-100 rounded-xl animate-pulse" />
                 </div>
               </div>
             </div>
@@ -119,15 +155,13 @@ function WishlistPage() {
     );
   }
 
-  // ── Error state ────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-10 mt-12 text-center">
-        <div className="text-5xl mb-4">⚠️</div>
-        <p className="text-stone-600 font-medium">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-100">
+        <h2 className="text-red-500 text-xl font-bold">{error}</h2>
         <button
-          onClick={() => window.location.reload()}
-          className="mt-4 bg-amber-500 text-stone-900 font-semibold px-5 py-2 rounded-xl text-sm hover:bg-amber-400 transition-colors"
+          onClick={fetchWishlist}
+          className="mt-4 px-6 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold hover:bg-amber-500 hover:text-stone-950 transition-all"
         >
           Retry
         </button>
@@ -135,93 +169,60 @@ function WishlistPage() {
     );
   }
 
-  // ── Main render ────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 mt-12">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-stone-900 font-serif">My Wishlist</h1>
-          <p className="text-stone-500 mt-1 text-sm">{wishlist.length} items saved</p>
+    <div className="max-w-7xl mx-auto p-6 mt-18">
+      
+      {/* Header */}
+      <div className="bg-stone-900 rounded-3xl p-8 mb-8 shadow-lg">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-white">
+              My Wishlist <span className="text-amber-400">❤️</span>
+            </h1>
+            <p className="mt-2 text-stone-400">
+              {wishlist.length} {wishlist.length === 1 ? "item" : "items"} saved
+            </p>
+          </div>
+          {wishlist.length > 0 && (
+            <button
+              onClick={clearAll}
+              disabled={clearingAll}
+              className="border border-white/20 text-white px-5 py-3 rounded-xl font-semibold hover:bg-red-500/20 hover:border-red-400 hover:text-red-300 transition-all disabled:opacity-50"
+            >
+              {clearingAll ? "Clearing..." : "Clear All"}
+            </button>
+          )}
         </div>
-        {wishlist.length > 0 && (
-          <button
-            onClick={clearAll}
-            disabled={clearingAll}
-            className="text-sm text-red-400 hover:text-red-600 transition-colors font-medium disabled:opacity-50"
-          >
-            {clearingAll ? "Clearing..." : "Clear All"}
-          </button>
-        )}
       </div>
 
+      {/* Empty State */}
       {wishlist.length === 0 ? (
-        <div className="text-center py-24 text-stone-400">
-          <div className="text-6xl mb-4">💔</div>
-          <p className="text-lg font-medium">Your wishlist is empty</p>
-          <p className="text-sm mt-1">Browse items and tap the heart to save them</p>
-          <button className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
+        <div className="bg-white rounded-2xl p-16 text-center border border-stone-200">
+          <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-5 text-3xl">
+            💔
+          </div>
+          <h2 className="text-xl font-semibold text-stone-700 mb-2">Your wishlist is empty</h2>
+          <p className="text-stone-400 text-sm mb-6">Save items you love and rent them later.</p>
+          <button
+            onClick={() => navigate("/categories")}
+            className="px-6 py-2.5 bg-stone-900 text-amber-400 rounded-xl font-semibold hover:bg-amber-500 hover:text-stone-950 transition-all shadow-sm"
+          >
             Browse Items
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {wishlist.map((item) => (
-            <div
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+          {wishlist.map(item => (
+            <ProductCard
               key={item._id}
-              className={`bg-white border border-stone-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-amber-300 transition-all group ${removingId === item._id ? "opacity-50 scale-95" : ""
-                }`}
-            >
-              {/* Image area */}
-              <div className="relative bg-linear-to-br from-amber-50 to-stone-100 h-40 flex items-center justify-center overflow-hidden">
-                {/* {getImage(item)} */}
-                <ImageSlider images={(item.images).map((img) => `http://localhost:3000${img.imageUrl}`)} />
-
-                {/* Remove button */}
-                <button
-                  onClick={() => remove(item._id)}
-                  disabled={removingId === item._id}
-                  className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-red-400 hover:text-red-600 hover:scale-110 transition-all disabled:opacity-50"
-                >
-                  ❤️
-                </button>
-
-                {/* Unavailable overlay */}
-                {!item.availability && (
-                  <div className="absolute inset-0 bg-stone-900/40 flex items-center justify-center rounded-t-2xl">
-                    <span className="bg-stone-900 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                      Unavailable
-                    </span>
-                  </div>
-                )}
-              </div>
-
-
-              <div className="p-4">
-
-                <h3 className="font-bold text-stone-900 mt-2 text-sm">{item.title}</h3>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-amber-400 text-xs">★</span>
-                  <span className="text-xs text-stone-600 font-medium">
-                    {/* {item.rating?.toFixed(1) ?? "New"} */}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <div>
-                    <span className="text-lg font-bold text-stone-900">
-                      Rs. {item.price.toLocaleString()}
-                    </span>
-                    <span className="text-xs text-stone-400">/day</span>
-                  </div>
-
-                  <button
-                    disabled={!item.availability}
-                    className="bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 text-xs font-bold px-4 py-2 rounded-xl hover:bg-amber-400 transition-colors"
-                  >
-                    {item.availability ? "Rent Now" : "Notify Me"}
-                  </button>
-                </div>
-              </div>
-            </div>
+              product={mapWishlistItemToProduct(item)}
+              index={0}
+              isInWishlist={true}        // always true — this is the wishlist page
+              onToggleWishlist={handleToggleWishlist}
+              onQuickView={() => {}}     // no quick view on wishlist page
+              onAddToCart={handleAddToCart}
+              onRentNow={handleRentNow}
+            />
           ))}
         </div>
       )}

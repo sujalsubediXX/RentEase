@@ -1,12 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Reveal } from "../../config/MotionFunction.tsx";
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
 import { useNavigate } from "react-router-dom"
+
+import { ProductCard } from "../../components/user/ProductCard.tsx";
+import { X } from "lucide-react";
 import { ImageSlider } from "./ImageSlider.tsx";
-const BASE_URL = "http://localhost:3000";
+
+const temp_userID = "6a2d05276369192a17ffac52";
 interface Category {
   icon: string;
   name: string;
@@ -21,22 +25,22 @@ interface dbCategory {
   image: string;
 }
 
-interface RentalItem {
-  _id: string;
-  title: string;
+export interface Product {
+  id: string;
+  name: string;
   description: string;
-  location: string;
-  price: number;
+  rentalPrice: number;
+  originalrice?: number;
+  images: string[];
+  category: string;
   categoryId: string;
-  ownerId: string;
-  condition: string;
-  availability: string;
-  securityDeposit: number;
-  quantity: number;
-  image: string[];
-  isApproved: boolean;
-  isActive: boolean;
+  brand: string;
+  rating: number;
+  reviewCount: number;
+  stock: number;
+  location: string;
 }
+
 
 interface Testimonial {
   text: string;
@@ -80,17 +84,101 @@ const testimonials: Testimonial[] = [
 const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "Kayak"];
 
 export default function Body() {
-  const [favs, setFavs] = useState<Record<number, boolean>>({});
   const [query, setQuery] = useState<string>("");
-
-  const [items, setItems] = useState<RentalItem[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [items, setItems] = useState<Product[]>([]);
   const [category, setCategory] = useState<dbCategory[]>([]);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [showToast, setShowToast] = useState<{ message: string; type: string } | null>(null);
+  const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const showToastMessage = useCallback((message: string, type: string) => {
+    setShowToast({ message, type });
+    setTimeout(() => setShowToast(null), 2500);
+  }, []);
+
+  const addToCart = async (product: Product) => {
+    try {
+      const today = new Date();
+      const end = new Date();
+      end.setDate(today.getDate() + 1);
+
+      const payload = {
+        itemId: product.id,
+        quantity: 1,
+        rentalDays: 1,
+        startDate: today.toISOString().split("T")[0],
+        endDate: end.toISOString().split("T")[0],
+      };
+
+      const res = await fetch(`${API_BASE_URL}/cart/add/${temp_userID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to add to cart");
+      }
+
+      showToastMessage("Added to cart", "success");
+    } catch (err) {
+      console.log(err);
+      showToastMessage("Failed to add to cart", "error");
+    }
+  };
+  const fetchWishlist = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${temp_userID}`);
+      const data = res.data;
+      // data.items is an array of populated Item objects OR ObjectId strings
+      const ids: string[] = (data.items ?? []).map((item: any) =>
+        typeof item === 'string' ? item : (item._id ?? item.id ?? '')
+      ).filter(Boolean);
+      setWishlist(ids);
+    } catch (err) {
+      // Silently fail — wishlist just won't be pre-populated
+      console.error('Failed to fetch wishlist:', err);
+    }
+  }, []);
+  const handleRentNow = (product: Product) => {
+    navigate("/checkout", {
+      state: {
+        type: "single",
+        items: [{ item: product, quantity: 1 }],
+      },
+    });
+  };
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/items/getitems`);
-        setItems(res.data);
+        const formattedProducts: Product[] = res.data.data.map((item: any) => ({
+          id: item._id,
+          name: item.title,
+          description: item.description,
+          rentalPrice: item.price,
+          originalPrice: item.price,
+          images: Array.isArray(item.images)
+            ? item.images.map((img: string) => `http://localhost:3000${img}`)
+            : [],
+          category: "",
+          categoryId: item.categoryId,
+          brand: item.brand || "Generic",
+          rating: 5,
+          reviewCount: 0,
+          stock: item.quantity || 0,
+          location: item.location,
+        }));
+
+        setItems(formattedProducts);
+
       } catch (err) {
         console.log(err);
       }
@@ -98,6 +186,7 @@ export default function Body() {
     }
     fetchItems();
   }, []);
+
   useEffect(() => {
     const fetchCategory = async () => {
       try {
@@ -110,8 +199,43 @@ export default function Body() {
     fetchCategory();
   }, []);
 
-  const toggleFav = (i: number): void =>
-    setFavs((f) => ({ ...f, [i]: !f[i] }));
+
+  const toggleWishlist = async (productId: string) => {
+    // Prevent double-clicks while request is in flight
+    if (wishlistLoading.has(productId)) return;
+
+    const isInWishlist = wishlist.includes(productId);
+
+    // Optimistic UI update
+    setWishlist(prev =>
+      isInWishlist ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+    setWishlistLoading(prev => new Set(prev).add(productId));
+
+    try {
+      if (isInWishlist) {
+        // Remove from wishlist
+        await axios.delete(`${API_BASE_URL}/wishlist/remove/${temp_userID}/${productId}`);
+        showToastMessage('Removed from wishlist', 'info');
+      } else {
+        // Add to wishlist
+        await axios.post(`${API_BASE_URL}/wishlist/add/${temp_userID}`, { itemId: productId });
+        showToastMessage('Added to wishlist', 'success');
+      }
+    } catch (error) {
+      // Revert optimistic update on failure
+      setWishlist(prev =>
+        isInWishlist ? [...prev, productId] : prev.filter(id => id !== productId)
+      );
+      showToastMessage('Failed to update wishlist', 'error');
+    } finally {
+      setWishlistLoading(prev => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
 
   return (
     <div>
@@ -121,6 +245,78 @@ export default function Body() {
 
       {/* HERO */}
       <section className="min-h-screen flex flex-col items-center justify-center px-[5vw] pt-28 pb-20 relative overflow-hidden text-center bg-white">
+         {showToast && (
+                <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
+                  <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
+                    ${showToast.type === 'success'
+                      ? 'bg-white border-emerald-200 text-emerald-700'
+                      : showToast.type === 'error'
+                        ? 'bg-white border-red-200 text-red-600'
+                        : 'bg-white border-stone-200 text-stone-600'}`}>
+                    {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
+                  </div>
+                </div>
+              )}
+        
+              {/* Quick View Modal */}
+              {quickViewProduct && (
+                <div
+                  className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                  onClick={() => setQuickViewProduct(null)}
+                >
+                  <div
+                    className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-5">
+                        <div>
+                          <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.brand}</span>
+                          <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
+                        </div>
+                        <button
+                          onClick={() => setQuickViewProduct(null)}
+                          className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+        
+                      <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
+                        <ImageSlider images={quickViewProduct.images} />
+                      </div>
+        
+                      <p className="text-stone-500 mb-5 text-sm leading-relaxed">{quickViewProduct.description}</p>
+        
+                      <div className="grid grid-cols-2 gap-3 mb-6">
+                        {[
+                          { label: 'Brand', value: quickViewProduct.brand },
+                          { label: 'Rating', value: `${quickViewProduct.rating} ★` },
+                          { label: 'Location', value: quickViewProduct.location },
+                          { label: 'Stock', value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock' },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3">
+                            <p className="text-[11px] text-stone-400 uppercase tracking-wider mb-0.5">{label}</p>
+                            <p className="text-sm font-medium text-stone-700">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+        
+                      <button
+                        disabled={quickViewProduct.stock === 0}
+                        onClick={() => navigate('/checkout', { state: { product: quickViewProduct } })}
+                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all
+                          ${quickViewProduct.stock > 0
+                            ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
+                            : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
+                      >
+                        Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+        
         <div className="absolute inset-0 hero-grid-bg opacity-60 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 60%, rgba(212,146,42,0.07) 0%, transparent 70%)" }} />
 
@@ -234,60 +430,24 @@ export default function Body() {
           </Reveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {items.map((item, i) => (
-              <Reveal key={i} delay={(i % 3) * 0.1}>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-amber-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
-                
-                  <div className="w-full aspect-4/3 relative overflow-hidden">
-                    <ImageSlider
-                      images={(item.image || []).map((img) => `${BASE_URL}${img}`)}
-                    />
+            {items.map((product, index) => {
+              // const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading;
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  index={index}
+                  isInWishlist={wishlist.includes(product.id)}
+                  onToggleWishlist={toggleWishlist}
+                  onQuickView={setQuickViewProduct}
+                  onAddToCart={addToCart}
+                  onRentNow={handleRentNow}
+                // cardRef={shouldAttachRef ? lastProductElementRef : undefined}
+                />
+              );
+            })
 
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.3))",
-                      }}
-                    />
-
-                    <span className="absolute top-3 left-3 bg-green-50 border border-green-200 text-green-600 text-[11px] px-2.5 py-1 rounded-full z-10">
-                      Available Now
-                    </span>
-
-                    <button
-                      onClick={() => toggleFav(i)}
-                      className="absolute top-3 right-3 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-[16px] border border-gray-200 hover:border-amber-300 transition-all duration-200 z-10"
-                      style={{ color: favs[i] ? AMBER : "#aaa" }}
-                    >
-                      {favs[i] ? "♥" : "♡"}
-                    </button>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="text-[11px] tracking-widest uppercase font-medium mb-1.5" style={{ color: AMBER }}>
-                      {item.description}
-                    </div>
-                    <div className="font-display text-[20px] text-gray-800 mb-2">{item.title}</div>
-                    <div className="flex items-center gap-3 mb-4">
-                      {/* <div className="flex items-center gap-1 text-[13px] text-gray-500">
-                        <span style={{ color: AMBER }}>★</span> {item.rating} ({item.reviews} reviews)
-                      </div> */}
-                      <div className="text-[12px] text-gray-400">📍 {item.location}</div>
-                    </div>
-                    <div className="flex items-center justify-between pt-3.5 border-t border-gray-100">
-                      <div className="font-display">
-                        <span className="text-[26px] font-normal" style={{ color: AMBER_LIGHT }}>{item.price}</span>
-                        <span className="text-[13px] text-gray-400">/day</span>
-                      </div>
-                      <button className="px-4 py-2 bg-transparent border border-gray-200 text-gray-500 text-[13px] rounded-md cursor-pointer hover:bg-amber-500 hover:border-amber-500 hover:text-white hover:font-semibold transition-all duration-200">
-                        Rent Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
+            }
           </div>
 
 

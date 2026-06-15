@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import type { Request, Response } from "express";
 import ItemImage from "../models/itemsImage.model.ts";
 import Item from "../models/items.model.ts";
@@ -51,47 +52,91 @@ export const createItem = async (req: Request, res: Response) => {
 
 
 
+// export const getItems = async (req: Request, res: Response) => {
+//   try {
+//     const items = await Item.aggregate([
+//       {
+//         $lookup: {
+//           from: "itemimages",
+//           localField: "_id",
+//           foreignField: "itemId",
+//           as: "image",
+//         },
+//       },
+//       {
+//         $project: {
+//           name: 1,
+//           description: 1,
+//           price: 1,
+//           categoryId: 1,
+//           ownerId: 1,
+//           createdAt: 1,
+//           updatedAt: 1,
+//           image: {
+//             $map: {
+//               input: "$image",
+//               as: "img",
+//               in: "$$img.imageUrl",
+//             },
+//           },
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json(items);
+//   } catch (err: any) {
+//     res.status(500).json({
+//       message: err.message,
+//     });
+//   }
+// };
+
 export const getItems = async (req: Request, res: Response) => {
   try {
-    const items = await Item.aggregate([
-      {
-        $lookup: {
-          from: "itemimages",
-          localField: "_id",
-          foreignField: "itemId",
-          as: "image",
-        },
-      },
-      {
-        $project: {
-          name: 1,
-          description: 1,
-          price: 1,
-          categoryId: 1,
-          ownerId: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          image: {
-            $map: {
-              input: "$image",
-              as: "img",
-              in: "$$img.imageUrl",
-            },
-          },
-        },
-      },
-    ]);
+   
+    // 1. Find items under category
+    const items = await Item.find()
+      .sort({ createdAt: -1 })
+      .lean();
 
-    res.status(200).json(items);
-  } catch (err: any) {
-    res.status(500).json({
-      message: err.message,
+    const itemIds = items.map((item) => item._id);
+
+    // 2. Fetch images for all items
+    const images = await ItemImage.find({ itemId: { $in: itemIds } })
+      .sort({ displayOrder: 1 })
+      .lean();
+
+    // 3. Map images to items
+    const itemsWithImages = items.map((item) => {
+      const itemImages = images.filter(
+        (img) => img.itemId.toString() === item._id.toString()
+      );
+
+      const primaryImage =
+        itemImages.find((img) => img.isPrimary)?.imageUrl ||
+        itemImages[0]?.imageUrl ||
+        null;
+
+      return {
+        ...item,
+        images: itemImages.map((img) => img.imageUrl),
+        primaryImage
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: itemsWithImages.length,
+      data: itemsWithImages
+    });
+  } catch (error) {
+    console.error("getItems error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
     });
   }
 };
-
-
-import mongoose from "mongoose";
 
 export const getItemsByCategoryId = async (req: Request, res: Response) => {
   try {
