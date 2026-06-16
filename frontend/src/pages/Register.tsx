@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '../auth/Input';
 import { validateRegisterForm } from '../utils/validation';
 import type { RegisterData, UserRole } from '../types/auth.types';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 import { Navigate, Link } from 'react-router-dom';
 

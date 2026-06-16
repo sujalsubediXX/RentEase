@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '../auth/Input';
 import { validateLoginForm } from '../utils/validation';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Link, Navigate } from 'react-router-dom';
 
 export const Login: React.FC = () => {
@@ -29,16 +29,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (role: 'renter' | 'owner') => {
-    const demoCredentials = {
-      renter: { email: 'demo@rentease.com', password: 'Demo@123' },
-      owner: { email: 'owner@rentease.com', password: 'Owner@123' },
-    };
-    
-    setEmail(demoCredentials[role].email);
-    setPassword(demoCredentials[role].password);
-    await login(demoCredentials[role]);
-  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50">
@@ -124,32 +114,6 @@ export const Login: React.FC = () => {
             )}
           </button>
         </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or try demo</span>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleDemoLogin('renter')}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Demo Renter
-            </button>
-            <button
-              onClick={() => handleDemoLogin('owner')}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Demo Owner
-            </button>
-          </div>
-        </div>
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
