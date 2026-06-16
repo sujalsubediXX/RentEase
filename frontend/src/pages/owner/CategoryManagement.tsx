@@ -16,6 +16,7 @@ interface Category {
   image: string;
 }
 import API_BASE_URL from "../../config/api";
+import { TopBar } from "../../components/owner/TopBar";
 
 
 
@@ -176,21 +177,15 @@ const CategoryManagement = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Category Management
-        </h1>
+    <main className="bg-gray-100 min-h-screen overflow-y-auto">
+<TopBar title="Category Management" subtitle="  Manage rental categories" />
+    <div className=" px-6 pt-4 h-fit ">
+     
 
-        <p className="text-gray-500 mt-1">
-          Manage rental categories
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="flex gap-6  ">
         {/* FORM */}
-<div className="max-h-[80vh] overflow-y-auto xl:col-span-4">
-          <div className="bg-white rounded-3xl p-6 shadow-sm sticky top-6">
+<div className="max-h-[80vh] overflow-y-auto xl:col-span-4 w-[65%]">
+          <div className="bg-white rounded-3xl p-6  shadow-sm sticky top-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-orange-100 p-3 rounded-xl">
                 <FolderOpen
@@ -306,7 +301,7 @@ const CategoryManagement = () => {
 
         {/* CATEGORY GRID */}
 
-        <div className="xl:col-span-8">
+        <div className="xl:col-span-8 h-fit">
           {loading ? (
             <div className="text-center py-20">
               Loading...
@@ -406,6 +401,8 @@ const CategoryManagement = () => {
         </div>
       </div>
     </div>
+    </main>
+
   );
 };
 

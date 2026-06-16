@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Package, CalendarCheck, Star,
-   Plus, ChevronRight,
-
- ArrowUpRight, ArrowDownRight, Wallet,
-   X,  Upload,
-
-} from "lucide-react";
+import {  Package, CalendarCheck, Star, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet} from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar
@@ -21,11 +14,6 @@ const LISTING_STATUS = {
   PENDING: "pending"
 } as const;
 
-// const BOOKING_STATUS = {
-//   CONFIRMED: "confirmed",
-//   PENDING: "pending",
-//   CANCELLED: "cancelled"
-// } as const;
 
 type ListingStatus = typeof LISTING_STATUS[keyof typeof LISTING_STATUS];
 // type BookingStatus = typeof BOOKING_STATUS[keyof typeof BOOKING_STATUS];
@@ -76,9 +64,6 @@ interface StatCardProps {
 
 
 
-interface AddListingModalProps {
-  onClose: () => void;
-}
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -164,115 +149,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value, sub, tren
 );
 
 
-const AddListingModal: React.FC<AddListingModalProps> = ({ onClose }) => {
-  const [step, setStep] = useState<number>(1);
-  const categories: string[] = ["Electronics", "Vehicles", "Sports", "Outdoors", "Tools", "Clothing", "Furniture", "Other"];
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-stone-100">
-          <div>
-            <h2 className="text-lg font-bold text-stone-800">Add New Listing</h2>
-            <p className="text-sm text-stone-400">Step {step} of 3 — {["Basic Info", "Details & Pricing", "Photos"][step - 1]}</p>
-          </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-stone-100 text-stone-400">
-            <X size={20} />
-          </button>
-        </div>
 
-        {/* Progress */}
-        <div className="px-6 pt-4 flex gap-2">
-          {[1, 2, 3].map(s => (
-            <div key={s} className={`h-1.5 flex-1 rounded-full transition-colors ${s <= step ? "bg-amber-500" : "bg-stone-100"}`} />
-          ))}
-        </div>
-
-        <div className="p-6 space-y-4">
-          {step === 1 && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">Item Title</label>
-                <input className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent" placeholder="e.g. Canon EOS R5 Camera Kit" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">Category</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {categories.map(c => (
-                    <button key={c} className="border border-stone-200 rounded-xl py-2 text-xs text-stone-600 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 transition-colors">{c}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">Description</label>
-                <textarea rows={3} className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" placeholder="Describe your item…" />
-              </div>
-            </>
-          )}
-          {step === 2 && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1.5">Daily Price (रू)</label>
-                  <input type="number" className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="0.00" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1.5">Weekly Price (रू)</label>
-                  <input type="number" className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="0.00" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">Location</label>
-                <input className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="Kathmandu, Nepal" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">Deposit Amount (रू)</label>
-                <input type="number" className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="0.00" />
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl">
-                <input type="checkbox" id="instant" className="accent-amber-500 w-4 h-4" />
-                <label htmlFor="instant" className="text-sm text-stone-700">Enable <strong>Instant Booking</strong> (no approval needed)</label>
-              </div>
-            </>
-          )}
-          {step === 3 && (
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-stone-200 rounded-2xl p-8 text-center hover:border-amber-400 transition-colors cursor-pointer group">
-                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-100">
-                  <Upload size={22} className="text-amber-500" />
-                </div>
-                <p className="text-sm font-medium text-stone-700">Drop photos here or click to upload</p>
-                <p className="text-xs text-stone-400 mt-1">PNG, JPG up to 10MB · Minimum 3 photos</p>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {["📷", "🖼️", "🌅"].map((e, i) => (
-                  <div key={i} className="aspect-square bg-stone-100 rounded-xl flex items-center justify-center text-2xl relative group">
-                    {e}
-                    <div className="absolute inset-0 bg-black/20 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <X size={16} className="text-white" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 p-6 pt-0">
-          {step > 1 && (
-            <button onClick={() => setStep(s => s - 1)} className="flex-1 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">
-              Back
-            </button>
-          )}
-          <button
-            onClick={() => step < 3 ? setStep(s => s + 1) : onClose()}
-            className="flex-1 py-3 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors shadow-sm">
-            {step === 3 ? "Publish Listing" : "Continue"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
@@ -292,7 +169,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label })
 
 
 export default function Dashboard() {
-  const [showAddListing, setShowAddListing] = useState<boolean>(false);
   const [listingItems, setListingItems] = useState<Listing[]>(listings);
   const [chartView, setChartView] = useState<"area" | "bar">("area");
 
@@ -303,7 +179,7 @@ export default function Dashboard() {
   const totalBookings: number = listingItems.reduce((s, l) => s + l.bookings, 0);
   const avgRating: string = (listingItems.filter(l => l.rating).reduce((s, l, _, a) => s + l.rating / a.length, 0)).toFixed(1);
 
- 
+
   const latestReviews: Review[] = [
     { name: "Priya T.", item: "MacBook Pro", stars: 5, text: "Excellent condition, super easy to pick up. Highly recommend this owner!", daysAgo: 1 },
     { name: "Aarav S.", item: "Canon EOS R5", stars: 5, text: "Camera was pristine and ready to use. Will definitely rent again for my next shoot.", daysAgo: 4 },
@@ -314,20 +190,16 @@ export default function Dashboard() {
 
   return (
     <>
-        <main className="flex-1 overflow-y-auto  space-y-6">
-    <TopBar title="Dashboard" />
-<div className="px-6 py-6">
+      <main className="flex-1 overflow-y-auto h-screen  space-y-6">
+        <TopBar title="Dashboard" />
+        <div className="px-6 py-6">
           {/* Page Header */}
           <div className="flex items-center justify-between ">
             <div>
               <h1 className="font-display text-2xl font-bold text-stone-800">Good morning, Ramesh! 👋</h1>
               <p className="text-stone-400 text-sm mt-0.5">Here's what's happening with your listings today.</p>
             </div>
-            <button onClick={() => setShowAddListing(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold shadow-sm shadow-amber-200 transition-colors">
-              <Plus size={18} />
-              <span>New Listing</span>
-            </button>
+        
           </div>
 
           {/* Stats */}
@@ -391,7 +263,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-                {/* Reviews Snapshot */}
+          {/* Reviews Snapshot */}
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display font-bold text-stone-800">Latest Reviews</h2>
@@ -423,10 +295,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-      {showAddListing && <AddListingModal onClose={() => setShowAddListing(false)} />}
         </div>
-        </main>
-      
+      </main>
+
 
     </>
   );

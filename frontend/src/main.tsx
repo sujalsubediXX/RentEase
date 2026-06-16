@@ -17,6 +17,7 @@ import { OwnerLayout } from "./layouts/OwnerLayout";
 import Dashboard from "./pages/owner/Dashboard";
 import Bookings from "./pages/owner/Bookings";
 import OwnerListings from "./pages/owner/OwnerListing";
+import OwnerListingForm from "./pages/owner/OwnerListingForm";
 import {Earnings} from "./pages/owner/Earnings";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import NoFoundPage from "./pages/NoFoundPage";
@@ -154,6 +155,14 @@ const router = createBrowserRouter([
       {
         path: "/owner/listings",
         element: <OwnerListings />,
+      },
+      {
+        path: "/owner/listings/edit/:itemId",
+        element: <OwnerListingForm />,
+      },
+      {
+        path: "/owner/listings/new",
+        element: <OwnerListingForm />,
       },
       {
         path: "/owner/reviews",

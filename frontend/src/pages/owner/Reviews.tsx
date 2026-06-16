@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Avatar } from "../../components/owner/Avatar";
 import { Stars } from "../../components/owner/Stars";
-import { NotificationBar } from "../../components/owner/NotificationBar";
 import { TopBar } from "../../components/owner/TopBar";
 interface Review {
     id: number;
@@ -30,7 +29,7 @@ export const Reviews = () => {
     const dist = [5, 4, 3, 2, 1].map(r => ({ r, count: mockReviews.filter(rv => rv.rating === r).length }));
 
     return (
-        <div className="flex-1 overflow-y-auto bg-stone-50">
+        <div className="flex-1 h-screen overflow-y-auto bg-stone-50">
             <TopBar title="Reviews" subtitle="What renters say about your listings" />
             <div className="p-6 space-y-5">
                 {/* Summary */}

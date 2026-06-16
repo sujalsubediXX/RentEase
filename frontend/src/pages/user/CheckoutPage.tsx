@@ -72,19 +72,10 @@ const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  /**
-   * Two flows arrive here:
-   *
-   * 1. SINGLE (from CategoryPage "Rent Now"):
-   *    { type: "single", items: [{ item: Product, quantity: number }] }
-   *
-   * 2. CART (from CartPage "Confirm Booking"):
-   *    { type: "cart", items: CartItem[] }
-   */
+ 
   const checkoutType: 'single' | 'cart' = location.state?.type ?? 'single';
   const rawItems: any[] = location.state?.items ?? [];
 
-  // ── Derive normalised line items ─────────────────────────────────────────
 
   // For single flow: product info without dates (user picks dates below)
   const singleProduct: Product | null =
@@ -116,11 +107,8 @@ const CheckoutPage: React.FC = () => {
     [startDate, endDate]
   );
 
-  /**
-   * Subtotal:
-   * - single: price × days chosen by user
-   * - cart:   sum of each item's (price × rentalDays) — already stored in cart
-   */
+  
+  
   const subtotal = useMemo(() => {
     if (checkoutType === 'single') {
       return singleProduct ? singleProduct.rentalPrice * singleRentalDays : 0;
@@ -131,11 +119,7 @@ const CheckoutPage: React.FC = () => {
     );
   }, [checkoutType, singleProduct, singleRentalDays, cartItems]);
 
-  /**
-   * Security deposit:
-   * - single: 1.5× daily rate
-   * - cart:   sum of 1.5× daily rate for each item
-   */
+ 
   const securityDeposit = useMemo(() => {
     if (checkoutType === 'single') {
       return singleProduct ? Math.round(singleProduct.rentalPrice * 1.5) : 0;
@@ -169,7 +153,6 @@ const CheckoutPage: React.FC = () => {
     );
   }
 
-  // ── Submit handler ───────────────────────────────────────────────────────
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -420,7 +403,7 @@ const CheckoutPage: React.FC = () => {
                   />
                   <div>
                     <p className="text-sm font-semibold text-stone-800">Digital Wallet</p>
-                    <p className="text-[11px] text-stone-400">eSewa / Khalti / Fonepay</p>
+                    <p className="text-[11px] text-stone-400">eSewa</p>
                   </div>
                 </label>
               </div>

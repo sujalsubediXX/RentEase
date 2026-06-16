@@ -30,7 +30,7 @@ export const OwnerSidebar = () => {
     ];
     return (
 
-        < aside className={`${isSidebarOpen ? "w-60" : "w-16"} shrink-0 bg-stone-900 flex flex-col transition-all duration-300 overflow-hidden`
+        < aside className={`${isSidebarOpen ? "w-60" : "w-16"} h-screen shrink-0 bg-stone-900 flex flex-col transition-all duration-300 overflow-hidden`
         }>
             < div className="h-16 flex items-center gap-3 px-4 border-b border-stone-800" >
                 <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">

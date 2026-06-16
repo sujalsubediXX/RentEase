@@ -5,7 +5,7 @@ import { OwnerSidebar } from "../components/owner/OwnerSidebar"
 export const OwnerLayout = () => {
     return (
         <SidebarProvider>
-            <div className="flex h-screen bg-stone-50 overflow-hidden">
+            <div className="flex bg-stone-50 ">
                 <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700&display=swap');
                 * { font-family: 'Nunito', sans-serif; }
@@ -13,7 +13,7 @@ export const OwnerLayout = () => {
                 ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; }
                 ::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 999px; }
                   `}</style>
-                <OwnerSidebar />
+                <OwnerSidebar  />
                 <Outlet />
             </div>
 
