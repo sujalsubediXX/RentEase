@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { User } from "../models/Users.model.ts";
+import  User  from "../models/Users.model.ts";
 
 const allowedRoles = ["renter", "owner", "admin"] as const;
 type AllowedRole = (typeof allowedRoles)[number];
