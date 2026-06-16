@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '../auth/Input';
 import { validateLoginForm } from '../utils/validation';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Link, Navigate } from 'react-router-dom';
 
 export const Login: React.FC = () => {

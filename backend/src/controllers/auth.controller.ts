@@ -1,8 +1,7 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.model.js";  // Use your model
-
+import  User  from "../models/Users.model.ts";
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 const JWT_EXPIRES_IN = "7d";
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {useSidebar} from "../../contexts/SidebarContext"
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import {
     LayoutDashboard, Package, CalendarCheck, BarChart3, Star,
     Settings,Home,
