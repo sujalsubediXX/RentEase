@@ -12,7 +12,7 @@ import paymentroute from "./routes/payment.route.ts"
 import cartroute from "./routes/cart.route.ts"
 import path from "path";
 import wishlistroute from "./routes/wishlist.route.ts"
-const PORT: number = Number(process.env.PORT) || 3000;
+const PORT: number = Number(process.env.PORT) ;
 
 
 app.use(cors());
@@ -32,7 +32,6 @@ app.use("/api/items", itemrouter)
 app.use("/api/payment", paymentroute)
 app.use("/api/cart", cartroute)
 app.use("/api/wishlist", wishlistroute)
-
 
 
 app.listen(PORT, () => {

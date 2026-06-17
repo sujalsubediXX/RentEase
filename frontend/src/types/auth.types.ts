@@ -22,6 +22,7 @@ export interface User {
   phoneNumber: string;
   role: UserRole;
   address: string;
+  profileImage:string;
   isKycVerified: boolean;
   profilePicture?: string;
   createdAt: Date;

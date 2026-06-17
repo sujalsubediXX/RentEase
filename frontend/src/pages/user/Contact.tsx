@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import MockMap from "../../components/common/mockmap";
+import MockMap from "../../components/common/MockMap";
 
 const ContactUs: React.FC = () => {
   const [formData, setFormData] = useState({

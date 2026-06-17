@@ -5,6 +5,7 @@ import { AdminSidebar } from '../components/admin/AdminSidebar';
 export const AdminLayout = () => {
   return (
     <>
+
      <SidebarProvider>
        <div className="flex h-screen bg-stone-950 font-sans overflow-hidden">
          <AdminSidebar />
@@ -17,6 +18,7 @@ export const AdminLayout = () => {
 
     </div>
      </SidebarProvider>
+
     </>
   )
 }

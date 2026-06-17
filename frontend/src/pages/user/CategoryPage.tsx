@@ -6,6 +6,7 @@ import { ImageSlider } from './ImageSlider';
 import axios from 'axios';
 import { ProductCard } from '../../components/user/ProductCard';
 import { ProductListItem } from '../../components/user/ProductListItem';
+import { useAuth } from "../../hooks/useAuth";
 export interface Product {
   id: string;
   name: string;
@@ -22,7 +23,7 @@ export interface Product {
   location: string;
 }
 
-const temp_userID = "6a2d05276369192a17ffac52";
+
 
 // ============ TYPES ============
 
@@ -254,7 +255,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
 // ============ MAIN COMPONENT ============
 const CategoryPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
-
+  const {user } = useAuth();
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -289,7 +290,7 @@ const CategoryPage: React.FC = () => {
   // Fetch wishlist on mount
   const fetchWishlist = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${temp_userID}`);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${user?.id}`);
       const data = res.data;
       // data.items is an array of populated Item objects OR ObjectId strings
       const ids: string[] = (data.items ?? []).map((item: any) =>
@@ -390,7 +391,7 @@ const CategoryPage: React.FC = () => {
         endDate: end.toISOString().split("T")[0],
       };
 
-      const res = await fetch(`${API_BASE_URL}/cart/add/${temp_userID}`, {
+      const res = await fetch(`${API_BASE_URL}/cart/add/${user?.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -424,11 +425,11 @@ const CategoryPage: React.FC = () => {
     try {
       if (isInWishlist) {
         // Remove from wishlist
-        await axios.delete(`${API_BASE_URL}/wishlist/remove/${temp_userID}/${productId}`);
+        await axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${productId}`);
         showToastMessage('Removed from wishlist', 'info');
       } else {
         // Add to wishlist
-        await axios.post(`${API_BASE_URL}/wishlist/add/${temp_userID}`, { itemId: productId });
+        await axios.post(`${API_BASE_URL}/wishlist/add/${user?.id}`, { itemId: productId });
         showToastMessage('Added to wishlist', 'success');
       }
     } catch (error) {

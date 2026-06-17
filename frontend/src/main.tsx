@@ -1,9 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
 
 import "./index.css";
+
+import { AuthProvider } from "./contexts/AuthContext"; // ADD THIS
 
 import HowItWorks from "./pages/user/HowItWorks";
 import Body from "./pages/user/Body";
@@ -19,8 +20,8 @@ import Dashboard from "./pages/owner/Dashboard";
 import Bookings from "./pages/owner/Bookings";
 import OwnerListings from "./pages/owner/OwnerListing";
 import OwnerListingForm from "./pages/owner/OwnerListingForm";
-import {Earnings} from "./pages/owner/Earnings";
-import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { Earnings } from "./pages/owner/Earnings";
+import ProtectedRoute from "./auth/ProtectedRoute";
 import NoFoundPage from "./pages/NoFoundPage";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -47,200 +48,137 @@ import CheckoutPage from "./pages/user/CheckoutPage";
 import ConfirmBookingPage from "./pages/user/ConfirmBookingPage";
 import PaymentSuccessPage from "./pages/user/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/user/PaymentFailurePage";
-
-
+import Unauthorized from "./pages/Unauthorized";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <UserLayout />,
     children: [
+      { path: "/", element: <Body /> },
+      { path: "/how-it-works", element: <HowItWorks /> },
+      { path: "/categories/:categoryId", element: <CategoryPage /> },
+      { path: "/categories", element: <CategoriesPage /> },
+      { path: "/about", element: <About /> },
+      { path: "/contact", element: <Contact /> },
       {
-        path: "/",
-        element: <Body />,
+        path: "/profile", element: (
+          <ProtectedRoute allowedRoles={["owner", "renter"]} >
+            <ProfilePage />
+          </ProtectedRoute>
+        )
       },
       {
-        path: "/how-it-works",
-        element: <HowItWorks />,
-      },
-
-      {
-        path: "/categories/:categoryId",
-        element: <CategoryPage />,
-    
-      },
-      {
-        path: "/confirm-booking",
-        element: <ConfirmBookingPage />,
-      },
-      {
-        path: "/categories",
-        element: <CategoriesPage />,
-      },
-      {
-        path: "/about",
-        element: <About/>,
-      },
-      {
-        path: "/checkout",
-        element: <CheckoutPage/>,
-      },
-      {
-        path: "/payment-success",
-        element: <PaymentSuccessPage/>,
-      },
-      {
-        path: "/payment-failure",
-        element: <PaymentFailurePage/>,
-      },
-      {
-        path: "/contact",
-        element: <Contact />,
-      },
-      {
-        path: "/profile",
-        element: <ProfilePage />,
-      },
-      {
-        path: "/wishlist",
-        element: <WishlistPage />,
-      },
-      {
-        path: "/cart",
-        element: <CartPage />,
-      },
-      {
-        path: "/settings",
-        element: <UserSettingsPage />,
+        path: "/cart", element: (
+          <ProtectedRoute allowedRoles={["owner", "renter"]} >
+            <CartPage />
+          </ProtectedRoute>
+        )
       },
 
+      {
+        path: "/wishlist", element:
+          (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+              <WishlistPage />
+            </ProtectedRoute>
+          )
+      },
+      {
+        path: "/checkout", element:
+          (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+              <CheckoutPage />
+            </ProtectedRoute>
+          )
+      },
+      {
+        path: "/confirm-booking", element:
+          (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+              <ConfirmBookingPage />
+            </ProtectedRoute>
+          )
+      },
+      {
+        path: "/payment-failure", element:
+          (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+              <PaymentFailurePage />
+            </ProtectedRoute>
+          )
+      },
+      {
+        path: "/payment-success", element:
+          (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+              <PaymentSuccessPage />
+            </ProtectedRoute>
+          )
+      },
+      {
+        path: "/settings", element:
+          (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+              <UserSettingsPage />
+            </ProtectedRoute>
+          )
+      },
     ],
   },
 
+  { path: "/login", element: <Login /> },
+  { path: "/kycverification", element: <KYCVerificationForm /> },
+  { path: "/register", element: <Register /> },
 
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/kycverification",
-    element: <KYCVerificationForm />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-  },
- 
   {
     path: "/owner",
-    element:
-      <>
-        <ProtectedRoute>
-          <OwnerLayout />
-        </ProtectedRoute>
-      </>,
+    element: (
+      <ProtectedRoute allowedRoles={["owner"]} >
+        <OwnerLayout />
+      </ProtectedRoute >
+    ),
     children: [
-      {
-        path: "/owner/dashboard",
-        element: <Dashboard />,
-      },
-
-      {
-        path: "/owner/bookings",
-        element: <Bookings />,
-      },
-      {
-        path: "/owner/managecategory",
-        element: <CategoryManagement />,
-      },
-      {
-        path: "/owner/listings",
-        element: <OwnerListings />,
-      },
-      {
-        path: "/owner/listings/edit/:itemId",
-        element: <OwnerListingForm />,
-      },
-      {
-        path: "/owner/listings/new",
-        element: <OwnerListingForm />,
-      },
-      {
-        path: "/owner/reviews",
-        element: <Reviews />,
-      },
-      {
-        path: "/owner/messages",
-        element: <Messages />,
-      },
-      {
-        path: "/owner/settings",
-        element: <Settings />,
-      },
-      {
-        path: "/owner/earnings",
-        element: <Earnings />,
-      }
+      { path: "/owner/dashboard", element: <Dashboard /> },
+      { path: "/owner/bookings", element: <Bookings /> },
+      { path: "/owner/managecategory", element: <CategoryManagement /> },
+      { path: "/owner/listings", element: <OwnerListings /> },
+      { path: "/owner/listings/edit/:itemId", element: <OwnerListingForm /> },
+      { path: "/owner/listings/new", element: <OwnerListingForm /> },
+      { path: "/owner/reviews", element: <Reviews /> },
+      { path: "/owner/messages", element: <Messages /> },
+      { path: "/owner/settings", element: <Settings /> },
+      { path: "/owner/earnings", element: <Earnings /> },
     ],
   },
+
   {
     path: "/admin",
-    element:
-      <>
-        <ProtectedRoute>
-          <AdminLayout />
-        </ProtectedRoute>
-      </>,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]} >
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
     children: [
-      {
-        path: "/admin/dashboard",
-        element: <DashboardPage />,
-      },
-      {
-        path: "/admin/users",
-        element: <UsersPage  roleFilter="user" />,
-      },
-      {
-        path: "/admin/owners",
-        element: <OwnersPage roleFilter="owner" />,
-      },
-      {
-        path: "/admin/listings",
-        element: <ListingsPage />,
-      },
-      {
-        path: "/admin/bookings",
-        element: <BookingsPage />,
-      },
-      {
-        path: "/admin/revenue",
-        element: <RevenuePage />,
-      },
-      {
-        path: "/admin/reviews",
-        element: <ReviewsPage />,
-      },
-      {
-        path: "/admin/messages",
-        element: <MessagesPage />,
-      },
-      {
-        path: "/admin/settings",
-        element: <SettingsPage />,
-      },
-
-     
+      { path: "/admin/dashboard", element: <DashboardPage /> },
+      { path: "/admin/users", element: <UsersPage roleFilter="user" /> },
+      { path: "/admin/owners", element: <OwnersPage roleFilter="owner" /> },
+      { path: "/admin/listings", element: <ListingsPage /> },
+      { path: "/admin/bookings", element: <BookingsPage /> },
+      { path: "/admin/revenue", element: <RevenuePage /> },
+      { path: "/admin/reviews", element: <ReviewsPage /> },
+      { path: "/admin/messages", element: <MessagesPage /> },
+      { path: "/admin/settings", element: <SettingsPage /> },
     ],
   },
-  {
-    path: "*",
-    element: <NoFoundPage />,
-  },
+
+  { path: "*", element: <NoFoundPage /> },
+  { path: "/unauthorized", element: <Unauthorized /> }
 ]);
 
 createRoot(document.getElementById("root")!).render(
-   <StrictMode>
-    <AuthProvider>  
+  <StrictMode>
+    <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
   </StrictMode>

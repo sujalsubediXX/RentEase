@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../../config/api";
 import { ProductCard, type Product } from "../../components/user/ProductCard";
-
+import { useAuth } from "../../hooks/useAuth";
 interface ItemImage {
   _id: string;
   imageUrl: string;
@@ -21,7 +21,7 @@ interface WishlistItem {
   quantity: number;
 }
 
-const USER_ID = "6a2d05276369192a17ffac52";
+
 
 // Map the API wishlist shape → ProductCard's Product shape
 const mapWishlistItemToProduct = (item: WishlistItem): Product => ({
@@ -46,7 +46,7 @@ function WishlistPage() {
   const [error, setError] = useState<string | null>(null);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [clearingAll, setClearingAll] = useState(false);
-
+  const {user } = useAuth();
   useEffect(() => {
     fetchWishlist();
   }, []);
@@ -55,7 +55,7 @@ function WishlistPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${USER_ID}`);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${user?.id}`);
       setWishlist(res.data?.items || []);
     } catch (err) {
       console.error(err);
@@ -74,7 +74,7 @@ function WishlistPage() {
     setWishlist(prev => prev.filter(item => item._id !== productId));
 
     try {
-      await axios.delete(`${API_BASE_URL}/wishlist/remove/${USER_ID}/${productId}`);
+      await axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${productId}`);
     } catch (err) {
       console.error(err);
       setWishlist(snapshot);
@@ -95,7 +95,7 @@ function WishlistPage() {
     try {
       await Promise.all(
         snapshot.map(item =>
-          axios.delete(`${API_BASE_URL}/wishlist/remove/${USER_ID}/${item._id}`)
+          axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${item._id}`)
         )
       );
     } catch (err) {
@@ -111,7 +111,7 @@ function WishlistPage() {
       const today = new Date();
       const end = new Date();
       end.setDate(today.getDate() + 1);
-      await axios.post(`${API_BASE_URL}/cart/add/${USER_ID}`, {
+      await axios.post(`${API_BASE_URL}/cart/add/${user?.id}`, {
         itemId: product.id,
         quantity: 1,
         rentalDays: 1,

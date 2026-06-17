@@ -9,11 +9,11 @@ const navLinks: { label: string; href: string }[] = [
   { label: "Contact Us", href: "/contact" },
   { label: "About Us", href: "/about" },
 ];
+import {useAuth} from "../../hooks/useAuth";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState<boolean>(false);
-  const [user, setUser] = useState<boolean>(true);
-
+ const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const onScroll = (): void => setScrolled(window.scrollY > 60);
@@ -43,7 +43,7 @@ export default function Header() {
           ))}
         </ul>
         {
-          user ? (
+          isAuthenticated ? (
             <div className="flex items-center gap-3">
               <Link to="/cart"
                 className="relative p-2 text-stone-600 hover:text-amber-600 transition-colors"

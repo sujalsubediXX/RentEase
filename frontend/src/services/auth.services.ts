@@ -1,35 +1,19 @@
-import type{ LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth.types';
+import axios from "axios";
+import type {
+  LoginCredentials,
+  RegisterData,
+  AuthResponse,
+  User,
+} from "../types/auth.types";
 
-// Mock user database
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    fullName: 'Demo User',
-    email: 'demo@rentease.com',
-    phoneNumber: '9812345678',
-    role: 'renter',
-    address: 'Kathmandu, Nepal',
-    isKycVerified: true,
-    createdAt: new Date(),
-  },
-  {
-    id: '2',
-    fullName: 'Test Owner',
-    email: 'owner@rentease.com',
-    phoneNumber: '9823456789',
-    role: 'owner',
-    address: 'Lalitpur, Nepal',
-    isKycVerified: true,
-    createdAt: new Date(),
-  },
-];
+import API_BASE_URL from "../config/api";
 
 class AuthService {
   private static instance: AuthService;
   private token: string | null = null;
 
   private constructor() {
-    this.token = localStorage.getItem('accessToken');
+    this.token = localStorage.getItem("accessToken");
   }
 
   static getInstance(): AuthService {
@@ -39,99 +23,159 @@ class AuthService {
     return AuthService.instance;
   }
 
+  // -------------------------
+  // LOGIN
+  // -------------------------
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    console.log('Login attempt:', credentials.email);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const user = MOCK_USERS.find(u => u.email === credentials.email);
-    
-    if (!user) {
-      throw new Error('User not found. Please check your email or register first.');
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/user/login`,
+        {
+          email: credentials.email,
+          password: credentials.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = response.data;
+
+      if (!data?.success) {
+        throw new Error(data?.message || "Login failed");
+      }
+
+      const user: User = {
+        id: data.user.id,
+        fullName: data.user.fullName,
+        email: data.user.email,
+        phoneNumber: data.user.phoneNumber,
+        role: data.user.role,
+        profileImage:data.user.profileImage,
+        address: data.user.address,
+        isKycVerified: data.user.kycStatus === "approved",
+        createdAt: new Date(),
+      };
+
+      this.setTokens(data.token, data.refreshToken);
+
+      return {
+        user,
+        token: data.token,
+        refreshToken: data.refreshToken,
+      };
+    } catch (error: any) {
+      throw new Error(
+        error?.response?.data?.message || error.message || "Login failed"
+      );
     }
-    
-    // Demo password check
-    if (credentials.password !== 'Demo@123') {
-      throw new Error('Invalid password. Demo password is "Demo@123"');
-    }
-    
-    const token = 'mock-jwt-token-' + Date.now();
-    const refreshToken = 'mock-refresh-token-' + Date.now();
-    
-    this.setTokens(token, refreshToken);
-    localStorage.setItem('userEmail', user.email);
-    
-    console.log('Login successful:', user.email);
-    
-    return { user, token, refreshToken };
   }
 
+  // -------------------------
+  // REGISTER
+  // -------------------------
   async register(userData: RegisterData): Promise<AuthResponse> {
-    console.log('Register attempt:', userData.email);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if user already exists
-    if (MOCK_USERS.some(u => u.email === userData.email)) {
-      throw new Error('User with this email already exists. Please login instead.');
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/user/register`,
+        userData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = response.data;
+
+      if (!data?.success) {
+        throw new Error(data?.message || "Registration failed");
+      }
+
+      // auto login
+      return await this.login({
+        email: userData.email,
+        password: userData.password,
+      });
+    } catch (error: any) {
+      throw new Error(
+        error?.response?.data?.message || "Registration failed"
+      );
     }
-    
-    const newUser: User = {
-      id: String(MOCK_USERS.length + 1),
-      fullName: userData.fullName,
-      email: userData.email,
-      phoneNumber: userData.phoneNumber,
-      role: userData.role,
-      address: userData.address,
-      isKycVerified: false,
-      createdAt: new Date(),
-    };
-    
-    const token = 'mock-jwt-token-' + Date.now();
-    const refreshToken = 'mock-refresh-token-' + Date.now();
-    
-    this.setTokens(token, refreshToken);
-    localStorage.setItem('userEmail', newUser.email);
-    
-    // Add to mock database
-    MOCK_USERS.push(newUser);
-    
-    console.log('Registration successful:', newUser.email);
-    
-    return { user: newUser, token, refreshToken };
   }
 
+  // -------------------------
+  // LOGOUT
+  // -------------------------
   async logout(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 500));
     this.clearTokens();
   }
 
-  async getCurrentUser(): Promise<User | null> {
-    const token = this.getAccessToken();
-    if (!token) return null;
-    
-    const email = localStorage.getItem('userEmail');
-    const user = MOCK_USERS.find(u => u.email === email);
-    return user || null;
-  }
+  // -------------------------
+  // GET CURRENT USER (/me)
+  // -------------------------
+async getCurrentUser(): Promise<User | null> {
+  const token = this.getAccessToken();
+  if (!token) return null;
 
+  try {
+    const response = await axios.get(`${API_BASE_URL}/user/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const raw = response.data;
+
+
+    const data = raw?.user ?? raw;
+
+    if (!data?._id && !data?.id) return null;
+
+    return {
+      id: data._id ?? data.id,
+      fullName: data.fullName,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      role: data.role,
+      profileImage:data.profileImage,
+      address: data.address,
+      isKycVerified: data.kycStatus === "approved",
+      createdAt: new Date(data.createdAt),
+    };
+  } catch (err: any) {
+    if (err?.response?.status === 401) {
+      this.clearTokens();
+    }
+    return null;
+  }
+}
+  // -------------------------
+  // TOKEN GETTER
+  // -------------------------
   getAccessToken(): string | null {
-    return this.token;
+    return this.token || localStorage.getItem("accessToken");
   }
 
-  private setTokens(accessToken: string, refreshToken: string): void {
+  // -------------------------
+  // SET TOKENS
+  // -------------------------
+  private setTokens(accessToken: string, refreshToken: string) {
     this.token = accessToken;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
   }
 
-  private clearTokens(): void {
+  // -------------------------
+  // CLEAR TOKENS
+  // -------------------------
+  private clearTokens() {
     this.token = null;
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userEmail');
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userEmail");
   }
 }
 

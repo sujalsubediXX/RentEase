@@ -1,15 +1,21 @@
 import { Router } from "express";
 import { 
-  addUser, 
+  loginUser, 
+  register,
   getUsersByRole, 
   getUserById,
   updateUser,
   deleteUser,
-  getAllUsers
+  getAllUsers,
+  getMe
 } from "../controllers/user.controller.ts";
-
+import { authMiddleware } from "../middleware/auth.middleware.ts";
 const router = Router();
 
+
+router.get("/me", authMiddleware, getMe);
+router.post("/register", register);
+router.post("/login",loginUser);
 // Get all users
 router.get("/users", getAllUsers);
 
@@ -20,7 +26,6 @@ router.get("/users/role/:role", getUsersByRole);
 router.get("/users/:id", getUserById);
 
 // Create user
-router.post("/users", addUser);
 
 // Update user
 router.put("/users/:id", updateUser);

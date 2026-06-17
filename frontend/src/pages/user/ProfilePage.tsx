@@ -1,4 +1,6 @@
+import { useAuth } from "../../hooks/useAuth";
 function ProfilePage() {
+  const { user } = useAuth();
   const stats = [
     { label: "Active Rentals", value: "3", icon: "📦" },
     { label: "Completed", value: "24", icon: "✅" },
@@ -20,20 +22,24 @@ function ProfilePage() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full -translate-y-32 translate-x-32" />
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <div className="w-20 h-20 rounded-2xl bg-amber-500 flex items-center justify-center text-stone-900 font-black text-3xl shadow-lg">
-            SR
+            {
+              user?.fullName?.split(" ").map((word) => word[0]).join("").toUpperCase() || "User"
+            }
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">Sujal Rai</h1>
-            <p className="text-stone-400 text-sm mt-0.5">sujal@email.com · Kathmandu, Nepal</p>
+            <h1 className="text-2xl font-bold text-white">{user?.fullName}</h1>
+            <p className="text-stone-400 text-sm mt-0.5">{user?.email} · {user?.address}, Nepal</p>
             <div className="flex flex-wrap gap-2 mt-3">
               <span className="bg-amber-500/20 text-amber-400 text-xs px-3 py-1 rounded-full font-medium border border-amber-500/30">
-                ✓ KYC Verified
+                {user?.isKycVerified ? "✓ KYC Verified" : (
+                  <p className="text-red-500">KYC Not Verified</p>
+                )}
               </span>
               <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full font-medium border border-green-500/30">
                 ● Active Member
               </span>
               <span className="bg-stone-700 text-stone-300 text-xs px-3 py-1 rounded-full font-medium">
-                Member since Jan 2024
+                Member since {user?.createdAt ? (typeof user.createdAt === 'string' ? new Date(user.createdAt).toLocaleDateString() : user.createdAt.toLocaleDateString()) : '—'}
               </span>
             </div>
           </div>
@@ -72,11 +78,10 @@ function ProfilePage() {
               </div>
               <div className="text-right">
                 <p className="font-semibold text-stone-900 text-sm">Rs. {r.price.toLocaleString()}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  r.status === "active"
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.status === "active"
                     ? "bg-green-100 text-green-700"
                     : "bg-stone-100 text-stone-500"
-                }`}>
+                  }`}>
                   {r.status === "active" ? "● Active" : "✓ Done"}
                 </span>
               </div>

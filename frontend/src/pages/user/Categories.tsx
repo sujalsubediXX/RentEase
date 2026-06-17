@@ -18,7 +18,6 @@ const CategoriesPage: React.FC = () => {
     const fetchCategories = async () => {
       try{
         const response = await axios.get(`${API_BASE_URL}/category/getcategory`);
-        console.log(response.data)
         setCategories(response.data);
       }catch(error){
         console.error("Error fetching categories:", error);

@@ -7,7 +7,6 @@ import ItemImage from "../models/itemsImage.model.ts";
 export const addItemToCart = async (req: Request, res: Response) => {
     try {
         const { userId } = req.params;
-        // const userId = req.params.userId;
 
         if (!userId) {
             return res.status(400).json({

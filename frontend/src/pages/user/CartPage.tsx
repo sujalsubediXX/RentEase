@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
 import { ImageSlider } from "./ImageSlider";
-const userId = "6a2d05276369192a17ffac52";
+import { useAuth } from "../../hooks/useAuth";
 const BASE_URL = "http://localhost:3000";
 interface CartItem {
   _id: string;
@@ -22,16 +22,14 @@ interface CartItem {
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+    const {user } = useAuth();
  const navigate = useNavigate();
-  // =========================
-  // FETCH CART
-  // =========================
+
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/cart/${userId}`);
-      console.log(res.data)
-      setCart(res.data.cart.items || []);
+      const res = await axios.get(`${API_BASE_URL}/cart/${user?.id}`);
+        setCart(res.data.cart.items || []);
     } catch (err) {
       console.log(err);
     } finally {
@@ -51,14 +49,12 @@ export default function CartPage() {
     return Math.max(1, diff);
   };
 
-  // =========================
-  // REMOVE ITEM
-  // =========================
+
   const removeItem = async (cartItemId: string) => {
 
     try {
       await axios.delete(
-        `${API_BASE_URL}/cart/remove/${userId}/${cartItemId}`
+        `${API_BASE_URL}/cart/remove/${user?.id}/${cartItemId}`
       );
 
       fetchCart();
@@ -67,9 +63,7 @@ export default function CartPage() {
     }
   };
 
-  // =========================
-  // CALCULATIONS
-  // =========================
+
   const subtotal = useMemo(() => {
     return cart.reduce(
       (acc, item) => acc + item.itemId.price * item.rentalDays,
@@ -87,7 +81,7 @@ export default function CartPage() {
   ) => {
     try {
       await axios.put(
-        `${API_BASE_URL}/cart/update-dates/${userId}/${cartItemId}`,
+        `${API_BASE_URL}/cart/update-dates/${user?.id}/${cartItemId}`,
         {
           startDate,
           endDate,
@@ -99,9 +93,7 @@ export default function CartPage() {
       console.log(err);
     }
   };
-  // =========================
-  // UI
-  // =========================
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 mt-12">
       <div className="mb-8">
