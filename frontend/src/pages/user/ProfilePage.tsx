@@ -1,4 +1,5 @@
 import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 function ProfilePage() {
   const { user } = useAuth();
   const stats = [
@@ -14,7 +15,7 @@ function ProfilePage() {
     { name: "DJI Drone Mini 3", status: "completed", dates: "May 20 – May 23", price: 3600, image: "🚁" },
     { name: "Projector 4K", status: "completed", dates: "May 5 – May 6", price: 750, image: "📽️" },
   ];
-
+const navigate = useNavigate();
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 mt-12">
       {/* Profile Header */}
@@ -43,7 +44,7 @@ function ProfilePage() {
               </span>
             </div>
           </div>
-          <button className="bg-amber-500 text-stone-900 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-400 transition-colors">
+          <button onClick={()=>navigate("/settings")} className="bg-amber-500 text-stone-900 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-400 transition-colors">
             Edit Profile
           </button>
         </div>
