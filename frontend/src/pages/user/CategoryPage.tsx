@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import {  Search, SlidersHorizontal, Grid3X3, List,  X, ChevronLeft, ChevronRight, Package} from 'lucide-react';
+import { Search, SlidersHorizontal, Grid3X3, List, X, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import { ImageSlider } from './ImageSlider';
 import axios from 'axios';
@@ -255,7 +255,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
 // ============ MAIN COMPONENT ============
 const CategoryPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const {user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -288,24 +288,29 @@ const CategoryPage: React.FC = () => {
   }, []);
 
   // Fetch wishlist on mount
-  const fetchWishlist = useCallback(async () => {
+  const fetchWishlist = useCallback(async (userId: string) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${user?.id}`);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${userId}`);
+
       const data = res.data;
-      // data.items is an array of populated Item objects OR ObjectId strings
-      const ids: string[] = (data.items ?? []).map((item: any) =>
-        typeof item === 'string' ? item : (item._id ?? item.id ?? '')
-      ).filter(Boolean);
+
+      const ids: string[] = (data.items ?? [])
+        .map((item: any) =>
+          typeof item === 'string' ? item : (item._id ?? item.id ?? '')
+        )
+        .filter(Boolean);
+
       setWishlist(ids);
     } catch (err) {
-      // Silently fail — wishlist just won't be pre-populated
       console.error('Failed to fetch wishlist:', err);
     }
   }, []);
 
   useEffect(() => {
-    fetchWishlist();
-  }, [fetchWishlist]);
+    if (!isAuthenticated || !user?.id) return;
+
+    fetchWishlist(user.id);
+  }, [fetchWishlist, isAuthenticated, user?.id]);
 
   // Fetch products from API
   const fetchProducts = useCallback(async (pageNum: number, reset: boolean = false) => {

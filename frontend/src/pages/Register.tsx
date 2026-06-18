@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '../auth/Input';
 import { validateRegisterForm } from '../utils/validation';
-import type { RegisterData, UserRole } from '../types/auth.types';
+import type { RegisterData } from '../types/auth.types';
 import { useAuth } from '../hooks/useAuth';
 
 import { Navigate, Link } from 'react-router-dom';

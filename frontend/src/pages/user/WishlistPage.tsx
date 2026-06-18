@@ -46,8 +46,9 @@ function WishlistPage() {
   const [error, setError] = useState<string | null>(null);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [clearingAll, setClearingAll] = useState(false);
-  const {user } = useAuth();
+  const {user,isAuthenticated } = useAuth();
   useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
   }, []);
 

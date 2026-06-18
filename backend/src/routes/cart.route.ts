@@ -1,4 +1,4 @@
-import {addItemToCart,getCart,updateCartItem,removeCartItem,clearCart,updateCartItemDates} from "../controllers/cart.controller.ts"
+import {addItemToCart,getCart,updateCartItem,removeCartItem,clearCart,updateCartItemDates,getCartItemCount} from "../controllers/cart.controller.ts"
 import express from "express";
 
 
@@ -14,4 +14,6 @@ router.delete("/remove/:userId/:itemId", removeCartItem);
 
 router.delete("/clear/:userId", clearCart);
 router.put("/update-dates/:userId/:itemId", updateCartItemDates);
+
+router.get('/count/:userId',getCartItemCount);
 export default router;

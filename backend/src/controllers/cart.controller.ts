@@ -72,112 +72,70 @@ export const addItemToCart = async (req: Request, res: Response) => {
 
 
 export const getCart = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
+    try {
+        const { userId } = req.params;
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required",
-      });
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required",
+            });
+        }
+
+        const cart = await Cart.findOne({ userId }).populate("items.itemId");
+
+        if (!cart) {
+            return res.status(200).json({
+                success: true,
+                cart: { userId, items: [] },
+            });
+        }
+
+        // Collect all itemIds from the cart
+        const itemIds = cart.items
+            .map((ci: any) => ci.itemId?._id)
+            .filter(Boolean);
+
+        // Fetch all images for those items in one query
+        const allImages = await ItemImage.find({ itemId: { $in: itemIds } })
+            .sort({ isPrimary: -1, displayOrder: 1 }); // primary image first
+
+        // Group images by itemId for quick lookup
+        const imagesByItemId: Record<string, string[]> = {};
+        for (const img of allImages) {
+            const key = img.itemId.toString();
+            if (!imagesByItemId[key]) imagesByItemId[key] = [];
+            imagesByItemId[key].push(img.imageUrl);
+        }
+
+        // Attach images to each cart item
+        const itemsWithImages = cart.items.map((ci: any) => {
+            const itemId = ci.itemId?._id?.toString();
+            return {
+                ...ci.toObject(),
+                itemId: {
+                    ...ci.itemId.toObject(),
+                    images: imagesByItemId[itemId] ?? [],
+                },
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            cart: {
+                ...cart.toObject(),
+                items: itemsWithImages,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch cart",
+        });
     }
-
-    const cart = await Cart.findOne({ userId }).populate("items.itemId");
-
-    if (!cart) {
-      return res.status(200).json({
-        success: true,
-        cart: { userId, items: [] },
-      });
-    }
-
-    // Collect all itemIds from the cart
-    const itemIds = cart.items
-      .map((ci: any) => ci.itemId?._id)
-      .filter(Boolean);
-
-    // Fetch all images for those items in one query
-    const allImages = await ItemImage.find({ itemId: { $in: itemIds } })
-      .sort({ isPrimary: -1, displayOrder: 1 }); // primary image first
-
-    // Group images by itemId for quick lookup
-    const imagesByItemId: Record<string, string[]> = {};
-    for (const img of allImages) {
-      const key = img.itemId.toString();
-      if (!imagesByItemId[key]) imagesByItemId[key] = [];
-      imagesByItemId[key].push(img.imageUrl);
-    }
-
-    // Attach images to each cart item
-    const itemsWithImages = cart.items.map((ci: any) => {
-      const itemId = ci.itemId?._id?.toString();
-      return {
-        ...ci.toObject(),
-        itemId: {
-          ...ci.itemId.toObject(),
-          images: imagesByItemId[itemId] ?? [],
-        },
-      };
-    });
-
-    return res.status(200).json({
-      success: true,
-      cart: {
-        ...cart.toObject(),
-        items: itemsWithImages,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch cart",
-    });
-  }
 };
-// =========================
-// Get User Cart
-// =========================
-// export const getCart = async (req: Request, res: Response) => {
-//     try {
-//         const { userId } = req.params;
 
-//         if (!userId) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "User ID is required",
-//             });
-//         }
-
-//         const cart = await Cart.findOne({ userId }).populate("items.itemId");
-
-//         if (!cart) {
-//             return res.status(200).json({
-//                 success: true,
-//                 cart: {
-//                     userId,
-//                     items: [],
-//                 },
-//             });
-//         }
-
-//         return res.status(200).json({
-//             success: true,
-//             cart,
-//         });
-//     } catch (error) {
-//         console.error(error);
-
-//         return res.status(500).json({
-//             success: false,
-//             message: "Failed to fetch cart",
-//         });
-//     }
-// };
-
-// =========================
-// Update Cart Item
-// =========================
 export const updateCartItem = async (req: Request, res: Response) => {
     try {
         const { userId, itemId } = req.params;
@@ -405,6 +363,40 @@ export const updateCartItemDates = async (req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             message: "Failed to update cart item dates",
+        });
+    }
+};
+
+export const getCartItemCount = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.params;
+        if (!userId || userId === "undefined") {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required",
+            });
+        }
+
+
+        const cart = await Cart.findOne({ userId });
+
+        if (!cart) {
+            return res.status(200).json({
+                success: true,
+                count: 0,
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count: cart.items.length,
+        });
+    } catch (error) {
+        console.error("Get Cart Count Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to get cart item count",
         });
     }
 };
