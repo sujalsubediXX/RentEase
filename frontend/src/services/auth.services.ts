@@ -73,6 +73,8 @@ class AuthService {
     }
   }
 
+  
+
   // -------------------------
   // REGISTER
   // -------------------------
@@ -148,6 +150,28 @@ async getCurrentUser(): Promise<User | null> {
       this.clearTokens();
     }
     return null;
+  }
+}
+
+async getProfile(): Promise<any> {
+  const token = this.getAccessToken();
+  if (!token) {
+    throw new Error("No token found");
+  }
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/user/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return response.data.data; // Returns { user, profile }
+  } catch (error: any) {
+    if (error?.response?.status === 401) {
+      this.clearTokens();
+    }
+    throw new Error(
+      error?.response?.data?.message || "Failed to fetch profile"
+    );
   }
 }
   // -------------------------

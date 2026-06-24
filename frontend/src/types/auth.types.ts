@@ -20,12 +20,14 @@ export interface User {
   fullName: string;
   email: string;
   phoneNumber: string;
-  role: UserRole;
-  address: string;
-  profileImage:string;
-  isKycVerified: boolean;
-  profilePicture?: string;
-  createdAt: Date;
+  role: string;
+  profileImage?: string;
+  address?: string;
+  isVerified?: boolean;
+  isKycVerified?: boolean;
+  kycStatus?: string;
+  createdAt?: Date | string;
+  joinedDate?: string;
 }
 
 export interface AuthResponse {
