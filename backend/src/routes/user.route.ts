@@ -10,16 +10,16 @@ import {
   getMe,
   getUserRentals,    
   getUserListings,   
-  getUserWishlist,
+
   changePassword,
 } from "../controllers/user.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 const router = Router();
 router.get("/me", authMiddleware, getMe);
 
-router.get("/me/rentals", authMiddleware, getUserRentals);    
-router.get("/me/listings", authMiddleware, getUserListings);  
-router.get("/me/wishlist", authMiddleware, getUserWishlist); 
+router.get("/rentals", authMiddleware, getUserRentals);    
+router.get("/listings", authMiddleware, getUserListings);  
+
 router.post("/register", register);
 router.post("/login",loginUser);
 // Get all users

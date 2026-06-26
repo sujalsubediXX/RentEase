@@ -2,29 +2,46 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/auth.services";
-
+import API_BASE_URL from "../../config/api";
+import axios from "axios";
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [rentals, setRentals] = useState<any[]>([]);
   const [listings, setListings] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    fetchWishlist();
+  }, []);
+
+  const fetchWishlist = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/wishlist/${user?.id}`);
+      setWishlist(res.data?.items || []);
+    } catch (err) {
+      console.error(err);
+
+    };
+  }
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
         // Fetch all data in parallel
-        const [rentalsData, listingsData, wishlistData] = await Promise.all([
+        const [rentalsData, listingsData] = await Promise.all([
           authService.getUserRentals(),
           authService.getUserListings(),
-          authService.getUserWishlist()
+
         ]);
-        
+
         setRentals(rentalsData);
         setListings(listingsData);
-        setWishlist(wishlistData);
+
       } catch (error) {
         console.error("Error fetching user data:", error);
       } finally {
@@ -39,7 +56,7 @@ function ProfilePage() {
 
   if (loading || !user) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-10 mt-12 flex justify-center items-center min-h-[400px]">
+      <div className="max-w-5xl mx-auto px-6 py-10 mt-12 flex justify-center items-center min-h-100">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-stone-600">Loading profile...</p>
@@ -74,11 +91,10 @@ function ProfilePage() {
               {user.email} · {user.address || "Nepal"}
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${
-                isKycVerified
+              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${isKycVerified
                   ? "bg-green-500/20 text-green-400 border-green-500/30"
                   : "bg-red-500/20 text-red-400 border-red-500/30"
-              }`}>
+                }`}>
                 {isKycVerified ? "✓ KYC Verified" : "✗ KYC Not Verified"}
               </span>
               <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full font-medium border border-green-500/30">
@@ -89,8 +105,8 @@ function ProfilePage() {
               </span>
             </div>
           </div>
-          <button 
-            onClick={() => navigate("/settings")} 
+          <button
+            onClick={() => navigate("/settings")}
             className="bg-amber-500 text-stone-900 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-400 transition-colors"
           >
             Edit Profile
@@ -127,7 +143,7 @@ function ProfilePage() {
                     {rental.itemId?.title || rental.itemName || "Item"}
                   </p>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    {rental.startDate && rental.endDate 
+                    {rental.startDate && rental.endDate
                       ? `${new Date(rental.startDate).toLocaleDateString()} – ${new Date(rental.endDate).toLocaleDateString()}`
                       : "No dates available"}
                   </p>
@@ -136,13 +152,12 @@ function ProfilePage() {
                   <p className="font-semibold text-stone-900 text-sm">
                     Rs. {(rental.totalAmount || rental.price || 0).toLocaleString()}
                   </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    rental.status === "active"
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${rental.status === "active"
                       ? "bg-green-100 text-green-700"
                       : rental.status === "completed"
                         ? "bg-stone-100 text-stone-500"
                         : "bg-yellow-100 text-yellow-700"
-                  }`}>
+                    }`}>
                     {rental.status === "active" ? "● Active" : rental.status === "completed" ? "✓ Done" : rental.status || "Pending"}
                   </span>
                 </div>
@@ -173,11 +188,10 @@ function ProfilePage() {
                     <p className="text-sm text-stone-500">{listing.category}</p>
                     <p className="text-sm font-bold text-amber-600">Rs. {listing.price}/day</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    listing.status === "available"
+                  <span className={`text-xs px-2 py-1 rounded-full ${listing.status === "available"
                       ? "bg-green-100 text-green-700"
                       : "bg-yellow-100 text-yellow-700"
-                  }`}>
+                    }`}>
                     {listing.status || "available"}
                   </span>
                 </div>

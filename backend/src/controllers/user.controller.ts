@@ -1,6 +1,8 @@
 const allowedRoles = ["renter", "owner", "admin"] as const;
 type AllowedRole = (typeof allowedRoles)[number];
-
+ // Import the Rental model (assuming you have one)
+    // You'll need to import this at the top
+import Rental from '../models/Rentels.model.ts';
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -49,9 +51,7 @@ export const getUserRentals = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Import the Rental model (assuming you have one)
-    // You'll need to import this at the top
-    const Rental = require('../models/Rentels.model').default;
+   
     
     const rentals = await Rental.find({ 
       $or: [
@@ -192,29 +192,7 @@ export const getUserListings = async (req: Request, res: Response) => {
   }
 };
 
-// Get user's wishlist/favorites
-export const getUserWishlist = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    // Import the Wishlist model
-    const Wishlist = require('../models/Wishlist').default;
-    
-    const wishlist = await Wishlist.find({ userId }).populate('itemId');
-
-    return res.json({
-      success: true,
-      wishlist: wishlist
-    });
-  } catch (err) {
-    console.error("Error in getUserWishlist:", err);
-    return res.status(500).json({ message: "Server error" });
-  }
-};
 
 export const loginUser = async (req: Request, res: Response) => {
   try {

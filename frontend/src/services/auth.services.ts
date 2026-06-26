@@ -158,7 +158,7 @@ async getUserRentals(): Promise<any[]> {
   if (!token) return [];
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/me/rentals`, {
+    const response = await axios.get(`${API_BASE_URL}/user/rentals`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data.rentals || [];
@@ -173,7 +173,7 @@ async getUserListings(): Promise<any[]> {
   if (!token) return [];
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/me/listings`, {
+    const response = await axios.get(`${API_BASE_URL}/user/listings`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data.listings || [];
@@ -183,20 +183,6 @@ async getUserListings(): Promise<any[]> {
   }
 }
 
-async getUserWishlist(): Promise<any[]> {
-  const token = this.getAccessToken();
-  if (!token) return [];
-
-  try {
-    const response = await axios.get(`${API_BASE_URL}/user/me/wishlist`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data.wishlist || [];
-  } catch (error) {
-    console.error("Error fetching wishlist:", error);
-    return [];
-  }
-}
 
   // -------------------------
   // TOKEN GETTER
