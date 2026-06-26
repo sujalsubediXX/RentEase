@@ -19,6 +19,8 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updatedUser: User) => void; // ADD THIS
+
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -99,6 +101,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(false);
     }
   };
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
 
   return (
     <AuthContext.Provider
@@ -109,6 +114,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         login,
         register,
         logout,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >

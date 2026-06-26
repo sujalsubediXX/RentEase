@@ -28,6 +28,20 @@ export interface User {
   kycStatus?: string;
   createdAt?: Date | string;
   joinedDate?: string;
+  profileData?: {
+    bio: string;
+    listings: any[];
+    rentals: any[];
+    favorites: any[];
+    paymentMethods: any[];
+    profileComplete: boolean;
+    stats?: {
+      totalRentals: number;
+      totalEarnings: number;
+      totalListings: number;
+      rating: number;
+    };
+  };
 }
 
 export interface AuthResponse {

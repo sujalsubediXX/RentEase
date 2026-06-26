@@ -74,6 +74,44 @@ export const validateLoginForm = (email: string, password: string) => {
   };
 };
 
+export const validatePasswordChange = (data: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) => {
+  const errors: { [key: string]: string } = {};
+
+  // Validate current password
+  if (!data.currentPassword || data.currentPassword.length < 6) {
+    errors.currentPassword = 'Current password must be at least 6 characters';
+  }
+
+  // Validate new password with strong password rules
+  if (!data.newPassword || data.newPassword.length < 6) {
+    errors.newPassword = 'Password must be at least 6 characters';
+  } else {
+    if (!/[A-Z]/.test(data.newPassword)) {
+      errors.newPassword = 'Password must contain at least one uppercase letter';
+    } else if (!/[a-z]/.test(data.newPassword)) {
+      errors.newPassword = 'Password must contain at least one lowercase letter';
+    } else if (!/[0-9]/.test(data.newPassword)) {
+      errors.newPassword = 'Password must contain at least one number';
+    } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(data.newPassword)) {
+      errors.newPassword = 'Password must contain at least one special character';
+    }
+  }
+
+  // Check if passwords match
+  if (data.newPassword !== data.confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+};
+
 export const validateRegisterForm = (data: RegisterData) => {
   const errors: ValidationErrors = {};
   

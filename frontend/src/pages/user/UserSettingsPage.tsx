@@ -1,16 +1,46 @@
-import  { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { authService } from "../../services/auth.services";
+import axios from "axios";
+import API_BASE_URL from "../../config/api";
+import { validatePasswordChange } from "../../utils/validation";
 
 function UserSettingsPage() {
+  const { user, updateUser } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+  });
+
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // Password validation errors
+  const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
+
   const [notifications, setNotifications] = useState({
     bookingUpdates: true,
     newMessages: true,
     promotions: false,
     reminders: true,
   });
+  
   const [privacy, setPrivacy] = useState({
     showProfile: true,
     showRentals: false,
   });
+  
   const [activeTab, setActiveTab] = useState<"account" | "notifications" | "privacy" | "kyc">("account");
 
   const tabs: { id: typeof activeTab; label: string; icon: string }[] = [
@@ -19,6 +49,18 @@ function UserSettingsPage() {
     { id: "privacy", label: "Privacy", icon: "🔒" },
     { id: "kyc", label: "KYC Status", icon: "✅" },
   ];
+
+  // Load user data
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
+        address: user.address || '',
+      });
+    }
+  }, [user]);
 
   const Toggle = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
     <button
@@ -29,9 +71,167 @@ function UserSettingsPage() {
     </button>
   );
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [name]: value }));
+    // Clear error for this field when user types
+    if (passwordErrors[name]) {
+      setPasswordErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSaving(true);
+      setMessage(null);
+
+      const token = authService.getAccessToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      if (!user?.id) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await axios.put(
+        `${API_BASE_URL}/user/users/${user.id}`,
+        {
+          fullName: formData.fullName,
+          phoneNumber: formData.phoneNumber,
+          address: formData.address,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        if (updateUser) {
+          const updatedUser = {
+            ...user,
+            fullName: formData.fullName,
+            phoneNumber: formData.phoneNumber,
+            address: formData.address,
+          };
+          updateUser(updatedUser);
+        }
+
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setTimeout(() => setMessage(null), 3000);
+      }
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to update profile' 
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    // Validate password using the existing validation function
+    const { isValid, errors } = validatePasswordChange(passwordData);
+    setPasswordErrors(errors);
+
+    if (!isValid) {
+      setMessage({ type: 'error', text: 'Please fix the validation errors' });
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      setMessage(null);
+
+      const token = authService.getAccessToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      // Call the password change endpoint
+      const response = await axios.post(
+        `${API_BASE_URL}/user/change-password`,
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        setMessage({ type: 'success', text: 'Password updated successfully!' });
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setPasswordErrors({});
+        setTimeout(() => setMessage(null), 3000);
+      }
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to update password' 
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const isKycVerified = user?.kycStatus === "verified" || user?.kycStatus === "approved";
+
+  // Password requirements list
+  const passwordRequirements = [
+    { label: 'At least 6 characters', check: (p: string) => p.length >= 6 },
+    { label: 'At least one uppercase letter', check: (p: string) => /[A-Z]/.test(p) },
+    { label: 'At least one lowercase letter', check: (p: string) => /[a-z]/.test(p) },
+    { label: 'At least one number', check: (p: string) => /[0-9]/.test(p) },
+    { label: 'At least one special character (!@#$%^&*)', check: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
+  ];
+
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-10 mt-12">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-stone-600">Loading settings...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 mt-12">
       <h1 className="text-3xl font-bold text-stone-900 font-serif mb-8">Settings</h1>
+
+      {/* Success/Error Message */}
+      {message && (
+        <div className={`mb-6 p-4 rounded-xl ${
+          message.type === 'success' 
+            ? 'bg-green-50 border border-green-200 text-green-700'
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {message.text}
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Tabs */}
@@ -58,40 +258,151 @@ function UserSettingsPage() {
             <div className="p-6">
               <h2 className="font-bold text-stone-900 text-lg mb-6">Account Information</h2>
               <div className="space-y-4">
-                {[
-                  { label: "Full Name", value: "Sujal Rai", type: "text" },
-                  { label: "Email Address", value: "sujal@email.com", type: "email" },
-                  { label: "Phone Number", value: "+977-9812345678", type: "tel" },
-                  { label: "City", value: "Kathmandu", type: "text" },
-                ].map((f) => (
-                  <div key={f.label}>
-                    <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">{f.label}</label>
-                    <input
-                      type={f.type}
-                      defaultValue={f.value}
-                      className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
-                    />
-                  </div>
-                ))}
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input
+                    name="fullName"
+                    type="text"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    disabled
+                    className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-500 bg-stone-50 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-stone-400 mt-1">Email cannot be changed</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+                  <input
+                    name="phoneNumber"
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Address</label>
+                  <input
+                    name="address"
+                    type="text"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                  />
+                </div>
               </div>
-              <button className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
-                Save Changes
+              <button 
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </button>
 
               <div className="mt-8 pt-8 border-t border-stone-100">
                 <h3 className="font-bold text-stone-900 mb-4">Change Password</h3>
-                <div className="space-y-3">
-                  {["Current Password", "New Password", "Confirm Password"].map((f) => (
-                    <input
-                      key={f}
-                      type="password"
-                      placeholder={f}
-                      className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
-                    />
-                  ))}
+                
+                {/* Password Requirements */}
+                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-xs font-semibold text-amber-800 mb-2">Password Requirements:</p>
+                  <ul className="space-y-1">
+                    {passwordRequirements.map((req, index) => {
+                      const isMet = req.check(passwordData.newPassword);
+                      return (
+                        <li key={index} className="flex items-center gap-2 text-xs">
+                          <span className={isMet ? 'text-green-600' : 'text-amber-600'}>
+                            {isMet ? '✓' : '○'}
+                          </span>
+                          <span className={isMet ? 'text-green-700' : 'text-amber-700'}>
+                            {req.label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
-                <button className="mt-4 border border-stone-900 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-stone-900 hover:text-white transition-colors text-sm">
-                  Update Password
+
+                <div className="space-y-3">
+                  <div>
+                    <input
+                      name="currentPassword"
+                      type="password"
+                      placeholder="Current Password"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${
+                        passwordErrors.currentPassword 
+                          ? 'border-red-400 focus:border-red-400 focus:ring-red-100' 
+                          : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
+                      }`}
+                    />
+                    {passwordErrors.currentPassword && (
+                      <p className="text-xs text-red-500 mt-1">{passwordErrors.currentPassword}</p>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      name="newPassword"
+                      type="password"
+                      placeholder="New Password"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${
+                        passwordErrors.newPassword 
+                          ? 'border-red-400 focus:border-red-400 focus:ring-red-100' 
+                          : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
+                      }`}
+                    />
+                    {passwordErrors.newPassword && (
+                      <p className="text-xs text-red-500 mt-1">{passwordErrors.newPassword}</p>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="Confirm Password"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${
+                        passwordErrors.confirmPassword 
+                          ? 'border-red-400 focus:border-red-400 focus:ring-red-100' 
+                          : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
+                      }`}
+                    />
+                    {passwordErrors.confirmPassword && (
+                      <p className="text-xs text-red-500 mt-1">{passwordErrors.confirmPassword}</p>
+                    )}
+                  </div>
+                </div>
+                <button 
+                  onClick={handleUpdatePassword}
+                  disabled={isChangingPassword}
+                  className="mt-4 border border-stone-900 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-stone-900 hover:text-white transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isChangingPassword ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
                 </button>
               </div>
             </div>
@@ -160,30 +471,58 @@ function UserSettingsPage() {
           {activeTab === "kyc" && (
             <div className="p-6">
               <h2 className="font-bold text-stone-900 text-lg mb-6">KYC Verification Status</h2>
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-5 flex items-start gap-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white text-lg shrink-0">
-                  ✓
+              <div className={`rounded-2xl p-5 flex items-start gap-4 mb-6 ${
+                isKycVerified 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-yellow-50 border border-yellow-200'
+              }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shrink-0 ${
+                  isKycVerified ? 'bg-green-500' : 'bg-yellow-500'
+                }`}>
+                  {isKycVerified ? '✓' : '⏳'}
                 </div>
                 <div>
-                  <p className="font-bold text-green-800">Fully Verified</p>
-                  <p className="text-sm text-green-600 mt-0.5">Your account is verified and ready to rent items.</p>
-                  <p className="text-xs text-green-500 mt-1">Verified on March 15, 2024</p>
+                  <p className={`font-bold ${
+                    isKycVerified ? 'text-green-800' : 'text-yellow-800'
+                  }`}>
+                    {isKycVerified ? 'Fully Verified' : 'Verification Pending'}
+                  </p>
+                  <p className={`text-sm mt-0.5 ${
+                    isKycVerified ? 'text-green-600' : 'text-yellow-600'
+                  }`}>
+                    {isKycVerified 
+                      ? 'Your account is verified and ready to rent items.' 
+                      : 'Please complete KYC verification to unlock all features.'}
+                  </p>
+                  {user?.createdAt && (
+                    <p className={`text-xs mt-1 ${
+                      isKycVerified ? 'text-green-500' : 'text-yellow-500'
+                    }`}>
+                      {isKycVerified 
+                        ? `Verified on ${new Date(user.createdAt).toLocaleDateString()}`
+                        : 'Submit your documents for verification'}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-3">
                 {[
-                  { label: "Citizenship / National ID", status: "verified", icon: "🪪" },
-                  { label: "Selfie Verification", status: "verified", icon: "🤳" },
-                  { label: "Phone Number", status: "verified", icon: "📱" },
-                  { label: "Email Address", status: "verified", icon: "📧" },
+                  { label: "Citizenship / National ID", status: isKycVerified ? "verified" : "pending", icon: "🪪" },
+                  { label: "Selfie Verification", status: isKycVerified ? "verified" : "pending", icon: "🤳" },
+                  { label: "Phone Number", status: user?.phoneNumber ? "verified" : "pending", icon: "📱" },
+                  { label: "Email Address", status: user?.email ? "verified" : "pending", icon: "📧" },
                 ].map((d) => (
                   <div key={d.label} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{d.icon}</span>
                       <span className="text-sm font-medium text-stone-700">{d.label}</span>
                     </div>
-                    <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">
-                      ✓ Verified
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                      d.status === "verified"
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {d.status === "verified" ? '✓ Verified' : '⏳ Pending'}
                     </span>
                   </div>
                 ))}
@@ -195,4 +534,5 @@ function UserSettingsPage() {
     </div>
   );
 }
+
 export default UserSettingsPage;

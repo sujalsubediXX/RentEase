@@ -127,23 +127,22 @@ async getCurrentUser(): Promise<User | null> {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    const raw = response.data;
+    const data = response.data;
 
-
-    const data = raw?.user ?? raw;
-
-    if (!data?._id && !data?.id) return null;
+    if (!data?.id && !data?._id) return null;
 
     return {
-      id: data._id ?? data.id,
+      id: data.id ?? data._id,
       fullName: data.fullName,
       email: data.email,
       phoneNumber: data.phoneNumber,
       role: data.role,
-      profileImage:data.profileImage,
+      profileImage: data.profileImage,
       address: data.address,
-      isKycVerified: data.kycStatus === "approved",
-      createdAt: new Date(data.createdAt),
+      isVerified: data.isVerified,
+      kycStatus: data.kycStatus,
+      isKycVerified: data.kycStatus === "verified" || data.kycStatus === "approved",
+      createdAt: data.createdAt,
     };
   } catch (err: any) {
     if (err?.response?.status === 401) {
@@ -153,27 +152,52 @@ async getCurrentUser(): Promise<User | null> {
   }
 }
 
-async getProfile(): Promise<any> {
+// Add these new methods to fetch rentals, listings, wishlist
+async getUserRentals(): Promise<any[]> {
   const token = this.getAccessToken();
-  if (!token) {
-    throw new Error("No token found");
-  }
+  if (!token) return [];
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/profile`, {
+    const response = await axios.get(`${API_BASE_URL}/user/me/rentals`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
-    return response.data.data; // Returns { user, profile }
-  } catch (error: any) {
-    if (error?.response?.status === 401) {
-      this.clearTokens();
-    }
-    throw new Error(
-      error?.response?.data?.message || "Failed to fetch profile"
-    );
+    return response.data.rentals || [];
+  } catch (error) {
+    console.error("Error fetching rentals:", error);
+    return [];
   }
 }
+
+async getUserListings(): Promise<any[]> {
+  const token = this.getAccessToken();
+  if (!token) return [];
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/user/me/listings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data.listings || [];
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    return [];
+  }
+}
+
+async getUserWishlist(): Promise<any[]> {
+  const token = this.getAccessToken();
+  if (!token) return [];
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/user/me/wishlist`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data.wishlist || [];
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    return [];
+  }
+}
+
   // -------------------------
   // TOKEN GETTER
   // -------------------------
