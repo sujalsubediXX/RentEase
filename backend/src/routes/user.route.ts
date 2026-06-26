@@ -7,17 +7,24 @@ import {
   updateUser,
   deleteUser,
   getAllUsers,
-  getMe
+  getMe,
+  getUserRentals,    
+  getUserListings,   
+  getUserWishlist,
+  changePassword,
 } from "../controllers/user.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 const router = Router();
-
-
 router.get("/me", authMiddleware, getMe);
+
+router.get("/me/rentals", authMiddleware, getUserRentals);    
+router.get("/me/listings", authMiddleware, getUserListings);  
+router.get("/me/wishlist", authMiddleware, getUserWishlist); 
 router.post("/register", register);
 router.post("/login",loginUser);
 // Get all users
 router.get("/users", getAllUsers);
+router.post("/change-password", authMiddleware, changePassword);  
 
 // Get users by role
 router.get("/users/role/:role", getUsersByRole);

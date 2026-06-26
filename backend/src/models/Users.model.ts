@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema(
             type: String,
             enum: ['pending', 'verified', 'rejected', 'not_submitted'],
             default: 'not_submitted'
-        }
+        },
     },
     {
         timestamps: true
