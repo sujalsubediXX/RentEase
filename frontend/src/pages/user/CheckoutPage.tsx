@@ -4,7 +4,9 @@ import {
   ChevronLeft, Calendar, MapPin, CreditCard,
   User, Phone, ShieldCheck, ShoppingBag, Package
 } from 'lucide-react';
-
+import axios from 'axios';
+import API_BASE_URL from '../../config/api';
+import {authService} from '../../services/auth.services';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Shape of a single product coming from CategoryPage's "Rent Now" */
@@ -154,59 +156,106 @@ const CheckoutPage: React.FC = () => {
   }
 
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // Validate dates for single flow
-    if (checkoutType === 'single' && (!startDate || !endDate)) return;
+  // Validate dates for single flow
+  if (checkoutType === 'single' && (!startDate || !endDate)) {
+    alert('Please select rental dates');
+    return;
+  }
 
-    const orderData = {
-      type: checkoutType,
-      // normalise to a unified shape for the confirmation page
-      items:
-        checkoutType === 'single'
-          ? [
-              {
-                id: singleProduct!.id,
-                name: singleProduct!.name,
-                images: singleProduct!.images,
-                rentalPrice: singleProduct!.rentalPrice,
-                startDate,
-                endDate,
-                rentalDays: singleRentalDays,
-                quantity: 1,
-              },
-            ]
-          : cartItems.map((ci) => ({
-              id: ci.itemId._id,
-              name: ci.itemId.title,
-              images: [],
-              rentalPrice: ci.itemId.price,
-              startDate: ci.startDate,
-              endDate: ci.endDate,
-              rentalDays: ci.rentalDays,
-              quantity: ci.quantity,
-            })),
-      customer: { fullName, phoneNumber, deliveryAddress },
-      paymentMethod,
-      subtotal,
-      securityDeposit,
-      deliveryFee,
-      totalAmount,
+  // Prepare order data
+  const orderData = {
+    type: checkoutType,
+    items: checkoutType === 'single'
+      ? [
+          {
+            id: singleProduct!.id,
+            startDate: startDate,
+            endDate: endDate,
+            rentalDays: singleRentalDays,
+            quantity: 1
+          }
+        ]
+      : cartItems.map((ci) => ({
+          id: ci.itemId._id,
+          startDate: ci.startDate,
+          endDate: ci.endDate,
+          rentalDays: ci.rentalDays,
+          quantity: ci.quantity
+        })),
+    customer: { 
+      fullName, 
+      phoneNumber, 
+      deliveryAddress 
+    },
+    paymentMethod,
+    subtotal,
+    securityDeposit,
+    deliveryFee,
+    totalAmount,
+  };
+
+  if (paymentMethod === 'digital') {
+    const productData = {
+      id: singleProduct!.id,
+      name: singleProduct!.name,
+      rentalPrice: singleProduct!.rentalPrice,
+      images: singleProduct!.images || [],
+      brand: singleProduct!.brand || 'RentEase',
+      location: singleProduct!.location || 'Kathmandu'
     };
 
-    if (paymentMethod === 'digital') {
-      navigate('/confirm-booking', { state: orderData });
-      return;
-    }
+    navigate('/confirm-booking', { 
+      state: { 
+        product: productData,
+        items: orderData.items,
+        startDate: startDate,
+        endDate: endDate,
+        fullName: fullName,
+        phoneNumber: phoneNumber,
+        deliveryAddress: deliveryAddress,
+        rentalDays: singleRentalDays,
+        totalAmount: totalAmount,
+        subtotal: subtotal,
+        securityDeposit: securityDeposit,
+        deliveryFee: deliveryFee,
+        customer: { fullName, phoneNumber, deliveryAddress },
+        paymentMethod: paymentMethod,
+        type: checkoutType
+      } 
+    });
+    return;
+  }
 
+  // COD flow - call backend directly
+  try {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert('Order placed successfully!');
+    const token = authService.getAccessToken();
+    
+    const response = await axios.post(
+      `${API_BASE_URL}/rentals/create`,
+      orderData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (response.data.success) {
+      alert('Order placed successfully! Check your rentals.');
       navigate('/');
-    }, 1500);
-  };
+    }
+  } catch (error: any) {
+    console.error('Error placing order:', error);
+    alert(error.response?.data?.message || 'Failed to place order');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // ── Render ───────────────────────────────────────────────────────────────
 

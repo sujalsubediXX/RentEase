@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Calendar, MapPin, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 interface Product {
     id: string;
@@ -11,14 +14,39 @@ interface Product {
     location: string;
 }
 
-interface CheckoutData {
-    product: Product;
+interface OrderItem {
+    id: string;
+    name: string;
+    rentalPrice: number;
+    images: string[];
     startDate: string;
     endDate: string;
+    rentalDays: number;
+    quantity: number;
+    location?: string;
+    brand?: string;
+}
+
+interface CheckoutData {
+    product?: Product;
+    items?: OrderItem[];
+    startDate?: string;
+    endDate?: string;
     fullName: string;
     phoneNumber: string;
     deliveryAddress: string;
-    rentalDays: number;
+    rentalDays?: number;
+    totalAmount?: number;
+    subtotal?: number;
+    securityDeposit?: number;
+    deliveryFee?: number;
+    customer?: {
+        fullName: string;
+        phoneNumber: string;
+        deliveryAddress: string;
+    };
+    paymentMethod?: string;
+    type?: 'single' | 'cart';
 }
 
 interface EsewaPayload {
@@ -38,64 +66,175 @@ interface EsewaPayload {
 const ConfirmBookingPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const checkoutData = location.state as CheckoutData;
 
     const [loading, setLoading] = useState<boolean>(false);
     const [esewaPayload, setEsewaPayload] = useState<EsewaPayload | null>(null);
     const [gatewayUrl, setGatewayUrl] = useState<string>('');
+    const [creatingRental, setCreatingRental] = useState<boolean>(false);
+    const [rentalIds, setRentalIds] = useState<string[]>([]);
 
     // Fallback protection guard routing patterns
     useEffect(() => {
-        if (!checkoutData || !checkoutData.product) {
+        if (!checkoutData || (!checkoutData.product && !checkoutData.items)) {
             navigate('/');
         }
     }, [checkoutData, navigate]);
 
-    if (!checkoutData) return null;
+    if (!checkoutData || (!checkoutData.product && !checkoutData.items)) {
+        return null;
+    }
 
-    const { product, startDate, endDate, fullName, phoneNumber, deliveryAddress, rentalDays } = checkoutData;
+    // ── Get the first product for display (for single item checkout) ──
+    const product = checkoutData.product || (checkoutData.items && checkoutData.items[0]);
+    
+    // ── Use data from checkoutData or fallback ──
+    const startDate = checkoutData.startDate || (checkoutData.items && checkoutData.items[0]?.startDate) || '';
+    const endDate = checkoutData.endDate || (checkoutData.items && checkoutData.items[0]?.endDate) || '';
+    const fullName = checkoutData.customer?.fullName || checkoutData.fullName || user?.fullName || '';
+    const phoneNumber = checkoutData.customer?.phoneNumber || checkoutData.phoneNumber || user?.phoneNumber || '';
+    const deliveryAddress = checkoutData.customer?.deliveryAddress || checkoutData.deliveryAddress || user?.address || '';
+    const rentalDays = checkoutData.rentalDays || (checkoutData.items && checkoutData.items[0]?.rentalDays) || 1;
 
-    // Breakdown price computations structures
+    if (!product) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-500">No product data found. Please go back and try again.</p>
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-xl"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Price calculations ──
     const subtotal = product.rentalPrice * rentalDays;
     const securityDeposit = Math.round(product.rentalPrice * 1.5);
     const deliveryCharge = 150;
     const grandTotal = subtotal + securityDeposit + deliveryCharge;
 
-    const handleBookingConfirmation = async () => {
+    // ── Create rental before payment ──
+    const createRentalAndInitiatePayment = async () => {
+        try {
+            setCreatingRental(true);
+
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Please login again');
+                return;
+            }
+
+            // Prepare order data
+            const orderData = {
+                items: checkoutData.items || [
+                    {
+                        id: product.id,
+                        startDate: startDate,
+                        endDate: endDate,
+                        rentalDays: rentalDays,
+                        quantity: 1
+                    }
+                ],
+                customer: {
+                    fullName: fullName,
+                    phoneNumber: phoneNumber,
+                    deliveryAddress: deliveryAddress
+                },
+                paymentMethod: 'digital',
+                subtotal: subtotal,
+                securityDeposit: securityDeposit,
+                deliveryFee: deliveryCharge,
+                totalAmount: grandTotal,
+                type: checkoutData.type || 'single'
+            };
+
+            // Create rental
+            const response = await axios.post(
+                `${API_BASE_URL}/rentals/create`,
+                orderData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                const rentalIds = response.data.data.rentalIds;
+                setRentalIds(rentalIds);
+                
+                // Now initiate payment
+                await initiatePayment();
+            } else {
+                alert('Failed to create rental. Please try again.');
+                setCreatingRental(false);
+            }
+        } catch (error: any) {
+            console.error('Error creating rental:', error);
+            alert(error.response?.data?.message || 'Failed to create rental');
+            setCreatingRental(false);
+        }
+    };
+
+    // ── Initiate eSewa Payment ──
+    const initiatePayment = async () => {
         setLoading(true);
         try {
-            // 1. Fetch encrypted parameters credentials maps securely from API Backend 
-            const response = await fetch('http://localhost:3000/api/payment/esewa/initiate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Please login again');
+                setLoading(false);
+                return;
+            }
+
+            const response = await axios.post(
+                `${API_BASE_URL}/payment/initiate`,
+                {
                     amount: subtotal,
                     tax_amount: 0,
                     delivery_charge: deliveryCharge,
                     security_deposit: securityDeposit,
-                }),
-            });
+                    rentalIds: rentalIds
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
 
-            const result = await response.json();
+            const result = response.data;
 
             if (result.status === 'success') {
                 setEsewaPayload(result.payment_payload);
                 setGatewayUrl(result.gateway_url);
 
-                // 2. Delay slightly to guarantee DOM rendering registers the hidden form elements 
+                // Submit the form to eSewa
                 setTimeout(() => {
                     const form = document.getElementById('esewa-form') as HTMLFormElement;
                     if (form) form.submit();
                 }, 300);
             } else {
-                alert('Failed to initialize connection interface with eSewa node.');
+                alert('Failed to initialize payment with eSewa.');
                 setLoading(false);
             }
-        } catch (err) {
-            console.error(err);
-            alert('Network connectivity loss detected during processing transaction.');
+        } catch (err: any) {
+            console.error('Payment initiation error:', err);
+            alert(err.response?.data?.message || 'Network error during payment processing.');
             setLoading(false);
         }
+    };
+
+    const handleBookingConfirmation = async () => {
+        await createRentalAndInitiatePayment();
     };
 
     return (
@@ -124,9 +263,15 @@ const ConfirmBookingPage: React.FC = () => {
                     <div className="p-5 space-y-4">
                         {/* Context Summary Meta Item Card Row Component */}
                         <div className="flex gap-4 pb-4 border-b border-stone-100">
-                            <img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded-xl border" />
+                            {product.images && product.images.length > 0 ? (
+                                <img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded-xl border" />
+                            ) : (
+                                <div className="w-16 h-16 rounded-xl bg-amber-100 flex items-center justify-center text-2xl">
+                                    📦
+                                </div>
+                            )}
                             <div>
-                                <span className="text-[10px] font-bold text-amber-600 uppercase">{product.brand}</span>
+                                <span className="text-[10px] font-bold text-amber-600 uppercase">{product.brand || 'RentEase'}</span>
                                 <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">{product.name}</h3>
                                 <p className="text-xs font-bold text-stone-900 mt-1">Rs. {product.rentalPrice.toLocaleString()} / day</p>
                             </div>
@@ -145,7 +290,7 @@ const ConfirmBookingPage: React.FC = () => {
                                 <span className="text-stone-400 font-medium block">DELIVERY LOGISTICS DESTINATION</span>
                                 <div className="flex items-center gap-1.5 font-semibold text-stone-700 mt-1">
                                     <MapPin size={13} className="text-amber-500" />
-                                    <span className="truncate">{deliveryAddress}, {product.location}</span>
+                                    <span className="truncate">{deliveryAddress}, {product.location || 'Kathmandu'}</span>
                                 </div>
                             </div>
                         </div>
@@ -192,10 +337,15 @@ const ConfirmBookingPage: React.FC = () => {
                 {/* Primary Action Button Gate Triggers */}
                 <button
                     onClick={handleBookingConfirmation}
-                    disabled={loading}
+                    disabled={loading || creatingRental}
                     className="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {loading ? (
+                    {creatingRental ? (
+                        <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Creating Rental...
+                        </>
+                    ) : loading ? (
                         <>
                             <Loader2 size={16} className="animate-spin" />
                             Securing Gateway Channel...
