@@ -1,13 +1,12 @@
 const allowedRoles = ["renter", "owner", "admin"] as const;
 type AllowedRole = (typeof allowedRoles)[number];
- // Import the Rental model (assuming you have one)
-    // You'll need to import this at the top
+
 import Rental from '../models/Rentels.model.ts';
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/Users.model.ts";
-
+import Item from '../models/items.model.ts';
 export const getMe = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
@@ -178,7 +177,7 @@ export const getUserListings = async (req: Request, res: Response) => {
     }
 
     // Import the Items model
-    const Item = require('../models/items.model').default;
+  
     
     const listings = await Item.find({ ownerId: userId });
 

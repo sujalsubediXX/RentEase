@@ -1,19 +1,16 @@
 import type { Request, Response } from "express";
-import mongoose from "mongoose";
 import Rentals from "../models/Rentels.model.ts";
 import Item from "../models/items.model.ts";
 import Cart from "../models/Cart.ts";
 
-// ─── Create Rental / Order ──────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Create Rental / Order
+// ───────────────────────────────────────────────────────────────
 
 export const createRental = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const userId = (req as any).user?.id;
-    
-    // ── Destructure with proper types ──
+
     const {
       items = [],
       customer,
@@ -22,7 +19,7 @@ export const createRental = async (req: Request, res: Response) => {
       securityDeposit,
       deliveryFee,
       totalAmount,
-      type
+      type,
     }: {
       items: Array<{
         id: string;
@@ -36,70 +33,67 @@ export const createRental = async (req: Request, res: Response) => {
         phoneNumber: string;
         deliveryAddress: string;
       };
-      paymentMethod: 'cod' | 'digital';
+      paymentMethod: "cod" | "digital";
       subtotal: number;
       securityDeposit: number;
       deliveryFee: number;
       totalAmount: number;
-      type: 'single' | 'cart';
+      type: "single" | "cart";
     } = req.body;
 
     if (!userId) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(401).json({
         success: false,
-        message: "Unauthorized"
+        message: "Unauthorized",
       });
     }
 
-    // ── Validate required fields ──
-    if (!items || items.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!items.length) {
       return res.status(400).json({
         success: false,
-        message: "No items to rent"
+        message: "No items selected for rental",
       });
     }
 
-    if (!customer?.fullName || !customer?.phoneNumber || !customer?.deliveryAddress) {
-      await session.abortTransaction();
-      session.endSession();
+    if (
+      !customer?.fullName ||
+      !customer?.phoneNumber ||
+      !customer?.deliveryAddress
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Customer details are required"
+        message: "Customer details are required",
       });
     }
 
-    // ── Validate each item exists and is available ──
     const rentalItems: any[] = [];
-    let totalPrice = 0;
+    let calculatedSubtotal = 0;
+
+    // ---------------------------------------------------
+    // Validate Items
+    // ---------------------------------------------------
 
     for (const item of items) {
-      const itemData = await Item.findById(item.id as string).session(session);
-      
+      const itemData = await Item.findById(item.id);
+
       if (!itemData) {
-        await session.abortTransaction();
-        session.endSession();
         return res.status(404).json({
           success: false,
-          message: `Item ${item.id} not found`
+          message: `Item ${item.id} not found`,
         });
       }
 
       if (itemData.availability !== "available") {
-        await session.abortTransaction();
-        session.endSession();
         return res.status(400).json({
           success: false,
-          message: `Item "${itemData.title}" is not available for rent`
+          message: `"${itemData.title}" is not available for rent`,
         });
       }
 
-      // Calculate item total
-      const itemTotal = itemData.price * item.rentalDays * item.quantity;
-      totalPrice += itemTotal;
+      const itemTotal =
+        itemData.price * item.rentalDays * item.quantity;
+
+      calculatedSubtotal += itemTotal;
 
       rentalItems.push({
         itemId: itemData._id,
@@ -109,76 +103,111 @@ export const createRental = async (req: Request, res: Response) => {
         quantity: item.quantity,
         startDate: item.startDate,
         endDate: item.endDate,
-        securityDeposit: itemData.securityDeposit || Math.round(itemData.price * 1.5)
+        securityDeposit:
+          itemData.securityDeposit ??
+          Math.round(itemData.price * 1.5),
       });
     }
 
-    // ── Create rental records ──
-    const createdRentals: any[] = [];
+    // ---------------------------------------------------
+    // Create Rentals
+    // ---------------------------------------------------
+
+    const createdRentals = [];
+
     for (const item of rentalItems) {
       const rental = new Rentals({
         itemId: item.itemId,
-        userId: userId,
+        userId,
+
         startDate: new Date(item.startDate),
         returnDate: new Date(item.endDate),
-        totalPrice: item.price * item.rentalDays * item.quantity,
-        status: paymentMethod === 'cod' ? 'confirmed' : 'pending',
+
+        totalPrice:
+          item.price *
+          item.rentalDays *
+          item.quantity,
+
+        status:
+          paymentMethod === "cod"
+            ? "confirmed"
+            : "pending",
+
         customerDetails: {
           fullName: customer.fullName,
           phoneNumber: customer.phoneNumber,
-          deliveryAddress: customer.deliveryAddress
+          deliveryAddress: customer.deliveryAddress,
         },
-        paymentMethod: paymentMethod,
+
+        paymentMethod,
+
         rentalDays: item.rentalDays,
         quantity: item.quantity,
-        securityDeposit: item.securityDeposit
+
+        securityDeposit: item.securityDeposit,
       });
 
-      await rental.save({ session });
+      await rental.save();
+
       createdRentals.push(rental);
     }
 
-    // ── Remove items from cart if type is 'cart' ──
-    if (type === 'cart') {
-      const cart = await Cart.findOne({ userId }).session(session);
+    // ---------------------------------------------------
+    // Remove rented items from cart
+    // ---------------------------------------------------
+
+    if (type === "cart") {
+      const cart = await Cart.findOne({ userId });
+
       if (cart) {
-        // ✅ FIX: Properly typed item IDs
-        const itemIds = items.map((item) => new mongoose.Types.ObjectId(item.id as string));
-        cart.items = cart.items.filter(
-          (cartItem) => !itemIds.some((id) => id.equals(cartItem.itemId))
-        );
-        await cart.save({ session });
+        cart.items = cart.items.filter((cartItem) => {
+          return !items.some(
+            (selected) =>
+              selected.id === cartItem.itemId.toString()
+          );
+        });
+
+        await cart.save();
       }
     }
-
-    // ── Commit transaction ──
-    await session.commitTransaction();
-    session.endSession();
 
     return res.status(201).json({
       success: true,
       message: "Rental created successfully",
       data: {
         rentals: createdRentals,
-        totalAmount: totalAmount || totalPrice + (securityDeposit || 0) + (deliveryFee || 0),
-        subtotal: totalPrice,
-        securityDeposit: securityDeposit || 0,
-        deliveryFee: deliveryFee || 0,
-        rentalIds: createdRentals.map((r: any) => r._id)
-      }
-    });
 
+        subtotal:
+          subtotal ?? calculatedSubtotal,
+
+        securityDeposit:
+          securityDeposit ?? 0,
+
+        deliveryFee:
+          deliveryFee ?? 0,
+
+        totalAmount:
+          totalAmount ??
+          calculatedSubtotal +
+            (securityDeposit ?? 0) +
+            (deliveryFee ?? 0),
+
+        rentalIds: createdRentals.map(
+          (r: any) => r._id
+        ),
+      },
+    });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error creating rental:", error);
+
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to create rental"
+      message:
+        error.message ||
+        "Failed to create rental",
     });
   }
 };
-
 // ─── Get Checkout Summary ──────────────────────────────────────────────────
 
 export const getCheckoutSummary = async (req: Request, res: Response) => {
