@@ -10,6 +10,8 @@ import categoryrouter from "./routes/categories.route.ts"
 import itemrouter from "./routes/items.route.ts"
 import paymentroute from "./routes/payment.route.ts"
 import cartroute from "./routes/cart.route.ts"
+import rentalrouter from "./routes/rental.route.ts"; 
+
 import path from "path";
 import wishlistroute from "./routes/wishlist.route.ts"
 const PORT: number = Number(process.env.PORT) ;
@@ -33,6 +35,8 @@ app.use("/api/items", itemrouter)
 app.use("/api/payment", paymentroute)
 app.use("/api/cart", cartroute)
 app.use("/api/wishlist", wishlistroute)
+app.use("/api/rentals", rentalrouter);
+
 
 
 app.listen(PORT, () => {

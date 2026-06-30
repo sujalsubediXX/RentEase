@@ -1,8 +1,16 @@
-import { initiatePayment,verifyPayment } from "../controllers/payment.controller.ts";
-import express from "express";
-const router = express.Router();
+import { Router } from "express";
+import { 
+  initiatePayment,
+  verifyPayment
+} from "../controllers/payment.controller.ts";
+import { authMiddleware } from "../middleware/auth.middleware.ts";
 
+const router = Router();
 
-router.post("/esewa/verify-payment", verifyPayment);
-router.post("/esewa/initiate", initiatePayment);
+// Public route for eSewa to call back
+router.post("/verify", verifyPayment);
+
+// Protected route for initiating payment
+router.post("/initiate", authMiddleware, initiatePayment);
+
 export default router;

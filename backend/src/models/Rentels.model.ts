@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+
 const rentalSchema = new mongoose.Schema({
   itemId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -24,8 +25,40 @@ const rentalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending','confirmed', 'ongoing','completed', 'cancelled','rejected'],
+    enum: ['pending', 'confirmed', 'ongoing', 'completed', 'cancelled', 'rejected'],
     default: 'pending'
+  },
+  customerDetails: {
+    fullName: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
+    deliveryAddress: { type: String, required: true }
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['cod', 'digital'],
+    required: true
+  },
+  paymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Payments'
+  },
+  paymentDetails: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  rentalDays: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  quantity: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  securityDeposit: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
