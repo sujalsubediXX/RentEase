@@ -20,6 +20,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ size
   { href: "/admin/owners", label: "Owners", icon: UserCheck },
   { href: "/admin/listings", label: "Listings", icon: Package },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck, badge: 3 },
+  { href: "/admin/kycreview", label: "KYC Review", icon: ShieldCheck },
   { href: "/admin/revenue", label: "Revenue", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/messages", label: "Messages", icon: MessageSquare, badge: 8 },
@@ -48,6 +49,7 @@ export const AdminSidebar = () => {
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => (
           <Link
+          key={href}
             to={href}
             onClick={() => setActiveNav(href)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative

@@ -49,7 +49,8 @@ import ConfirmBookingPage from "./pages/user/ConfirmBookingPage";
 import PaymentSuccessPage from "./pages/user/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/user/PaymentFailurePage";
 import Unauthorized from "./pages/Unauthorized";
-
+import Kycviewpage from "./pages/admin/Kycreviewpage";
+import KYCDetailView from "./pages/admin/Kycdetailview";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -167,6 +168,8 @@ const router = createBrowserRouter([
       { path: "/admin/bookings", element: <BookingsPage /> },
       { path: "/admin/revenue", element: <RevenuePage /> },
       { path: "/admin/reviews", element: <ReviewsPage /> },
+      { path: "/admin/kycreview", element: <Kycviewpage /> },
+      { path: "/admin/kyc/:id", element: <KYCDetailView /> },
       { path: "/admin/messages", element: <MessagesPage /> },
       { path: "/admin/settings", element: <SettingsPage /> },
     ],

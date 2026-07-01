@@ -209,47 +209,132 @@ export const getMyKYCStatus = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
+ 
+type KycStatus = "pending" | "under review" | "verified" | "rejected";
+type KycQueryStatus = "pending" | "under_review" | "verified" | "rejected";
 
-// GET /api/kyc/admin/pending
-export const getPendingKYCs = async (req: Request, res: Response) => {
+const VALID_STATUS_FILTERS: (KycQueryStatus | "all")[] = ["all", "pending", "under_review", "verified", "rejected"];
+const STATUS_QUERY_TO_DB_STATUS: Record<KycQueryStatus, KycStatus> = {
+  pending: "pending",
+  under_review: "under review",
+  verified: "verified",
+  rejected: "rejected",
+};
+ 
+// GET /api/kyc/admin?status=pending|under_review|verified|rejected|all
+export const getAllKYCs = async (req: Request, res: Response) => {
   try {
-    const kycs = await KYC.find({ status: "under review" })
+    const statusQuery = (req.query.status as string) || "all";
+ 
+    if (!VALID_STATUS_FILTERS.includes(statusQuery as KycQueryStatus | "all")) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status filter. Use one of: ${VALID_STATUS_FILTERS.join(", ")}`,
+      });
+    }
+ 
+    const status = statusQuery === "all" ? "all" : STATUS_QUERY_TO_DB_STATUS[statusQuery as KycQueryStatus];
+    const filter = status === "all" ? {} : { status };
+ 
+    const kycs = await KYC.find(filter)
       .populate("user", "name email")
-      .sort({ submittedAt: 1 });
-    return res.status(200).json({ success: true, data: kycs });
+      .select(
+        "user personalInfo.fullName personalInfo.phone documentInfo.docType status submittedAt reviewedAt"
+      )
+      .sort({ submittedAt: -1 });
+ 
+    // Counts per status power the tab badges on the list page without a second round trip
+    const counts = await KYC.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+    const countsByStatus: Record<string, number> = {
+      pending: 0,
+      under_review: 0,
+      verified: 0,
+      rejected: 0,
+    };
+    counts.forEach((c) => {
+      const statusKey = c._id === "under review" ? "under_review" : c._id;
+      countsByStatus[statusKey] = c.count;
+    });
+ 
+    return res.status(200).json({
+      success: true,
+      data: kycs,
+      counts: {
+        ...countsByStatus,
+        all: Object.values(countsByStatus).reduce((a, b) => a + b, 0),
+      },
+    });
   } catch (err) {
-    console.error("Get pending KYCs error:", err);
+    console.error("Get all KYCs error:", err);
     return res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
-
+ 
+// GET /api/kyc/admin/:id
+// Auto-promotes a "pending" submission to "under_review" the first time an
+// admin opens it — gives a live signal that someone's actively looking at it.
+export const getKYCById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+ 
+    const kyc = await KYC.findById(id).populate("user", "name email phone");
+    if (!kyc) {
+      return res.status(404).json({ success: false, message: "KYC submission not found" });
+    }
+ 
+    if (kyc.status === "pending") {
+      kyc.status = "under review";
+      await kyc.save();
+    }
+ 
+    return res.status(200).json({ success: true, data: kyc });
+  } catch (err) {
+    console.error("Get KYC by id error:", err);
+    return res.status(500).json({ success: false, message: "Something went wrong" });
+  }
+};
+ 
 // PATCH /api/kyc/admin/:id/review
 export const reviewKYC = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { decision, rejectionReason } = req.body; // decision: "verified" | "rejected"
-
+    console.log(id)
+    const { decision, rejectionReason } = req.body as { decision: string; rejectionReason?: string };
+    console.log(decision,rejectionReason)
+ 
     if (!["verified", "rejected"].includes(decision)) {
       return res.status(400).json({ success: false, message: "Decision must be 'verified' or 'rejected'" });
     }
-    if (decision === "rejected" && !rejectionReason) {
-      return res.status(400).json({ success: false, message: "Rejection reason is required" });
+    if (decision === "rejected" && !rejectionReason?.trim()) {
+      return res.status(400).json({ success: false, message: "A rejection reason is required" });
     }
-
+ 
     const kyc = await KYC.findById(id);
     if (!kyc) {
       return res.status(404).json({ success: false, message: "KYC submission not found" });
     }
-
-    kyc.status = decision;
-    kyc.rejectionReason = decision === "rejected" ? rejectionReason : undefined;
+    if (kyc.status === "verified" || kyc.status === "rejected") {
+      return res.status(400).json({
+        success: false,
+        message: `This submission was already ${kyc.status === "verified" ? "approved" : "rejected"}`,
+      });
+    }
+ 
+    kyc.status = decision as "verified" | "rejected";
+    kyc.rejectionReason = decision === "rejected" ? rejectionReason!.trim() : null;
     kyc.reviewedAt = new Date();
-    kyc.reviewedBy = req.user._id;
+    kyc.reviewedBy = req.user!.id;
     await kyc.save();
-
+ 
     await User.findByIdAndUpdate(kyc.user, { kycStatus: decision });
-
-    return res.status(200).json({ success: true, message: `KYC ${decision}`, data: kyc });
+ console.log(kyc)
+    return res.status(200).json({
+      success: true,
+      message: decision === "verified" ? "KYC approved" : "KYC rejected",
+      data: kyc,
+    });
   } catch (err) {
     console.error("Review KYC error:", err);
     return res.status(500).json({ success: false, message: "Something went wrong" });
