@@ -300,9 +300,7 @@ export const getKYCById = async (req: Request, res: Response) => {
 export const reviewKYC = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    console.log(id)
     const { decision, rejectionReason } = req.body as { decision: string; rejectionReason?: string };
-    console.log(decision,rejectionReason)
  
     if (!["verified", "rejected"].includes(decision)) {
       return res.status(400).json({ success: false, message: "Decision must be 'verified' or 'rejected'" });
@@ -325,11 +323,9 @@ export const reviewKYC = async (req: Request, res: Response) => {
     kyc.status = decision as "verified" | "rejected";
     kyc.rejectionReason = decision === "rejected" ? rejectionReason!.trim() : null;
     kyc.reviewedAt = new Date();
-    kyc.reviewedBy = req.user!.id;
     await kyc.save();
  
     await User.findByIdAndUpdate(kyc.user, { kycStatus: decision });
- console.log(kyc)
     return res.status(200).json({
       success: true,
       message: decision === "verified" ? "KYC approved" : "KYC rejected",

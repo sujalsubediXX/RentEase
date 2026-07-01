@@ -667,7 +667,10 @@ export default function KYCVerificationForm() {
         setSubmitError(data.message || "Something went wrong while submitting your KYC. Please try again.");
         return;
       }
-
+   setTimeout(()=>{
+                  navigate("/profile")
+                },4000)
+        
       setSubmitted(true);
     } catch (err) {
       setSubmitError("Network error. Please check your connection and try again.");
@@ -713,15 +716,11 @@ export default function KYCVerificationForm() {
         <div className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
           <div className="p-6 sm:p-8">
             {submitted ? (
-              <>
+         
                <SuccessScreen />
-
-              {
-                setTimeout(()=>{
-                  navigate("/profile")
-                },4000)
-              }
-              </>
+   
+             
+     
              
             ) : (
               <>

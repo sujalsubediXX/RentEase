@@ -154,8 +154,7 @@ export default function KYCDetailView() {
 
     try {
       const res = await axios.patch(`${API_BASE_URL}/kyc/admin/${id}/review`, {
-        decision,
-        ...(decision === "rejected" ? { rejectionReason: rejectionReason.trim() } : {}),
+    decision,rejectionReason
       });
       const data = res.data;
 

@@ -50,4 +50,4 @@ const kycVerificationSchema = new mongoose.Schema(
 
 
 
-export default mongoose.model("KYCVerification", kycVerificationSchema)
+export default mongoose.model("KYC", kycVerificationSchema)
