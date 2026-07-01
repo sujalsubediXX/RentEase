@@ -1,45 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Calendar, MapPin, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { ShieldCheck, Calendar, MapPin, CheckCircle, ArrowRight, Loader2, Package } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 
-interface Product {
-    id: string;
-    name: string;
-    rentalPrice: number;
-    images: string[];
-    brand: string;
-    location: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface OrderItem {
+/** A single line item, whether it came from single-item checkout or the cart */
+interface CheckoutItem {
     id: string;
     name: string;
-    rentalPrice: number;
+    price: number;
     images: string[];
     startDate: string;
     endDate: string;
     rentalDays: number;
     quantity: number;
+
     location?: string;
-    brand?: string;
 }
 
 interface CheckoutData {
-    product?: Product;
-    items?: OrderItem[];
-    startDate?: string;
-    endDate?: string;
+    items: CheckoutItem[];
     fullName: string;
     phoneNumber: string;
     deliveryAddress: string;
-    rentalDays?: number;
-    totalAmount?: number;
-    subtotal?: number;
-    securityDeposit?: number;
-    deliveryFee?: number;
+    totalAmount: number;
+    subtotal: number;
+    securityDeposit: number;
+    deliveryFee: number;
     customer?: {
         fullName: string;
         phoneNumber: string;
@@ -67,7 +57,8 @@ const ConfirmBookingPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const checkoutData = location.state as CheckoutData;
+    const checkoutData = location.state as CheckoutData | null;
+    console.log(checkoutData)
 
     const [loading, setLoading] = useState<boolean>(false);
     const [esewaPayload, setEsewaPayload] = useState<EsewaPayload | null>(null);
@@ -77,47 +68,30 @@ const ConfirmBookingPage: React.FC = () => {
 
     // Fallback protection guard routing patterns
     useEffect(() => {
-        if (!checkoutData || (!checkoutData.product && !checkoutData.items)) {
+        if (!checkoutData || !checkoutData.items || checkoutData.items.length === 0) {
             navigate('/');
         }
     }, [checkoutData, navigate]);
 
-    if (!checkoutData || (!checkoutData.product && !checkoutData.items)) {
+    if (!checkoutData || !checkoutData.items || checkoutData.items.length === 0) {
         return null;
     }
 
-    // ── Get the first product for display (for single item checkout) ──
-    const product = checkoutData.product || (checkoutData.items && checkoutData.items[0]);
-    
-    // ── Use data from checkoutData or fallback ──
-    const startDate = checkoutData.startDate || (checkoutData.items && checkoutData.items[0]?.startDate) || '';
-    const endDate = checkoutData.endDate || (checkoutData.items && checkoutData.items[0]?.endDate) || '';
+    const items = checkoutData.items;
+    console.log(items)
+    const isMultiItem = items.length > 1;
+
+    // ── Contact / delivery info ──
     const fullName = checkoutData.customer?.fullName || checkoutData.fullName || user?.fullName || '';
     const phoneNumber = checkoutData.customer?.phoneNumber || checkoutData.phoneNumber || user?.phoneNumber || '';
     const deliveryAddress = checkoutData.customer?.deliveryAddress || checkoutData.deliveryAddress || user?.address || '';
-    const rentalDays = checkoutData.rentalDays || (checkoutData.items && checkoutData.items[0]?.rentalDays) || 1;
 
-    if (!product) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-red-500">No product data found. Please go back and try again.</p>
-                    <button 
-                        onClick={() => navigate(-1)}
-                        className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-xl"
-                    >
-                        Go Back
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Price calculations ──
-    const subtotal = product.rentalPrice * rentalDays;
-    const securityDeposit = Math.round(product.rentalPrice * 1.5);
-    const deliveryCharge = 150;
-    const grandTotal = subtotal + securityDeposit + deliveryCharge;
+    // ── Trust the totals CheckoutPage already computed across ALL items ──
+    // (Recomputing here from a single item was the bug that dropped cart items from the invoice.)
+    const subtotal = checkoutData.subtotal;
+    const securityDeposit = checkoutData.securityDeposit;
+    const deliveryCharge = checkoutData.deliveryFee;
+    const grandTotal = checkoutData.totalAmount;
 
     // ── Create rental before payment ──
     const createRentalAndInitiatePayment = async () => {
@@ -130,48 +104,42 @@ const ConfirmBookingPage: React.FC = () => {
                 return;
             }
 
-            // Prepare order data
             const orderData = {
-                items: checkoutData.items || [
-                    {
-                        id: product.id,
-                        startDate: startDate,
-                        endDate: endDate,
-                        rentalDays: rentalDays,
-                        quantity: 1
-                    }
-                ],
+                items: items.map((it) => ({
+                    id: it.id,
+                    startDate: it.startDate,
+                    endDate: it.endDate,
+                    rentalDays: it.rentalDays,
+                    quantity: it.quantity,
+                })),
                 customer: {
-                    fullName: fullName,
-                    phoneNumber: phoneNumber,
-                    deliveryAddress: deliveryAddress
+                    fullName,
+                    phoneNumber,
+                    deliveryAddress,
                 },
                 paymentMethod: 'digital',
-                subtotal: subtotal,
-                securityDeposit: securityDeposit,
+                subtotal,
+                securityDeposit,
                 deliveryFee: deliveryCharge,
                 totalAmount: grandTotal,
-                type: checkoutData.type || 'single'
+                type: checkoutData.type || 'single',
             };
 
-            // Create rental
             const response = await axios.post(
                 `${API_BASE_URL}/rentals/create`,
                 orderData,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                    },
                 }
             );
 
             if (response.data.success) {
-                const rentalIds = response.data.data.rentalIds;
-                setRentalIds(rentalIds);
-                
-                // Now initiate payment
-                await initiatePayment();
+                const ids = response.data.data.rentalIds;
+                setRentalIds(ids);
+                await initiatePayment(ids);
             } else {
                 alert('Failed to create rental. Please try again.');
                 setCreatingRental(false);
@@ -184,7 +152,7 @@ const ConfirmBookingPage: React.FC = () => {
     };
 
     // ── Initiate eSewa Payment ──
-    const initiatePayment = async () => {
+    const initiatePayment = async (ids: string[]) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
@@ -201,13 +169,13 @@ const ConfirmBookingPage: React.FC = () => {
                     tax_amount: 0,
                     delivery_charge: deliveryCharge,
                     security_deposit: securityDeposit,
-                    rentalIds: rentalIds
+                    rentalIds: ids,
                 },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                    },
                 }
             );
 
@@ -217,7 +185,6 @@ const ConfirmBookingPage: React.FC = () => {
                 setEsewaPayload(result.payment_payload);
                 setGatewayUrl(result.gateway_url);
 
-                // Submit the form to eSewa
                 setTimeout(() => {
                     const form = document.getElementById('esewa-form') as HTMLFormElement;
                     if (form) form.submit();
@@ -241,100 +208,114 @@ const ConfirmBookingPage: React.FC = () => {
         <div className="min-h-screen bg-stone-50/50 text-stone-800 pt-24 pb-16">
             <div className="container mx-auto px-4 max-w-2xl">
 
-                {/* Progress Navigation Header Tracking */}
+                {/* Header */}
                 <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm mb-6">
                     <h1 className="text-xl font-bold text-stone-900 mb-2 flex items-center gap-2">
                         <CheckCircle className="text-amber-500" size={20} /> Verify & Confirm Booking
                     </h1>
                     <p className="text-xs text-stone-400">
-                        Please perform a final validation pass check on your rental scheduling parameters before connecting with digital processing routing nodes.
+                        Please double-check your rental details below before proceeding to payment.
                     </p>
                 </div>
 
-                {/* Dynamic Parameter Summary Layout Panels */}
+                {/* Item breakdown — supports 1 or many items */}
                 <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm mb-6">
                     <div className="bg-stone-900 text-amber-400 p-4 flex justify-between items-center">
-                        <span className="text-xs font-bold uppercase tracking-wider">Item Breakdown Details</span>
-                        <span className="text-xs px-2.5 py-1 bg-stone-800 border border-stone-700 text-stone-300 rounded-lg">
-                            {rentalDays} {rentalDays === 1 ? 'Day' : 'Days'} Rental duration
+                        <span className="text-xs font-bold uppercase tracking-wider">
+                            {isMultiItem ? `Items (${items.length})` : 'Item Breakdown'}
                         </span>
                     </div>
 
                     <div className="p-5 space-y-4">
-                        {/* Context Summary Meta Item Card Row Component */}
-                        <div className="flex gap-4 pb-4 border-b border-stone-100">
-                            {product.images && product.images.length > 0 ? (
-                                <img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded-xl border" />
-                            ) : (
-                                <div className="w-16 h-16 rounded-xl bg-amber-100 flex items-center justify-center text-2xl">
-                                    📦
+                        {items.map((item, idx) => (
+                            <div
+                                key={`${item.id}-${idx}`}
+                                className={`flex gap-4 ${idx < items.length - 1 ? 'pb-4 border-b border-stone-100' : ''}`}
+                            >
+                                {item.images && item.images.length > 0 ? (
+                                    <img
+                                        src={item.images[0]}
+                                        alt={item.name}
+                                        className="w-16 h-16 object-cover rounded-xl border shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                                        <Package size={22} className="text-amber-500" />
+                                    </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  
+                                    <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">{item.name}</h3>
+                                    <p className="text-xs font-bold text-stone-900 mt-1">
+                                        Rs. {item.price} / day
+                                        {item.quantity > 1 && (
+                                            <span className="text-stone-400 font-normal"> × {item.quantity}</span>
+                                        )}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 text-[11px] text-stone-500 mt-1">
+                                        <Calendar size={12} className="text-amber-500" />
+                                        {item.startDate} <ArrowRight size={9} /> {item.endDate}
+                                        <span className="text-stone-400">
+                                            ({item.rentalDays} {item.rentalDays === 1 ? 'day' : 'days'})
+                                        </span>
+                                    </div>
                                 </div>
-                            )}
-                            <div>
-                                <span className="text-[10px] font-bold text-amber-600 uppercase">{product.brand || 'RentEase'}</span>
-                                <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">{product.name}</h3>
-                                <p className="text-xs font-bold text-stone-900 mt-1">Rs. {product.rentalPrice.toLocaleString()} / day</p>
                             </div>
-                        </div>
+                        ))}
 
-                        {/* Dates & Logistics Summary Parameters */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pb-4 border-b border-stone-100">
+                        {/* Delivery & customer info */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
                             <div className="space-y-1 bg-stone-50 p-3 rounded-xl border border-stone-100">
-                                <span className="text-stone-400 font-medium block">RENTAL SCHEDULING</span>
-                                <div className="flex items-center gap-1.5 font-semibold text-stone-700 mt-1">
-                                    <Calendar size={13} className="text-amber-500" />
-                                    {startDate} <ArrowRight size={10} /> {endDate}
-                                </div>
-                            </div>
-                            <div className="space-y-1 bg-stone-50 p-3 rounded-xl border border-stone-100">
-                                <span className="text-stone-400 font-medium block">DELIVERY LOGISTICS DESTINATION</span>
+                                <span className="text-stone-400 font-medium block">DELIVERY ADDRESS</span>
                                 <div className="flex items-center gap-1.5 font-semibold text-stone-700 mt-1">
                                     <MapPin size={13} className="text-amber-500" />
-                                    <span className="truncate">{deliveryAddress}, {product.location || 'Kathmandu'}</span>
+                                    <span className="truncate">
+                                        {deliveryAddress}, {items[0].location || 'Kathmandu'}
+                                    </span>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Recipient Verification */}
-                        <div className="text-xs space-y-1 text-stone-600">
-                            <p><span className="text-stone-400 font-medium">Customer Holder:</span> {fullName}</p>
-                            <p><span className="text-stone-400 font-medium">Primary Contact line:</span> {phoneNumber}</p>
+                            <div className="space-y-1 bg-stone-50 p-3 rounded-xl border border-stone-100">
+                                <span className="text-stone-400 font-medium block">CUSTOMER</span>
+                                <p className="font-semibold text-stone-700 mt-1">{fullName}</p>
+                                <p className="text-stone-500">{phoneNumber}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Calculation Invoice Line Blocks */}
+                {/* Invoice summary — uses totals computed once on CheckoutPage across all items */}
                 <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm mb-6">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-3">Final Invoice Summary</h3>
                     <div className="space-y-2.5 text-xs pb-3 border-b border-stone-100">
                         <div className="flex justify-between text-stone-500">
-                            <span>Rental Processing Fee Base</span>
+                            <span>Rental Fee{isMultiItem ? ' (all items)' : ''}</span>
                             <span className="font-medium text-stone-800">Rs. {subtotal.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-stone-500">
-                            <span>Refundable Escrow Security Deposit</span>
+                            <span>Refundable Security Deposit</span>
                             <span className="font-medium text-stone-800">Rs. {securityDeposit.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-stone-500">
-                            <span>Fulfillment & Delivery Courier logistics</span>
+                            <span>Delivery Charge</span>
                             <span className="font-medium text-stone-800">Rs. {deliveryCharge.toLocaleString()}</span>
                         </div>
                     </div>
                     <div className="flex justify-between items-baseline pt-3">
-                        <span className="text-xs font-bold text-stone-800">Total Digital Invoice Capture</span>
+                        <span className="text-xs font-bold text-stone-800">Total Amount</span>
                         <span className="text-lg font-black text-stone-900">Rs. {grandTotal.toLocaleString()}</span>
                     </div>
                 </div>
 
-                {/* Security Disclaimers Badge Information element */}
+                {/* Security note */}
                 <div className="flex gap-3 bg-stone-900 text-stone-300 rounded-2xl p-4 mb-6 shadow-md border border-stone-800">
                     <ShieldCheck size={24} className="text-amber-400 shrink-0 mt-0.5" />
                     <p className="text-[11px] text-stone-400 leading-relaxed">
-                        By executing payment processing operations below, you authenticate integration routing redirects to secure eSewa Merchant Gateway validation processing centers. Financial asset records metrics execute with standard TLS encryption layers.
+                        By proceeding with payment below, you'll be redirected to the secure eSewa payment
+                        gateway. All transactions use standard TLS encryption.
                     </p>
                 </div>
 
-                {/* Primary Action Button Gate Triggers */}
+                {/* Confirm button */}
                 <button
                     onClick={handleBookingConfirmation}
                     disabled={loading || creatingRental}
@@ -355,7 +336,7 @@ const ConfirmBookingPage: React.FC = () => {
                     )}
                 </button>
 
-                {/* Hidden Form Required for Post-Initiation Redirect Operations */}
+                {/* Hidden auto-submit form for eSewa redirect */}
                 {esewaPayload && (
                     <form id="esewa-form" action={gatewayUrl} method="POST" className="hidden">
                         {Object.entries(esewaPayload).map(([key, value]) => (

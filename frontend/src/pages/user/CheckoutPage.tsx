@@ -180,6 +180,8 @@ const CheckoutPage: React.FC = () => {
         ]
       : cartItems.map((ci) => ({
           id: ci.itemId._id,
+          name: ci.itemId.title,
+          price: ci.itemId.price,
           startDate: ci.startDate,
           endDate: ci.endDate,
           rentalDays: ci.rentalDays,
@@ -198,6 +200,7 @@ const CheckoutPage: React.FC = () => {
   };
 
   if (paymentMethod === 'digital') {
+  if (checkoutType === 'single') {
     const productData = {
       id: singleProduct!.id,
       name: singleProduct!.name,
@@ -207,27 +210,56 @@ const CheckoutPage: React.FC = () => {
       location: singleProduct!.location || 'Kathmandu'
     };
 
-    navigate('/confirm-booking', { 
-      state: { 
+    navigate('/confirm-booking', {
+      state: {
         product: productData,
         items: orderData.items,
-        startDate: startDate,
-        endDate: endDate,
-        fullName: fullName,
-        phoneNumber: phoneNumber,
-        deliveryAddress: deliveryAddress,
+        startDate,
+        endDate,
+        fullName,
+        phoneNumber,
+        deliveryAddress,
         rentalDays: singleRentalDays,
-        totalAmount: totalAmount,
-        subtotal: subtotal,
-        securityDeposit: securityDeposit,
-        deliveryFee: deliveryFee,
+        totalAmount,
+        subtotal,
+        securityDeposit,
+        deliveryFee,
         customer: { fullName, phoneNumber, deliveryAddress },
-        paymentMethod: paymentMethod,
+        paymentMethod,
         type: checkoutType
-      } 
+      }
     });
-    return;
+  } else {
+    // cart flow — no single "product", pass the cart items instead
+    const productsData = cartItems.map((ci) => ({
+      id: ci.itemId._id,
+      name: ci.itemId.title,
+      rentalPrice: ci.itemId.price,
+      rentalDays: ci.rentalDays,
+      quantity: ci.quantity,
+      startDate: ci.startDate,
+      endDate: ci.endDate,
+    }));
+
+    navigate('/confirm-booking', {
+      state: {
+        products: productsData,      // plural, since it's multiple items
+        items: orderData.items,
+        fullName,
+        phoneNumber,
+        deliveryAddress,
+        totalAmount,
+        subtotal,
+        securityDeposit,
+        deliveryFee,
+        customer: { fullName, phoneNumber, deliveryAddress },
+        paymentMethod,
+        type: checkoutType
+      }
+    });
   }
+  return;
+}
 
   // COD flow - call backend directly
   try {
