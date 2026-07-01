@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Reveal } from "../../config/MotionFunction.tsx";
 import axios from "axios";
-import API_BASE_URL from "../../config/api";
+import API_BASE_URL from "../../config/api.ts";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
 import { useNavigate } from "react-router-dom"
@@ -9,8 +9,7 @@ import { useNavigate } from "react-router-dom"
 import { ProductCard } from "../../components/user/ProductCard.tsx";
 import { X } from "lucide-react";
 import { ImageSlider } from "./ImageSlider.tsx";
-
-const temp_userID = "6a2d05276369192a17ffac52";
+import { useAuth } from "../../hooks/useAuth.ts";
 interface Category {
   icon: string;
   name: string;
@@ -84,6 +83,7 @@ const testimonials: Testimonial[] = [
 const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "Kayak"];
 
 export default function Body() {
+  const { user } = useAuth();
   const [query, setQuery] = useState<string>("");
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [items, setItems] = useState<Product[]>([]);
@@ -97,7 +97,97 @@ export default function Body() {
     setTimeout(() => setShowToast(null), 2500);
   }, []);
 
-  const addToCart = async (product: Product) => {
+
+  const fetchWishlist = useCallback(async (userId: string) => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/wishlist/${userId}`
+      );
+
+      const ids: string[] = (res.data.items ?? [])
+        .map((item: any) =>
+          typeof item === "string" ? item : item._id ?? item.id
+        )
+        .filter(Boolean);
+
+      setWishlist(ids);
+    } catch (err) {
+      console.error("Failed to fetch wishlist:", err);
+    }
+  }, []);
+
+
+
+  const handleRentNow = (product: Product) => {
+    navigate("/checkout", {
+      state: {
+        type: "single",
+        items: [{ item: product, quantity: 1 }],
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchWishlist(user.id);
+  }, [user, fetchWishlist]);
+
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchWishlist(user.id);
+  }, [user, fetchWishlist]);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/items/getitems`);
+
+        setItems(
+          res.data.data.map((item: any) => ({
+            id: item._id,
+            name: item.title,
+            description: item.description,
+            rentalPrice: item.price,
+            originalPrice: item.price,
+            images: Array.isArray(item.images)
+              ? item.images.map((img: string) => `http://localhost:3000${img}`)
+              : [],
+            categoryId: item.categoryId,
+            brand: item.brand || "Generic",
+            rating: 5,
+            reviewCount: 0,
+            stock: item.quantity || 0,
+            location: item.location,
+          }))
+        );
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchItems();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategory = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/category/getcategory`);
+        setCategory(res.data);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchCategory();
+  }, []);
+
+  const addToCart = async (product: any) => {
+    if (!user?.id) {
+      showToastMessage("Please login first", "error");
+      return;
+    }
+
     try {
       const today = new Date();
       const end = new Date();
@@ -111,131 +201,70 @@ export default function Body() {
         endDate: end.toISOString().split("T")[0],
       };
 
-      const res = await fetch(`${API_BASE_URL}/cart/add/${temp_userID}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/cart/add/${user.id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      if (!res.ok) {
-        throw new Error("Failed to add to cart");
-      }
+      if (!res.ok) throw new Error();
 
       showToastMessage("Added to cart", "success");
-    } catch (err) {
-      console.log(err);
+    } catch {
       showToastMessage("Failed to add to cart", "error");
     }
   };
-  const fetchWishlist = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${temp_userID}`);
-      const data = res.data;
-      // data.items is an array of populated Item objects OR ObjectId strings
-      const ids: string[] = (data.items ?? []).map((item: any) =>
-        typeof item === 'string' ? item : (item._id ?? item.id ?? '')
-      ).filter(Boolean);
-      setWishlist(ids);
-    } catch (err) {
-      // Silently fail — wishlist just won't be pre-populated
-      console.error('Failed to fetch wishlist:', err);
-    }
-  }, []);
-  const handleRentNow = (product: Product) => {
-    navigate("/checkout", {
-      state: {
-        type: "single",
-        items: [{ item: product, quantity: 1 }],
-      },
-    });
-  };
-
-  useEffect(() => {
-    fetchWishlist();
-  }, [fetchWishlist]);
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/items/getitems`);
-        const formattedProducts: Product[] = res.data.data.map((item: any) => ({
-          id: item._id,
-          name: item.title,
-          description: item.description,
-          rentalPrice: item.price,
-          originalPrice: item.price,
-          images: Array.isArray(item.images)
-            ? item.images.map((img: string) => `http://localhost:3000${img}`)
-            : [],
-          category: "",
-          categoryId: item.categoryId,
-          brand: item.brand || "Generic",
-          rating: 5,
-          reviewCount: 0,
-          stock: item.quantity || 0,
-          location: item.location,
-        }));
-
-        setItems(formattedProducts);
-
-      } catch (err) {
-        console.log(err);
-      }
-
-    }
-    fetchItems();
-  }, []);
-
-  useEffect(() => {
-    const fetchCategory = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/category/getcategory`);
-        setCategory(res.data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    fetchCategory();
-  }, []);
 
 
   const toggleWishlist = async (productId: string) => {
-    // Prevent double-clicks while request is in flight
+    if (!user?.id) {
+      showToastMessage("Please login first", "error");
+      return;
+    }
+
     if (wishlistLoading.has(productId)) return;
 
     const isInWishlist = wishlist.includes(productId);
 
-    // Optimistic UI update
-    setWishlist(prev =>
-      isInWishlist ? prev.filter(id => id !== productId) : [...prev, productId]
+    setWishlist((prev) =>
+      isInWishlist
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
     );
-    setWishlistLoading(prev => new Set(prev).add(productId));
+
+    setWishlistLoading((prev) => new Set(prev).add(productId));
 
     try {
       if (isInWishlist) {
-        // Remove from wishlist
-        await axios.delete(`${API_BASE_URL}/wishlist/remove/${temp_userID}/${productId}`);
-        showToastMessage('Removed from wishlist', 'info');
+        await axios.delete(
+          `${API_BASE_URL}/wishlist/remove/${user.id}/${productId}`
+        );
       } else {
-        // Add to wishlist
-        await axios.post(`${API_BASE_URL}/wishlist/add/${temp_userID}`, { itemId: productId });
-        showToastMessage('Added to wishlist', 'success');
+        await axios.post(
+          `${API_BASE_URL}/wishlist/add/${user.id}`,
+          { itemId: productId }
+        );
       }
-    } catch (error) {
-      // Revert optimistic update on failure
-      setWishlist(prev =>
-        isInWishlist ? [...prev, productId] : prev.filter(id => id !== productId)
+    } catch (err) {
+      // rollback
+      setWishlist((prev) =>
+        isInWishlist
+          ? [...prev, productId]
+          : prev.filter((id) => id !== productId)
       );
-      showToastMessage('Failed to update wishlist', 'error');
+      showToastMessage("Failed to update wishlist", "error");
     } finally {
-      setWishlistLoading(prev => {
+      setWishlistLoading((prev) => {
         const next = new Set(prev);
         next.delete(productId);
         return next;
       });
     }
   };
+
 
   return (
     <div>
@@ -245,78 +274,78 @@ export default function Body() {
 
       {/* HERO */}
       <section className="min-h-screen flex flex-col items-center justify-center px-[5vw] pt-28 pb-20 relative overflow-hidden text-center bg-white">
-         {showToast && (
-                <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
-                  <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
+        {showToast && (
+          <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
                     ${showToast.type === 'success'
-                      ? 'bg-white border-emerald-200 text-emerald-700'
-                      : showToast.type === 'error'
-                        ? 'bg-white border-red-200 text-red-600'
-                        : 'bg-white border-stone-200 text-stone-600'}`}>
-                    {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
+                ? 'bg-white border-emerald-200 text-emerald-700'
+                : showToast.type === 'error'
+                  ? 'bg-white border-red-200 text-red-600'
+                  : 'bg-white border-stone-200 text-stone-600'}`}>
+              {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
+            </div>
+          </div>
+        )}
+
+        {/* Quick View Modal */}
+        {quickViewProduct && (
+          <div
+            className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setQuickViewProduct(null)}
+          >
+            <div
+              className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.brand}</span>
+                    <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
                   </div>
-                </div>
-              )}
-        
-              {/* Quick View Modal */}
-              {quickViewProduct && (
-                <div
-                  className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                  onClick={() => setQuickViewProduct(null)}
-                >
-                  <div
-                    className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl"
-                    onClick={e => e.stopPropagation()}
+                  <button
+                    onClick={() => setQuickViewProduct(null)}
+                    className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all"
                   >
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-5">
-                        <div>
-                          <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.brand}</span>
-                          <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
-                        </div>
-                        <button
-                          onClick={() => setQuickViewProduct(null)}
-                          className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-        
-                      <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
-                        <ImageSlider images={quickViewProduct.images} />
-                      </div>
-        
-                      <p className="text-stone-500 mb-5 text-sm leading-relaxed">{quickViewProduct.description}</p>
-        
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        {[
-                          { label: 'Brand', value: quickViewProduct.brand },
-                          { label: 'Rating', value: `${quickViewProduct.rating} ★` },
-                          { label: 'Location', value: quickViewProduct.location },
-                          { label: 'Stock', value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock' },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3">
-                            <p className="text-[11px] text-stone-400 uppercase tracking-wider mb-0.5">{label}</p>
-                            <p className="text-sm font-medium text-stone-700">{value}</p>
-                          </div>
-                        ))}
-                      </div>
-        
-                      <button
-                        disabled={quickViewProduct.stock === 0}
-                        onClick={() => navigate('/checkout', { state: { product: quickViewProduct } })}
-                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all
-                          ${quickViewProduct.stock > 0
-                            ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
-                            : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
-                      >
-                        Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
-                      </button>
-                    </div>
-                  </div>
+                    <X size={16} />
+                  </button>
                 </div>
-              )}
-        
+
+                <div className="rounded-xl overflow-hidden mb-5 bg-stone-100 aspect-video">
+                  <ImageSlider images={quickViewProduct.images} />
+                </div>
+
+                <p className="text-stone-500 mb-5 text-sm leading-relaxed">{quickViewProduct.description}</p>
+
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {[
+                    { label: 'Brand', value: quickViewProduct.brand },
+                    { label: 'Rating', value: `${quickViewProduct.rating} ★` },
+                    { label: 'Location', value: quickViewProduct.location },
+                    { label: 'Stock', value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3">
+                      <p className="text-[11px] text-stone-400 uppercase tracking-wider mb-0.5">{label}</p>
+                      <p className="text-sm font-medium text-stone-700">{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  disabled={quickViewProduct.stock === 0}
+                  onClick={() => navigate('/checkout', { state: { product: quickViewProduct } })}
+                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all
+                          ${quickViewProduct.stock > 0
+                      ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
+                      : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
+                >
+                  Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="absolute inset-0 hero-grid-bg opacity-60 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 60%, rgba(212,146,42,0.07) 0%, transparent 70%)" }} />
 

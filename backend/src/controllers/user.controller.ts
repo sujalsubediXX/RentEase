@@ -281,7 +281,7 @@ export const register = async (req: Request, res: Response) => {
       role: role || "renter",
       address: address || "",
       isVerified: false,
-      kycStatus: role === "owner" ? "pending" : "not_submitted",
+      kycStatus: "pending",
     });
 
     res.status(201).json({

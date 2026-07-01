@@ -1,7 +1,11 @@
 import { useState, useRef, useCallback } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import API_BASE_URL from '../config/api';
+import axios from "axios";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
+type Errors = Record<string, string>;
 
 interface PersonalInfo {
   fullName: string;
@@ -27,6 +31,101 @@ interface SelfieInfo {
   selfieFile: File | null;
 }
 
+// ─── Validation ───────────────────────────────────────────────────────────────
+const PHONE_REGEX = /^(\+977-?)?9\d{9}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_REGEX = /^[a-zA-Z\s.]+$/;
+const DOC_TYPES_REQUIRING_BACK = ["Citizenship Certificate"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const DOC_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+const SELFIE_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
+
+function calculateAge(dobStr: string): number {
+  const dob = new Date(dobStr);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+function validateFile(file: File | null, allowedTypes: string[], label: string): string | null {
+  if (!file) return `${label} is required`;
+  if (!allowedTypes.includes(file.type)) {
+    return `${label} must be ${allowedTypes.includes("application/pdf") ? "JPG, PNG or PDF" : "JPG or PNG"}`;
+  }
+  if (file.size > MAX_FILE_SIZE) return `${label} must be under 5MB`;
+  return null;
+}
+
+function validatePersonal(data: PersonalInfo): Errors {
+  const errors: Errors = {};
+  const name = data.fullName.trim();
+  if (!name || name.length < 3) errors.fullName = "Full name must be at least 3 characters";
+  else if (!NAME_REGEX.test(name)) errors.fullName = "Full name can only contain letters and spaces";
+
+  if (!data.dob) errors.dob = "Date of birth is required";
+  else {
+    const dobDate = new Date(data.dob);
+    if (isNaN(dobDate.getTime())) errors.dob = "Enter a valid date";
+    else if (dobDate > new Date()) errors.dob = "Date of birth cannot be in the future";
+    else if (calculateAge(data.dob) < 18) errors.dob = "You must be at least 18 years old";
+  }
+
+  if (!data.gender) errors.gender = "Gender is required";
+  if (!data.nationality) errors.nationality = "Nationality is required";
+
+  const phone = data.phone.trim().replace(/\s/g, "");
+  if (!phone) errors.phone = "Phone number is required";
+  else if (!PHONE_REGEX.test(phone)) errors.phone = "Enter a valid number, e.g. +977-98XXXXXXXX";
+
+  const email = data.email.trim();
+  if (!email) errors.email = "Email is required";
+  else if (!EMAIL_REGEX.test(email)) errors.email = "Enter a valid email address";
+
+  if (!data.address.trim() || data.address.trim().length < 5) errors.address = "Address is required (min 5 characters)";
+  if (!data.city) errors.city = "City/District is required";
+
+  return errors;
+}
+
+function validateDocument(data: DocumentInfo): Errors {
+  const errors: Errors = {};
+  if (!data.docType) errors.docType = "Document type is required";
+
+  const docNumber = data.docNumber.trim();
+  if (!docNumber || docNumber.length < 4) errors.docNumber = "Enter a valid document number";
+
+  if (!data.issuedDate) errors.issuedDate = "Issue date is required";
+  else if (new Date(data.issuedDate) > new Date()) errors.issuedDate = "Issue date cannot be in the future";
+
+  if (data.expiryDate) {
+    const expiry = new Date(data.expiryDate);
+    if (data.issuedDate && expiry <= new Date(data.issuedDate)) {
+      errors.expiryDate = "Expiry date must be after issue date";
+    } else if (expiry < new Date()) {
+      errors.expiryDate = "This document has expired";
+    }
+  }
+
+  const frontErr = validateFile(data.frontFile, DOC_FILE_TYPES, "Front image");
+  if (frontErr) errors.frontFile = frontErr;
+
+  if (data.docType && DOC_TYPES_REQUIRING_BACK.includes(data.docType)) {
+    const backErr = validateFile(data.backFile, DOC_FILE_TYPES, "Back image");
+    if (backErr) errors.backFile = backErr;
+  }
+
+  return errors;
+}
+
+function validateSelfie(data: SelfieInfo): Errors {
+  const errors: Errors = {};
+  const err = validateFile(data.selfieFile, SELFIE_FILE_TYPES, "Selfie photo");
+  if (err) errors.selfieFile = err;
+  return errors;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function FileDropZone({
   label,
@@ -34,12 +133,14 @@ function FileDropZone({
   file,
   onChange,
   accept = "image/*",
+  error,
 }: {
   label: string;
   hint: string;
   file: File | null;
   onChange: (f: File) => void;
   accept?: string;
+  error?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -66,7 +167,7 @@ function FileDropZone({
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden
-          ${dragging ? "border-amber-400 bg-amber-50" : file ? "border-amber-400 bg-amber-50/50" : "border-stone-200 hover:border-amber-300 hover:bg-stone-50"}
+          ${dragging ? "border-amber-400 bg-amber-50" : file ? "border-amber-400 bg-amber-50/50" : error ? "border-red-300 bg-red-50/50" : "border-stone-200 hover:border-amber-300 hover:bg-stone-50"}
         `}
         style={{ minHeight: 140 }}
       >
@@ -77,7 +178,7 @@ function FileDropZone({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center h-full">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 text-xl mb-2">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2 ${error ? "bg-red-100 text-red-500" : "bg-amber-100 text-amber-600"}`}>
               📁
             </div>
             <p className="text-sm font-medium text-stone-700">Drop or click to upload</p>
@@ -92,6 +193,7 @@ function FileDropZone({
           onChange={(e) => { const f = e.target.files?.[0]; if (f) onChange(f); }}
         />
       </div>
+      {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
     </div>
   );
 }
@@ -114,10 +216,10 @@ function StepBadge({ step, current, label }: { step: number; current: number; la
 }
 
 function InputField({
-  label, value, onChange, type = "text", placeholder = "", required = false,
+  label, value, onChange, type = "text", placeholder = "", required = false, error,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; required?: boolean;
+  type?: string; placeholder?: string; required?: boolean; error?: string;
 }) {
   return (
     <div>
@@ -129,17 +231,20 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400
-          focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+        className={`w-full border rounded-xl px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400
+          focus:outline-none focus:ring-2 transition-all
+          ${error ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-stone-200 focus:border-amber-400 focus:ring-amber-100"}
+        `}
       />
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }
 
 function SelectField({
-  label, value, onChange, options, required = false,
+  label, value, onChange, options, required = false, error,
 }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[]; required?: boolean;
+  label: string; value: string; onChange: (v: string) => void; options: string[]; required?: boolean; error?: string;
 }) {
   return (
     <div>
@@ -149,18 +254,21 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-900
-          focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all bg-white appearance-none"
+        className={`w-full border rounded-xl px-4 py-2.5 text-sm text-stone-900
+          focus:outline-none focus:ring-2 transition-all bg-white appearance-none
+          ${error ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-stone-200 focus:border-amber-400 focus:ring-amber-100"}
+        `}
       >
         <option value="">Select…</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }
 
 // ─── Step 1: Personal Info ────────────────────────────────────────────────────
-function Step1({ data, onChange }: { data: PersonalInfo; onChange: (d: Partial<PersonalInfo>) => void }) {
+function Step1({ data, onChange, errors }: { data: PersonalInfo; onChange: (d: Partial<PersonalInfo>) => void; errors: Errors }) {
   return (
     <div className="space-y-5">
       <div>
@@ -169,27 +277,27 @@ function Step1({ data, onChange }: { data: PersonalInfo; onChange: (d: Partial<P
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <InputField label="Full Legal Name" value={data.fullName} onChange={(v) => onChange({ fullName: v })} placeholder="As per citizenship / ID" required />
+          <InputField label="Full Legal Name" value={data.fullName} onChange={(v) => onChange({ fullName: v })} placeholder="As per citizenship / ID" required error={errors.fullName} />
         </div>
-        <InputField label="Date of Birth" value={data.dob} onChange={(v) => onChange({ dob: v })} type="date" required />
+        <InputField label="Date of Birth" value={data.dob} onChange={(v) => onChange({ dob: v })} type="date" required error={errors.dob} />
         <SelectField
           label="Gender" value={data.gender} onChange={(v) => onChange({ gender: v })}
-          options={["Male", "Female", "Other", "Prefer not to say"]} required
+          options={["Male", "Female", "Other", "Prefer not to say"]} required error={errors.gender}
         />
         <SelectField
           label="Nationality" value={data.nationality} onChange={(v) => onChange({ nationality: v })}
-          options={["Nepali", "Indian", "Other"]} required
+          options={["Nepali", "Indian", "Other"]} required error={errors.nationality}
         />
-        <InputField label="Phone Number" value={data.phone} onChange={(v) => onChange({ phone: v })} type="tel" placeholder="+977-98XXXXXXXX" required />
+        <InputField label="Phone Number" value={data.phone} onChange={(v) => onChange({ phone: v })} type="tel" placeholder="+977-98XXXXXXXX" required error={errors.phone} />
         <div className="sm:col-span-2">
-          <InputField label="Email Address" value={data.email} onChange={(v) => onChange({ email: v })} type="email" placeholder="you@email.com" required />
+          <InputField label="Email Address" value={data.email} onChange={(v) => onChange({ email: v })} type="email" placeholder="you@email.com" required error={errors.email} />
         </div>
         <div className="sm:col-span-2">
-          <InputField label="Current Address" value={data.address} onChange={(v) => onChange({ address: v })} placeholder="Street, Ward No." required />
+          <InputField label="Current Address" value={data.address} onChange={(v) => onChange({ address: v })} placeholder="Street, Ward No." required error={errors.address} />
         </div>
         <SelectField
           label="City / District" value={data.city} onChange={(v) => onChange({ city: v })}
-          options={["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Biratnagar", "Butwal", "Dharan", "Other"]} required
+          options={["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Biratnagar", "Butwal", "Dharan", "Other"]} required error={errors.city}
         />
       </div>
 
@@ -204,8 +312,18 @@ function Step1({ data, onChange }: { data: PersonalInfo; onChange: (d: Partial<P
 }
 
 // ─── Step 2: Document Upload ──────────────────────────────────────────────────
-function Step2({ data, onChange }: { data: DocumentInfo; onChange: (d: Partial<DocumentInfo>) => void }) {
+function Step2({ data, onChange, errors }: { data: DocumentInfo; onChange: (d: Partial<DocumentInfo>) => void; errors: Errors }) {
   const docTypes = ["Citizenship Certificate", "Passport", "National ID Card", "Driving License"];
+  const needsBack = DOC_TYPES_REQUIRING_BACK.includes(data.docType);
+
+  const handleDocTypeChange = (v: string) => {
+    // Clear back file if switching away from a doc type that needs it
+    if (!DOC_TYPES_REQUIRING_BACK.includes(v) && data.backFile) {
+      onChange({ docType: v, backFile: null });
+    } else {
+      onChange({ docType: v });
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -215,31 +333,42 @@ function Step2({ data, onChange }: { data: DocumentInfo; onChange: (d: Partial<D
       </div>
 
       <SelectField
-        label="Document Type" value={data.docType} onChange={(v) => onChange({ docType: v })}
-        options={docTypes} required
+        label="Document Type" value={data.docType} onChange={handleDocTypeChange}
+        options={docTypes} required error={errors.docType}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <InputField label="Document Number" value={data.docNumber} onChange={(v) => onChange({ docNumber: v })} placeholder="e.g. 123-456-789" required />
+        <InputField label="Document Number" value={data.docNumber} onChange={(v) => onChange({ docNumber: v })} placeholder="e.g. 123-456-789" required error={errors.docNumber} />
         <div />
-        <InputField label="Issue Date" value={data.issuedDate} onChange={(v) => onChange({ issuedDate: v })} type="date" required />
-        <InputField label="Expiry Date" value={data.expiryDate} onChange={(v) => onChange({ expiryDate: v })} type="date" />
+        <InputField label="Issue Date" value={data.issuedDate} onChange={(v) => onChange({ issuedDate: v })} type="date" required error={errors.issuedDate} />
+        <InputField label="Expiry Date" value={data.expiryDate} onChange={(v) => onChange({ expiryDate: v })} type="date" error={errors.expiryDate} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FileDropZone
-          label="Front Side"
-          hint="JPG, PNG or PDF · Max 5MB"
-          file={data.frontFile}
-          onChange={(f) => onChange({ frontFile: f })}
-        />
-        <FileDropZone
-          label="Back Side"
-          hint="JPG, PNG or PDF · Max 5MB"
-          file={data.backFile}
-          onChange={(f) => onChange({ backFile: f })}
-        />
+      <div className={`grid grid-cols-1 ${needsBack ? "sm:grid-cols-2" : ""} gap-4`}>
+        <div className={needsBack ? "" : "sm:max-w-xs"}>
+          <FileDropZone
+            label="Front Side"
+            hint="JPG, PNG or PDF · Max 5MB"
+            file={data.frontFile}
+            onChange={(f) => onChange({ frontFile: f })}
+            error={errors.frontFile}
+          />
+        </div>
+        {needsBack && (
+          <FileDropZone
+            label="Back Side"
+            hint="JPG, PNG or PDF · Max 5MB"
+            file={data.backFile}
+            onChange={(f) => onChange({ backFile: f })}
+            error={errors.backFile}
+          />
+        )}
       </div>
+      {!needsBack && data.docType && (
+        <p className="text-xs text-stone-400 -mt-2">
+          Only the front side is required for {data.docType}.
+        </p>
+      )}
 
       <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
         <p className="text-xs font-semibold text-stone-700 mb-2">📋 Document Requirements</p>
@@ -261,7 +390,7 @@ function Step2({ data, onChange }: { data: DocumentInfo; onChange: (d: Partial<D
 }
 
 // ─── Step 3: Selfie Verification ─────────────────────────────────────────────
-function Step3({ data, onChange }: { data: SelfieInfo; onChange: (d: Partial<SelfieInfo>) => void }) {
+function Step3({ data, onChange, errors }: { data: SelfieInfo; onChange: (d: Partial<SelfieInfo>) => void; errors: Errors }) {
   return (
     <div className="space-y-5">
       <div>
@@ -291,6 +420,8 @@ function Step3({ data, onChange }: { data: SelfieInfo; onChange: (d: Partial<Sel
           hint="Clear photo of your face · JPG or PNG"
           file={data.selfieFile}
           onChange={(f) => onChange({ selfieFile: f })}
+          accept="image/*"
+          error={errors.selfieFile}
         />
       </div>
 
@@ -310,9 +441,10 @@ function Step3({ data, onChange }: { data: SelfieInfo; onChange: (d: Partial<Sel
 
 // ─── Step 4: Review & Submit ──────────────────────────────────────────────────
 function Step4({
-  personal, document: doc, selfie,
+  personal, document: doc, selfie, consent, onConsentChange,
 }: {
   personal: PersonalInfo; document: DocumentInfo; selfie: SelfieInfo;
+  consent: boolean; onConsentChange: (v: boolean) => void;
 }) {
   const selfieSrc = selfie.selfieFile ? URL.createObjectURL(selfie.selfieFile) : null;
 
@@ -370,7 +502,9 @@ function Step4({
         <Row label="Issue Date" value={doc.issuedDate} />
         <Row label="Expiry Date" value={doc.expiryDate || "N/A"} />
         <Row label="Front Image" value={doc.frontFile ? doc.frontFile.name : "Not uploaded"} />
-        <Row label="Back Image" value={doc.backFile ? doc.backFile.name : "Not uploaded"} />
+        {DOC_TYPES_REQUIRING_BACK.includes(doc.docType) && (
+          <Row label="Back Image" value={doc.backFile ? doc.backFile.name : "Not uploaded"} />
+        )}
       </Section>
 
       {/* Consent */}
@@ -380,7 +514,12 @@ function Step4({
           By submitting this form, I declare that all information provided is true, accurate, and complete. I consent to RentEase processing my personal data for identity verification purposes as described in the Privacy Policy.
         </p>
         <label className="flex items-start gap-3 cursor-pointer group">
-          <input type="checkbox" className="mt-0.5 accent-amber-500 w-4 h-4 shrink-0" />
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => onConsentChange(e.target.checked)}
+            className="mt-0.5 accent-amber-500 w-4 h-4 shrink-0"
+          />
           <span className="text-stone-300 group-hover:text-white transition-colors">
             I agree to the <span className="text-amber-400 underline">Terms of Service</span> and <span className="text-amber-400 underline">Privacy Policy</span>, and confirm that the information above is accurate.
           </span>
@@ -441,6 +580,15 @@ function SuccessScreen() {
 export default function KYCVerificationForm() {
   const [step, setStep] = useState<Step>(1);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  if (user?.kycStatus === "verified" || user?.kycStatus === "under review") {
+    navigate("/profile");
+  }
 
   const [personal, setPersonal] = useState<PersonalInfo>({
     fullName: "", dob: "", gender: "", nationality: "",
@@ -452,6 +600,10 @@ export default function KYCVerificationForm() {
   });
   const [selfie, setSelfie] = useState<SelfieInfo>({ selfieFile: null });
 
+  const [errors1, setErrors1] = useState<Errors>({});
+  const [errors2, setErrors2] = useState<Errors>({});
+  const [errors3, setErrors3] = useState<Errors>({});
+
   const steps = [
     { n: 1, label: "Personal Info" },
     { n: 2, label: "Document" },
@@ -459,11 +611,69 @@ export default function KYCVerificationForm() {
     { n: 4, label: "Review" },
   ];
 
-  const canProceed = () => {
-    if (step === 1) return personal.fullName && personal.dob && personal.gender && personal.phone && personal.email;
-    if (step === 2) return docInfo.docType && docInfo.docNumber && docInfo.issuedDate && docInfo.frontFile;
-    if (step === 3) return selfie.selfieFile;
+  const runStepValidation = (s: Step): boolean => {
+    if (s === 1) {
+      const errs = validatePersonal(personal);
+      setErrors1(errs);
+      return Object.keys(errs).length === 0;
+    }
+    if (s === 2) {
+      const errs = validateDocument(docInfo);
+      setErrors2(errs);
+      return Object.keys(errs).length === 0;
+    }
+    if (s === 3) {
+      const errs = validateSelfie(selfie);
+      setErrors3(errs);
+      return Object.keys(errs).length === 0;
+    }
     return true;
+  };
+
+  const handleContinue = () => {
+    if (runStepValidation(step)) {
+      setStep((s) => ((s + 1) as Step));
+    }
+  };
+
+  const handleSubmit = async () => {
+    const step1Valid = runStepValidation(1);
+    const step2Valid = runStepValidation(2);
+    const step3Valid = runStepValidation(3);
+
+    if (!step1Valid) { setStep(1); return; }
+    if (!step2Valid) { setStep(2); return; }
+    if (!step3Valid) { setStep(3); return; }
+    if (!consent) { setSubmitError("Please agree to the Terms of Service and Privacy Policy to continue."); return; }
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const formData = new FormData();
+      Object.entries(personal).forEach(([k, v]) => formData.append(k, v));
+      formData.append("docType", docInfo.docType);
+      formData.append("docNumber", docInfo.docNumber);
+      formData.append("issuedDate", docInfo.issuedDate);
+      if (docInfo.expiryDate) formData.append("expiryDate", docInfo.expiryDate);
+      if (docInfo.frontFile) formData.append("frontImage", docInfo.frontFile);
+      if (docInfo.backFile) formData.append("backImage", docInfo.backFile);
+      if (selfie.selfieFile) formData.append("selfieImage", selfie.selfieFile);
+      console.log(user?.id)
+      const res = await axios.post(`${API_BASE_URL}/kyc/submit/${user?.id}`, formData  )
+  
+      const data = res.data;
+      if (res.status !== 200 || data.status !== "success") {
+        setSubmitError(data.message || "Something went wrong while submitting your KYC. Please try again.");
+        return;
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -503,29 +713,53 @@ export default function KYCVerificationForm() {
         <div className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
           <div className="p-6 sm:p-8">
             {submitted ? (
-              <SuccessScreen />
+              <>
+               <SuccessScreen />
+
+              {
+                setTimeout(()=>{
+                  navigate("/profile")
+                },4000)
+              }
+              </>
+             
             ) : (
               <>
                 {step === 1 && (
                   <Step1
                     data={personal}
                     onChange={(d) => setPersonal((p) => ({ ...p, ...d }))}
+                    errors={errors1}
                   />
                 )}
                 {step === 2 && (
                   <Step2
                     data={docInfo}
                     onChange={(d) => setDocInfo((p) => ({ ...p, ...d }))}
+                    errors={errors2}
                   />
                 )}
                 {step === 3 && (
                   <Step3
                     data={selfie}
                     onChange={(d) => setSelfie((p) => ({ ...p, ...d }))}
+                    errors={errors3}
                   />
                 )}
                 {step === 4 && (
-                  <Step4 personal={personal} document={docInfo} selfie={selfie} />
+                  <Step4
+                    personal={personal}
+                    document={docInfo}
+                    selfie={selfie}
+                    consent={consent}
+                    onConsentChange={setConsent}
+                  />
+                )}
+                {submitError && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 flex gap-2">
+                    <span className="text-red-500 text-sm shrink-0">⚠️</span>
+                    <p className="text-xs text-red-600">{submitError}</p>
+                  </div>
                 )}
               </>
             )}
@@ -536,7 +770,7 @@ export default function KYCVerificationForm() {
             <div className="border-t border-stone-100 px-6 sm:px-8 py-4 bg-stone-50 flex items-center justify-between">
               <button
                 onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
-                disabled={step === 1}
+                disabled={step === 1 || submitting}
                 className="flex items-center gap-2 text-sm font-semibold text-stone-500 hover:text-stone-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 ← Back
@@ -553,18 +787,18 @@ export default function KYCVerificationForm() {
 
               {step < 4 ? (
                 <button
-                  onClick={() => setStep((s) => ((s + 1) as Step))}
-                  disabled={!canProceed()}
-                  className="flex items-center gap-2 bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-amber-400 transition-colors disabled:cursor-not-allowed"
+                  onClick={handleContinue}
+                  className="flex items-center gap-2 bg-amber-500 text-stone-900 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-amber-400 transition-colors"
                 >
                   Continue →
                 </button>
               ) : (
                 <button
-                  onClick={() => setSubmitted(true)}
-                  className="flex items-center gap-2 bg-stone-900 text-amber-400 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-stone-800 transition-colors"
+                  onClick={handleSubmit}
+                  disabled={submitting || !consent}
+                  className="flex items-center gap-2 bg-stone-900 disabled:bg-stone-300 text-amber-400 disabled:text-stone-500 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-stone-800 transition-colors disabled:cursor-not-allowed"
                 >
-                  Submit KYC 🚀
+                  {submitting ? "Submitting…" : "Submit KYC 🚀"}
                 </button>
               )}
             </div>

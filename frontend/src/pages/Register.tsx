@@ -22,9 +22,7 @@ export const Register: React.FC = () => {
     [key: string]: string;
   }>({});
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const { register, isLoading, error, isAuthenticated } = useAuth();
+  const { register, isLoading, error, isAuthenticated } = useAuth();
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
@@ -159,8 +157,8 @@ export const Register: React.FC = () => {
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, role: 'renter' }))}
                       className={`py-2 px-4 rounded-lg border transition-all ${formData.role === 'renter'
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'border-gray-300 text-gray-700 hover:border-blue-300'
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'border-gray-300 text-gray-700 hover:border-blue-300'
                         }`}
                     >
                       Rent Items
@@ -169,8 +167,8 @@ export const Register: React.FC = () => {
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, role: 'owner' }))}
                       className={`py-2 px-4 rounded-lg border transition-all ${formData.role === 'owner'
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'border-gray-300 text-gray-700 hover:border-blue-300'
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'border-gray-300 text-gray-700 hover:border-blue-300'
                         }`}
                     >
                       List Items
@@ -182,7 +180,7 @@ export const Register: React.FC = () => {
                 <Input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type='password'
                   label="Password"
                   value={formData.password}
                   onChange={handleChange}
@@ -194,22 +192,24 @@ export const Register: React.FC = () => {
                     </svg>
                   }
                 />
+   
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type='password'
+                    label="Confirm Password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    error={validationErrors.confirmPassword}
+                    placeholder="Confirm your password"
+                    icon={
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    }
+                  />
+             
 
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  label="Confirm Password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  error={validationErrors.confirmPassword}
-                  placeholder="Confirm your password"
-                  icon={
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  }
-                />
 
                 {getDisplayError() && (
                   <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">

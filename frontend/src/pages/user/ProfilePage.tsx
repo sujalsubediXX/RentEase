@@ -28,6 +28,7 @@ function ProfilePage() {
     };
   }
 
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -65,7 +66,6 @@ function ProfilePage() {
     );
   }
 
-  const isKycVerified = user.kycStatus === "verified" || user.kycStatus === "approved";
   const activeRentals = rentals.filter(r => r.status === "active").length;
   const completedRentals = rentals.filter(r => r.status === "completed").length;
 
@@ -91,13 +91,14 @@ function ProfilePage() {
               {user.email} · {user.address || "Nepal"}
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${isKycVerified
+              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${user.kycStatus=="verified" || user.kycStatus =="under review"
                   ? "bg-green-500/20 text-green-400 border-green-500/30"
                   : "bg-red-500/20 text-red-400 border-red-500/30"
                 }`}>
-                {isKycVerified ? "✓ KYC Verified" : "✗ KYC Not Verified"}
+                {user.kycStatus == "verified"? "✓ KYC Verified" : user.kycStatus =="under review"?"✓ KYC Under Review":"✗ KYC Not Verified"}
               </span>
               <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full font-medium border border-green-500/30">
+                
                 ● Active Member
               </span>
               <span className="bg-stone-700 text-stone-300 text-xs px-3 py-1 rounded-full font-medium">

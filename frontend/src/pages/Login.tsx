@@ -7,7 +7,6 @@ import { Link, Navigate } from 'react-router-dom';
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     email?: string;
     password?: string;
@@ -63,7 +62,7 @@ export const Login: React.FC = () => {
 
           <Input
             id="password"
-            type={showPassword ? 'text' : 'password'}
+            type='password'
             label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

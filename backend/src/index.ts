@@ -11,6 +11,7 @@ import itemrouter from "./routes/items.route.ts"
 import paymentroute from "./routes/payment.route.ts"
 import cartroute from "./routes/cart.route.ts"
 import rentalrouter from "./routes/rental.route.ts"; 
+import kycRoutes from "./routes/kycverification.route.ts";
 
 import path from "path";
 import wishlistroute from "./routes/wishlist.route.ts"
@@ -36,7 +37,7 @@ app.use("/api/payment", paymentroute)
 app.use("/api/cart", cartroute)
 app.use("/api/wishlist", wishlistroute)
 app.use("/api/rentals", rentalrouter);
-
+app.use("/api/kyc", kycRoutes);
 
 
 app.listen(PORT, () => {

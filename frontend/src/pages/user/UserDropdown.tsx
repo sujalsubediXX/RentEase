@@ -15,12 +15,19 @@ function UserDropdown() {
         return () => document.removeEventListener("mousedown", handleClick);
     }, []);
 
+
+  
+
     const items: { label: string; icon: string; page: string }[] = [
         { label: "My Profile", icon: "👤", page: "profile" },
         { label: "Wishlist", icon: "❤️", page: "wishlist" },
         { label: "Cart", icon: "🛒", page: "cart" },
         { label: "Settings", icon: "⚙️", page: "settings" },
     ];
+
+    if (user?.kycStatus == "pending" || user?.kycStatus =="rejected"){
+        items.push({label:"Verify KYC",icon:"😎", page:"kycverification"})
+    }
 
     return (
         <div ref={ref} className="relative">
@@ -51,13 +58,18 @@ function UserDropdown() {
                         <p className="font-semibold text-stone-800 text-sm">{user?.fullName || "User"}</p>
                         <p className="text-xs text-stone-500">{user?.email}</p>
                         {
-                            user?.isKycVerified ? (
-                                <span className="inline-block mt-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                            user?.kycStatus == "verified" ? (
+                                <span className="inline-block mt-1 text-xs bg-amber-100 text-green-500 px-2 py-0.5 rounded-full font-medium">
                                     ✓ KYC Verified
+                                </span>
+                            ) : 
+                            user?.kycStatus == "under review" ? (
+                                <span className="inline-block mt-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                                    ✓ KYC Under Review
                                 </span>
                             ) : (
                                 <span className="inline-block mt-1 text-xs bg-amber-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                                KYC Not Verified
+                                    ❎KYC Not Verified
                                 </span>
                             )
                         }

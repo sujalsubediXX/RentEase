@@ -40,6 +40,7 @@ export const Input: React.FC<InputProps> = ({
           `}
           {...props}
         />
+
       </div>
       {error && (
         <p className="mt-1 text-xs text-red-500 animate-pulse">

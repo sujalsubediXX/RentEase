@@ -10,7 +10,7 @@ function UserSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     fullName: '',
@@ -35,12 +35,12 @@ function UserSettingsPage() {
     promotions: false,
     reminders: true,
   });
-  
+
   const [privacy, setPrivacy] = useState({
     showProfile: true,
     showRentals: false,
   });
-  
+
   const [activeTab, setActiveTab] = useState<"account" | "notifications" | "privacy" | "kyc">("account");
 
   const tabs: { id: typeof activeTab; label: string; icon: string }[] = [
@@ -130,9 +130,9 @@ function UserSettingsPage() {
       }
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Failed to update profile' 
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to update profile'
       });
     } finally {
       setIsSaving(false);
@@ -185,16 +185,15 @@ function UserSettingsPage() {
       }
     } catch (error: any) {
       console.error('Error updating password:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Failed to update password' 
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to update password'
       });
     } finally {
       setIsChangingPassword(false);
     }
   };
 
-  const isKycVerified = user?.kycStatus === "verified" || user?.kycStatus === "approved";
 
   // Password requirements list
   const passwordRequirements = [
@@ -208,7 +207,7 @@ function UserSettingsPage() {
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-10 mt-12">
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-100">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
             <p className="mt-4 text-stone-600">Loading settings...</p>
@@ -218,17 +217,37 @@ function UserSettingsPage() {
     );
   }
 
+
+  const normalizeKycStatus = (status?: string) => {
+    if (!status) return "rejected";
+
+    const s = status.toLowerCase().trim();
+
+    if (s === "approved") return "verified";
+    if (s === "pending") return "pending";
+    if (s === "under review" || s === "under_review") return "under_review";
+    return "rejected";
+  };
+
+  const kycStatus = normalizeKycStatus(user?.kycStatus);
+
+  const kycItems = [
+    { label: "Citizenship / National ID", icon: "🪪" },
+    { label: "Selfie Verification", icon: "🤳" },
+    { label: "Phone Number", icon: "📱" },
+    { label: "Email Address", icon: "📧" },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 mt-12">
       <h1 className="text-3xl font-bold text-stone-900 font-serif mb-8">Settings</h1>
 
       {/* Success/Error Message */}
       {message && (
-        <div className={`mb-6 p-4 rounded-xl ${
-          message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700'
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
+        <div className={`mb-6 p-4 rounded-xl ${message.type === 'success'
+          ? 'bg-green-50 border border-green-200 text-green-700'
+          : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
           {message.text}
         </div>
       )}
@@ -240,11 +259,10 @@ function UserSettingsPage() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left ${
-                activeTab === t.id
-                  ? "bg-stone-900 text-amber-400"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left ${activeTab === t.id
+                ? "bg-stone-900 text-amber-400"
+                : "text-stone-600 hover:bg-stone-100"
+                }`}
             >
               <span>{t.icon}</span>
               {t.label}
@@ -299,7 +317,7 @@ function UserSettingsPage() {
                   />
                 </div>
               </div>
-              <button 
+              <button
                 onClick={handleSaveProfile}
                 disabled={isSaving}
                 className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -316,7 +334,7 @@ function UserSettingsPage() {
 
               <div className="mt-8 pt-8 border-t border-stone-100">
                 <h3 className="font-bold text-stone-900 mb-4">Change Password</h3>
-                
+
                 {/* Password Requirements */}
                 <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                   <p className="text-xs font-semibold text-amber-800 mb-2">Password Requirements:</p>
@@ -345,11 +363,10 @@ function UserSettingsPage() {
                       placeholder="Current Password"
                       value={passwordData.currentPassword}
                       onChange={handlePasswordChange}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${
-                        passwordErrors.currentPassword 
-                          ? 'border-red-400 focus:border-red-400 focus:ring-red-100' 
-                          : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
-                      }`}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${passwordErrors.currentPassword
+                        ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
+                        : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
+                        }`}
                     />
                     {passwordErrors.currentPassword && (
                       <p className="text-xs text-red-500 mt-1">{passwordErrors.currentPassword}</p>
@@ -362,11 +379,10 @@ function UserSettingsPage() {
                       placeholder="New Password"
                       value={passwordData.newPassword}
                       onChange={handlePasswordChange}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${
-                        passwordErrors.newPassword 
-                          ? 'border-red-400 focus:border-red-400 focus:ring-red-100' 
-                          : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
-                      }`}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${passwordErrors.newPassword
+                        ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
+                        : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
+                        }`}
                     />
                     {passwordErrors.newPassword && (
                       <p className="text-xs text-red-500 mt-1">{passwordErrors.newPassword}</p>
@@ -379,18 +395,17 @@ function UserSettingsPage() {
                       placeholder="Confirm Password"
                       value={passwordData.confirmPassword}
                       onChange={handlePasswordChange}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${
-                        passwordErrors.confirmPassword 
-                          ? 'border-red-400 focus:border-red-400 focus:ring-red-100' 
-                          : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
-                      }`}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all ${passwordErrors.confirmPassword
+                        ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
+                        : 'border-stone-200 focus:border-amber-400 focus:ring-amber-100'
+                        }`}
                     />
                     {passwordErrors.confirmPassword && (
                       <p className="text-xs text-red-500 mt-1">{passwordErrors.confirmPassword}</p>
                     )}
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={handleUpdatePassword}
                   disabled={isChangingPassword}
                   className="mt-4 border border-stone-900 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-stone-900 hover:text-white transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -471,58 +486,64 @@ function UserSettingsPage() {
           {activeTab === "kyc" && (
             <div className="p-6">
               <h2 className="font-bold text-stone-900 text-lg mb-6">KYC Verification Status</h2>
-              <div className={`rounded-2xl p-5 flex items-start gap-4 mb-6 ${
-                isKycVerified 
-                  ? 'bg-green-50 border border-green-200' 
-                  : 'bg-yellow-50 border border-yellow-200'
-              }`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shrink-0 ${
-                  isKycVerified ? 'bg-green-500' : 'bg-yellow-500'
+              <div className={`rounded-2xl p-5 flex items-start gap-4 mb-6 ${user.kycStatus == "approved" || user.kycStatus == "under review"
+                ? 'bg-green-50 border border-green-200'
+                : 'bg-yellow-50 border border-yellow-200'
                 }`}>
-                  {isKycVerified ? '✓' : '⏳'}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shrink-0 ${user.kycStatus == "approved" ? 'bg-green-500' : user.kycStatus == "under review" ? 'bg-yellow-500' : 'bg-red-400'
+                  }`}>
+                  {user.kycStatus == "approved" ? '✓' : user.kycStatus == "pending" || user.kycStatus == "under review" ? '⏳' : ''}
                 </div>
                 <div>
-                  <p className={`font-bold ${
-                    isKycVerified ? 'text-green-800' : 'text-yellow-800'
-                  }`}>
-                    {isKycVerified ? 'Fully Verified' : 'Verification Pending'}
+                  <p className={`font-bold ${user.kycStatus ? 'text-green-800' : 'text-yellow-800'
+                    }`}>
+                    {user.kycStatus ? 'Fully Verified' : 'Verification Pending'}
                   </p>
-                  <p className={`text-sm mt-0.5 ${
-                    isKycVerified ? 'text-green-600' : 'text-yellow-600'
-                  }`}>
-                    {isKycVerified 
-                      ? 'Your account is verified and ready to rent items.' 
-                      : 'Please complete KYC verification to unlock all features.'}
+                  <p className={`text-sm mt-0.5 ${user.kycStatus ? 'text-green-600' : 'text-yellow-600'
+                    }`}>
+                    {user.kycStatus == "approved"
+                      ? 'Your account is verified and ready to rent items.' :
+                      user.kycStatus == "under review" ? 'Your account is under review .' : 'Please complete KYC verification to unlock all features.'}
                   </p>
                   {user?.createdAt && (
-                    <p className={`text-xs mt-1 ${
-                      isKycVerified ? 'text-green-500' : 'text-yellow-500'
-                    }`}>
-                      {isKycVerified 
+                    <p className={`text-xs mt-1 ${user?.kycStatus == "approved" ? 'text-green-500' : user?.kycStatus == "under review" ? 'text-yellow-500' : 'text-red-500'
+                      }`}>
+                      {user?.kycStatus == "approved"
                         ? `Verified on ${new Date(user.createdAt).toLocaleDateString()}`
-                        : 'Submit your documents for verification'}
+                        :
+                        user?.kycStatus == "under review" ? 'Your KYC is under review.' : 'Submit your documents for verification'}
                     </p>
                   )}
                 </div>
               </div>
               <div className="space-y-3">
-                {[
-                  { label: "Citizenship / National ID", status: isKycVerified ? "verified" : "pending", icon: "🪪" },
-                  { label: "Selfie Verification", status: isKycVerified ? "verified" : "pending", icon: "🤳" },
-                  { label: "Phone Number", status: user?.phoneNumber ? "verified" : "pending", icon: "📱" },
-                  { label: "Email Address", status: user?.email ? "verified" : "pending", icon: "📧" },
-                ].map((d) => (
-                  <div key={d.label} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
+                {kycItems.map((d) => (
+                  <div
+                    key={d.label}
+                    className="flex items-center justify-between p-4 bg-stone-50 rounded-xl"
+                  >
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{d.icon}</span>
-                      <span className="text-sm font-medium text-stone-700">{d.label}</span>
+                      <span className="text-sm font-medium text-stone-700">
+                        {d.label}
+                      </span>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                      d.status === "verified"
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {d.status === "verified" ? '✓ Verified' : '⏳ Pending'}
+
+                    <span
+                      className={`text-xs px-2.5 py-1 rounded-full font-semibold ${kycStatus === "verified"
+                        ? "bg-green-100 text-green-700"
+                        :  kycStatus === "under_review"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                      {kycStatus === "verified"
+                        ? "✓ Verified"
+                        : kycStatus === "pending"
+                        ?"⏳ Pending":
+                          kycStatus === "under_review"
+                          ? "⏳ Under Review"
+                          : "❎ Rejected"}
                     </span>
                   </div>
                 ))}
