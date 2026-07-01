@@ -129,7 +129,13 @@ const router = createBrowserRouter([
   },
 
   { path: "/login", element: <Login /> },
-  { path: "/kycverification", element: <KYCVerificationForm /> },
+  { path: "/kycverification", element:
+     (
+            <ProtectedRoute allowedRoles={["owner", "renter"]} >
+            <KYCVerificationForm /> 
+            </ProtectedRoute>
+          )
+},
   { path: "/register", element: <Register /> },
 
   {

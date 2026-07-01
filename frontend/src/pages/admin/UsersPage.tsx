@@ -1,18 +1,17 @@
-import axios from "axios";
 import { Download, Search, Eye, Ban, CheckCircle } from "lucide-react";
-import  {  useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import API_BASE_URL from "../../config/api";
+import axios from "axios";
 
 interface User {
   id: string;
-  fullname: string;
+  fullName: string;
   email: string;
   role: "user" | "owner";
   status: "active" | "suspended" | "inactive";
   joined: string;
   avatar: string;
 }
-
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     active: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
@@ -34,16 +33,16 @@ const avatarColor = (initials: string) => {
   return colors[initials.charCodeAt(0) % colors.length];
 };
 
-export const UsersPage: React.FC<{ roleFilter?: "user" | "owner" }> = ({ roleFilter }) => {
-  const [search, setSearch] = useState("");
+export const UsersPage = () => {
+  const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [user,setUsers] = useState<User[]>([]);
+    const [user,setUsers] = useState<User[]>([]);
 
   useEffect(()=>{
     const fetchUser = async()=>{
       try {
-        const res = await axios.get(`${API_BASE_URL}/user/getUser/role=user`)
-        setUsers(res.data)
+        const res = await axios.get(`${API_BASE_URL}/user/role/renter`)
+        setUsers(res.data.users)
       } catch (error) {
         console.log(error)
       }
@@ -51,18 +50,19 @@ export const UsersPage: React.FC<{ roleFilter?: "user" | "owner" }> = ({ roleFil
     fetchUser()
     },[])
 
-  const filtered = user.filter(u => {
-    const matchRole = roleFilter ? u.role === roleFilter : true;
-    const matchSearch = u.fullname.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || u.status === statusFilter;
-    return matchRole && matchSearch && matchStatus;
-  });
 
+
+ const filtered = user.filter(u => {
+
+    const matchSearch = u.fullName.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "all" || u.status === statusFilter;
+    return  matchSearch && matchStatus;
+  });
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white">{roleFilter === "owner" ? "Owners" : roleFilter === "user" ? "Renters" : "All Users"}</h1>
+          <h1 className="text-lg font-bold text-white">Renters</h1>
           <p className="text-xs text-stone-500 mt-0.5">{filtered.length} total records</p>
         </div>
         <button className="flex items-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-medium transition-colors">
@@ -107,7 +107,7 @@ export const UsersPage: React.FC<{ roleFilter?: "user" | "owner" }> = ({ roleFil
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-xl ${avatarColor(u.avatar)} flex items-center justify-center text-xs font-bold text-white`}>{u.avatar}</div>
-                    <span className="text-stone-200 font-medium">{u.fullname}</span>
+                    <span className="text-stone-200 font-medium">{u.fullName}</span>
                   </div>
                 </td>
                 <td className="px-5 py-3.5 text-stone-400">{u.email}</td>

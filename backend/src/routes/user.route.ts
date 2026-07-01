@@ -27,7 +27,7 @@ router.get("/users", getAllUsers);
 router.post("/change-password", authMiddleware, changePassword);  
 
 // Get users by role
-router.get("/users/role/:role", getUsersByRole);
+router.get("/role/:role", getUsersByRole);
 
 // Get single user
 router.get("/users/:id", getUserById);

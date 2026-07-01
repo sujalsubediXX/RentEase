@@ -39,9 +39,10 @@ const userSchema = new mongoose.Schema(
             required: [true, 'Address is required'],
             trim: true
         },
-        isVerified: {
-            type: Boolean,
-            default: false
+        status: {
+            type: String,
+            enum: ['active', 'suspended', 'inactive'],
+            default: 'active'
         },
         kycStatus: {
             type: String,

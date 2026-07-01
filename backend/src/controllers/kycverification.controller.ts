@@ -56,7 +56,7 @@ export const submitKYC = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message:
-          existing.status === "under review"
+          existing.status === "under_review"
             ? "You already have a KYC submission under review"
             : "You are already verified",
       });
@@ -133,7 +133,7 @@ export const submitKYC = async (req: Request, res: Response) => {
 
       selfieImage,
 
-      status: "under review" as const,
+      status: "under_review" as const,
 
       submittedAt: new Date(),
     };
@@ -165,7 +165,7 @@ export const submitKYC = async (req: Request, res: Response) => {
     }
 
     await User.findByIdAndUpdate(userId, {
-      kycStatus: "under review",
+      kycStatus: "under_review",
     });
 
     return res.status(201).json({
@@ -210,13 +210,13 @@ export const getMyKYCStatus = async (req: Request, res: Response) => {
   }
 };
  
-type KycStatus = "pending" | "under review" | "verified" | "rejected";
+type KycStatus = "pending" | "under_review" | "verified" | "rejected";
 type KycQueryStatus = "pending" | "under_review" | "verified" | "rejected";
 
 const VALID_STATUS_FILTERS: (KycQueryStatus | "all")[] = ["all", "pending", "under_review", "verified", "rejected"];
 const STATUS_QUERY_TO_DB_STATUS: Record<KycQueryStatus, KycStatus> = {
   pending: "pending",
-  under_review: "under review",
+  under_review: "under_review",
   verified: "verified",
   rejected: "rejected",
 };
@@ -224,18 +224,16 @@ const STATUS_QUERY_TO_DB_STATUS: Record<KycQueryStatus, KycStatus> = {
 // GET /api/kyc/admin?status=pending|under_review|verified|rejected|all
 export const getAllKYCs = async (req: Request, res: Response) => {
   try {
-    const statusQuery = (req.query.status as string) || "all";
- 
-    if (!VALID_STATUS_FILTERS.includes(statusQuery as KycQueryStatus | "all")) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status filter. Use one of: ${VALID_STATUS_FILTERS.join(", ")}`,
-      });
+        const { status } = req.query;
+
+    // Build filter dynamically
+    const filter: any = {};
+
+    if (status && status !== "all") {
+      filter.status = status;
     }
  
-    const status = statusQuery === "all" ? "all" : STATUS_QUERY_TO_DB_STATUS[statusQuery as KycQueryStatus];
-    const filter = status === "all" ? {} : { status };
- 
+    
     const kycs = await KYC.find(filter)
       .populate("user", "name email")
       .select(
@@ -243,28 +241,17 @@ export const getAllKYCs = async (req: Request, res: Response) => {
       )
       .sort({ submittedAt: -1 });
  
-    // Counts per status power the tab badges on the list page without a second round trip
-    const counts = await KYC.aggregate([
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
-    const countsByStatus: Record<string, number> = {
-      pending: 0,
-      under_review: 0,
-      verified: 0,
-      rejected: 0,
+      const counts = {
+      all: await KYC.countDocuments(),
+      pending: await KYC.countDocuments({ status: "pending" }),
+      under_review: await KYC.countDocuments({ status: "under_review" }),
+      verified: await KYC.countDocuments({ status: "verified" }),
+      rejected: await KYC.countDocuments({ status: "rejected" }),
     };
-    counts.forEach((c) => {
-      const statusKey = c._id === "under review" ? "under_review" : c._id;
-      countsByStatus[statusKey] = c.count;
-    });
- 
     return res.status(200).json({
       success: true,
       data: kycs,
-      counts: {
-        ...countsByStatus,
-        all: Object.values(countsByStatus).reduce((a, b) => a + b, 0),
-      },
+      counts,
     });
   } catch (err) {
     console.error("Get all KYCs error:", err);
@@ -285,7 +272,7 @@ export const getKYCById = async (req: Request, res: Response) => {
     }
  
     if (kyc.status === "pending") {
-      kyc.status = "under review";
+      kyc.status = "under_review";
       await kyc.save();
     }
  

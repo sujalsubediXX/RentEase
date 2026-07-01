@@ -197,7 +197,7 @@ export default function KYCDetailView() {
     <div className="min-h-screen bg-stone-950 text-white px-6 py-10">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <button onClick={() => navigate("/admin/kyc")} className="text-stone-400 text-sm font-semibold hover:text-white mb-6 inline-flex items-center gap-1">
+        <button onClick={() => navigate("/admin/kycreview")} className="text-stone-400 text-sm font-semibold hover:text-white mb-6 inline-flex items-center gap-1">
           ← Back to list
         </button>
 

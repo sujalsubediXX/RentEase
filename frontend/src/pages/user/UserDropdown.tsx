@@ -63,7 +63,7 @@ function UserDropdown() {
                                     ✓ KYC Verified
                                 </span>
                             ) : 
-                            user?.kycStatus == "under review" ? (
+                            user?.kycStatus == "under_review" ? (
                                 <span className="inline-block mt-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
                                     ✓ KYC Under Review
                                 </span>

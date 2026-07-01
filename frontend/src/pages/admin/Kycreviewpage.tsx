@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+
 import axios from "axios";
 type KycStatus = "pending" | "under_review" | "verified" | "rejected";
 type TabFilter = "all" | KycStatus;
@@ -91,7 +91,11 @@ export default function Kycreviewpage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_BASE_URL}/kyc/admin`);
+      const res = await axios.get(`${API_BASE_URL}/kyc/admin`,{
+      params: {
+        status: status === "all" ? undefined : status,
+      },
+    });
 
       
       setKycs(res.data.data);

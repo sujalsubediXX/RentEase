@@ -37,7 +37,7 @@ const kycVerificationSchema = new mongoose.Schema(
         selfieImage: { type: String, required: true },
         status: {
             type: String,
-            enum: ["pending","under review", "verified", "rejected"],
+            enum: ["pending","under_review", "verified", "rejected"],
             default: "pending",
         },
         rejectionReason: { type: String },

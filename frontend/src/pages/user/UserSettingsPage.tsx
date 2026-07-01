@@ -223,9 +223,9 @@ function UserSettingsPage() {
 
     const s = status.toLowerCase().trim();
 
-    if (s === "approved") return "verified";
+    if (s === "verified") return "verified";
     if (s === "pending") return "pending";
-    if (s === "under review" || s === "under_review") return "under_review";
+    if (s === "under_review") return "under_review";
     return "rejected";
   };
 
@@ -486,13 +486,13 @@ function UserSettingsPage() {
           {activeTab === "kyc" && (
             <div className="p-6">
               <h2 className="font-bold text-stone-900 text-lg mb-6">KYC Verification Status</h2>
-              <div className={`rounded-2xl p-5 flex items-start gap-4 mb-6 ${user.kycStatus == "approved" || user.kycStatus == "under review"
+              <div className={`rounded-2xl p-5 flex items-start gap-4 mb-6 ${user.kycStatus == "verified" || user.kycStatus == "under_review"
                 ? 'bg-green-50 border border-green-200'
                 : 'bg-yellow-50 border border-yellow-200'
                 }`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shrink-0 ${user.kycStatus == "approved" ? 'bg-green-500' : user.kycStatus == "under review" ? 'bg-yellow-500' : 'bg-red-400'
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shrink-0 ${user.kycStatus == "approved" ? 'bg-green-500' : user.kycStatus == "under_review" ? 'bg-yellow-500' : 'bg-red-400'
                   }`}>
-                  {user.kycStatus == "approved" ? '✓' : user.kycStatus == "pending" || user.kycStatus == "under review" ? '⏳' : ''}
+                  {user.kycStatus == "approved" ? '✓' : user.kycStatus == "pending" || user.kycStatus == "under_review" ? '⏳' : ''}
                 </div>
                 <div>
                   <p className={`font-bold ${user.kycStatus ? 'text-green-800' : 'text-yellow-800'
@@ -501,17 +501,17 @@ function UserSettingsPage() {
                   </p>
                   <p className={`text-sm mt-0.5 ${user.kycStatus ? 'text-green-600' : 'text-yellow-600'
                     }`}>
-                    {user.kycStatus == "approved"
+                    {user.kycStatus == "verified"
                       ? 'Your account is verified and ready to rent items.' :
-                      user.kycStatus == "under review" ? 'Your account is under review .' : 'Please complete KYC verification to unlock all features.'}
+                      user.kycStatus == "under_review" ? 'Your account is under review .' : 'Please complete KYC verification to unlock all features.'}
                   </p>
                   {user?.createdAt && (
-                    <p className={`text-xs mt-1 ${user?.kycStatus == "approved" ? 'text-green-500' : user?.kycStatus == "under review" ? 'text-yellow-500' : 'text-red-500'
+                    <p className={`text-xs mt-1 ${user?.kycStatus == "approved" ? 'text-green-500' : user?.kycStatus == "under_review" ? 'text-yellow-500' : 'text-red-500'
                       }`}>
-                      {user?.kycStatus == "approved"
+                      {user?.kycStatus == "verified"
                         ? `Verified on ${new Date(user.createdAt).toLocaleDateString()}`
                         :
-                        user?.kycStatus == "under review" ? 'Your KYC is under review.' : 'Submit your documents for verification'}
+                        user?.kycStatus == "under_review" ? 'Your KYC is under review.' : 'Submit your documents for verification'}
                     </p>
                   )}
                 </div>

@@ -31,7 +31,7 @@ export const getMe = async (req: Request, res: Response) => {
       role: user.role,
       profileImage: user.profileImage,
       address: user.address,
-      isVerified: user.isVerified,
+      status: user.status,
       kycStatus: user.kycStatus,
       createdAt: user.createdAt,
     });
@@ -246,7 +246,7 @@ export const loginUser = async (req: Request, res: Response) => {
         role: user.role,
         profileImage: user.profileImage,
         address: user.address,
-        isVerified: user.isVerified,
+        status: user.status,
         kycStatus: user.kycStatus,
       },
     });
@@ -280,7 +280,7 @@ export const register = async (req: Request, res: Response) => {
       password: hashedPassword,
       role: role || "renter",
       address: address || "",
-      isVerified: false,
+      status: "active",
       kycStatus: "pending",
     });
 
@@ -294,7 +294,7 @@ export const register = async (req: Request, res: Response) => {
         phoneNumber: user.phoneNumber,
         role: user.role,
         address: user.address,
-        isVerified: user.isVerified,
+        status: user.status,
         profileImage: user.profileImage,
       },
     });
@@ -309,6 +309,7 @@ export const getUsersByRole = async (req: Request, res: Response) => {
   try {
     const roleParam = req.params.role;
     const role = Array.isArray(roleParam) ? roleParam[0] : roleParam;
+    console.log(role)
 
     if (!role || !allowedRoles.includes(role as AllowedRole)) {
       return res.status(400).json({
@@ -326,7 +327,7 @@ export const getUsersByRole = async (req: Request, res: Response) => {
       phoneNumber: user.phoneNumber,
       role: user.role,
       address: user.address,
-      isVerified: user.isVerified,
+      status: user.status,
       kycStatus: user.kycStatus,
       joined: user.createdAt?.toLocaleDateString("en-US", {
         month: "short",
@@ -376,7 +377,7 @@ export const getUserById = async (req: Request, res: Response) => {
         phoneNumber: user.phoneNumber,
         role: user.role,
         address: user.address,
-        isVerified: user.isVerified,
+        status: user.status,
         kycStatus: user.kycStatus,
         profileImage: user.profileImage,
         createdAt: user.createdAt,
@@ -426,7 +427,7 @@ export const updateUser = async (req: Request, res: Response) => {
         phoneNumber: user.phoneNumber,
         role: user.role,
         address: user.address,
-        isVerified: user.isVerified,
+        status: user.status,
         profileImage: user.profileImage,
       },
     });
@@ -475,7 +476,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
       phoneNumber: user.phoneNumber,
       role: user.role,
       address: user.address,
-      isVerified: user.isVerified,
+      status: user.status,
       kycStatus: user.kycStatus,
       joined: user.createdAt?.toLocaleDateString("en-US", {
         month: "short",
