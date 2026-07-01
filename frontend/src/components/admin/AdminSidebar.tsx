@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useSidebar } from "../../contexts/SidebarContext"
 import { Link } from "react-router-dom";
+import { useAuth } from '../../hooks/useAuth';
 const NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; badge?: number }[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
@@ -28,6 +29,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ size
 
 
 export const AdminSidebar = () => {
+  const { logout } = useAuth();
   const { isSidebarOpen } = useSidebar();
   const [activeNav, setActiveNav] = useState<string>("dashboard");
   return (
@@ -81,7 +83,7 @@ export const AdminSidebar = () => {
           <Settings size={18} className="shrink-0" />
           {isSidebarOpen && <span>Settings</span>}
         </Link >
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-red-600 hover:text-stone-200 transition-all">
+        <button onClick={()=>logout()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-red-600 hover:text-stone-200 transition-all">
           <LogOut size={18} className="shrink-0" />
           {isSidebarOpen && <span>Log Out</span>}
         </button>

@@ -6,11 +6,36 @@ import API_BASE_URL from "../../config/api";
 import { validatePasswordChange } from "../../utils/validation";
 
 function UserSettingsPage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try{
+      const res = await axios.patch(`${API_BASE_URL}/user/${user?.id}/deactivate`)
+      if(res.data.success){
+      setMessage({
+        type: 'success',
+        text: 'Account deleted successfully'
+      });
+
+      setTimeout(() => {
+        setMessage(null);
+        logout();
+        // window.location.href = '/login';
+      }, 3000);
+    }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to delete account'
+      });
+    }
+  }
   // Form state
   const [formData, setFormData] = useState({
     fullName: '',
@@ -29,24 +54,15 @@ function UserSettingsPage() {
   // Password validation errors
   const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
 
-  const [notifications, setNotifications] = useState({
-    bookingUpdates: true,
-    newMessages: true,
-    promotions: false,
-    reminders: true,
-  });
+ 
 
-  const [privacy, setPrivacy] = useState({
-    showProfile: true,
-    showRentals: false,
-  });
-
-  const [activeTab, setActiveTab] = useState<"account" | "notifications" | "privacy" | "kyc">("account");
+  const [activeTab, setActiveTab] = useState<"account" | "password"  | "danger" | "kyc">("account");
 
   const tabs: { id: typeof activeTab; label: string; icon: string }[] = [
     { id: "account", label: "Account", icon: "👤" },
-    { id: "notifications", label: "Notifications", icon: "🔔" },
-    { id: "privacy", label: "Privacy", icon: "🔒" },
+    { id: "password", label: "Change Password", icon: "🔒" },
+  
+    { id: "danger", label: "Danger Zone", icon: "⚠️" },
     { id: "kyc", label: "KYC Status", icon: "✅" },
   ];
 
@@ -62,14 +78,7 @@ function UserSettingsPage() {
     }
   }, [user]);
 
-  const Toggle = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
-    <button
-      onClick={onChange}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${checked ? "bg-amber-500" : "bg-stone-200"}`}
-    >
-      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-1"}`} />
-    </button>
-  );
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -331,8 +340,13 @@ function UserSettingsPage() {
                   'Save Changes'
                 )}
               </button>
-
-              <div className="mt-8 pt-8 border-t border-stone-100">
+        
+            </div>
+          )}
+          {activeTab === "password" && (
+            <div className="p-6">
+            
+              <div className=" border-stone-100">
                 <h3 className="font-bold text-stone-900 mb-4">Change Password</h3>
 
                 {/* Password Requirements */}
@@ -423,63 +437,20 @@ function UserSettingsPage() {
             </div>
           )}
 
-          {activeTab === "notifications" && (
-            <div className="p-6">
-              <h2 className="font-bold text-stone-900 text-lg mb-6">Notification Preferences</h2>
-              <div className="space-y-1">
-                {(
-                  [
-                    { key: "bookingUpdates", label: "Booking Updates", desc: "Status changes for your rentals" },
-                    { key: "newMessages", label: "New Messages", desc: "Messages from item owners" },
-                    { key: "promotions", label: "Promotions & Offers", desc: "Deals and seasonal discounts" },
-                    { key: "reminders", label: "Return Reminders", desc: "Alerts before items are due" },
-                  ] as { key: keyof typeof notifications; label: string; desc: string }[]
-                ).map((n) => (
-                  <div key={n.key} className="flex items-center justify-between py-4 border-b border-stone-100 last:border-0">
-                    <div>
-                      <p className="font-medium text-stone-900 text-sm">{n.label}</p>
-                      <p className="text-xs text-stone-500 mt-0.5">{n.desc}</p>
-                    </div>
-                    <Toggle
-                      checked={notifications[n.key]}
-                      onChange={() => setNotifications((p) => ({ ...p, [n.key]: !p[n.key] }))}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+ 
 
-          {activeTab === "privacy" && (
+          {activeTab === "danger" && (
             <div className="p-6">
-              <h2 className="font-bold text-stone-900 text-lg mb-6">Privacy Settings</h2>
-              <div className="space-y-1">
-                {(
-                  [
-                    { key: "showProfile", label: "Public Profile", desc: "Allow others to view your profile" },
-                    { key: "showRentals", label: "Show Rental History", desc: "Display your past rentals publicly" },
-                  ] as { key: keyof typeof privacy; label: string; desc: string }[]
-                ).map((n) => (
-                  <div key={n.key} className="flex items-center justify-between py-4 border-b border-stone-100 last:border-0">
-                    <div>
-                      <p className="font-medium text-stone-900 text-sm">{n.label}</p>
-                      <p className="text-xs text-stone-500 mt-0.5">{n.desc}</p>
-                    </div>
-                    <Toggle
-                      checked={privacy[n.key]}
-                      onChange={() => setPrivacy((p) => ({ ...p, [n.key]: !p[n.key] }))}
-                    />
-                  </div>
-                ))}
-              </div>
+              <h2 className="font-bold text-stone-900 text-lg mb-6">Danger Zone</h2>
+              <p className="text-sm text-stone-600 mb-4">Be cautious! Actions in this section are irreversible.</p>
 
-              <div className="mt-8 p-4 bg-red-50 border border-red-100 rounded-xl">
+              <form onSubmit={handleDeleteAccount} className="mt-8 p-4 bg-red-50 border border-red-100 rounded-xl">
                 <h3 className="font-semibold text-red-700 text-sm mb-1">Danger Zone</h3>
                 <p className="text-xs text-red-500 mb-3">These actions are permanent and cannot be undone.</p>
                 <button className="text-red-600 border border-red-200 text-xs font-semibold px-4 py-2 rounded-lg hover:bg-red-100 transition-colors">
                   Delete Account
                 </button>
-              </div>
+              </form>
             </div>
           )}
 

@@ -38,32 +38,9 @@ const TABS: { key: TabFilter; label: string }[] = [
   { key: "rejected", label: "Rejected" },
 ];
 
-function normalizeStatus(status: string): KycStatus {
-  const s = status?.toLowerCase().trim();
-
-  switch (s) {
-    case "pending":
-      return "pending";
-
-    case "under review":
-    case "under_review":
-      return "under_review";
-
-    case "approved":
-    case "verified":
-      return "verified";
-
-    case "rejected":
-      return "rejected";
-
-    default:
-      return "pending";
-  }
-}
-
 function StatusBadge({ status }: { status: string }) {
-  const normalized = normalizeStatus(status);
-  const cfg = STATUS_CONFIG[normalized];
+
+  const cfg = STATUS_CONFIG[status as KycStatus] || { label: "Unknown", dot: "bg-stone-400", badge: "bg-stone-100 text-stone-600" };
 
   return (
     <span
@@ -80,7 +57,7 @@ function formatDate(iso: string) {
 }
 
 export default function Kycreviewpage() {
-  const [activeTab, setActiveTab] = useState<TabFilter>("pending");
+  const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [kycs, setKycs] = useState<KYCListItem[]>([]);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [loading, setLoading] = useState(true);

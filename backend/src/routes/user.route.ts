@@ -5,7 +5,7 @@ import {
   getUsersByRole, 
   getUserById,
   updateUser,
-  deleteUser,
+  deactivateUser,
   getAllUsers,
   getMe,
   getUserRentals,    
@@ -37,7 +37,7 @@ router.get("/users/:id", getUserById);
 // Update user
 router.put("/users/:id", updateUser);
 
-// Delete user
-router.delete("/users/:id", deleteUser);
+// Deactivate user
+router.patch("/:id/deactivate", deactivateUser);
 
 export default router;

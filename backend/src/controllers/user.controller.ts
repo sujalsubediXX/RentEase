@@ -204,6 +204,12 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({ email });
+    if (user && user.status === "inactive") {
+      return res.status(403).json({
+        success: false,
+        message: "Account is deactivated. Please contact support.",
+      });
+    }
 
     if (!user) {
       return res.status(400).json({
@@ -440,17 +446,20 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deactivateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
+
+    user.status = "inactive";
+    await user.save();
 
     res.status(200).json({
       success: true,
@@ -464,6 +473,8 @@ export const deleteUser = async (req: Request, res: Response) => {
     });
   }
 };
+
+
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
