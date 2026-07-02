@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Upload, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
-const DEMO_OWNER_ID = "6a24e1db462be5606d0ca55d";
+import { useAuth } from "../../hooks/useAuth";
 
 
 interface Category {
@@ -63,7 +63,7 @@ export default function OwnerListingForm() {
     console.log(itemId)
     const routerLocation = useLocation();
     const isEditMode = Boolean(itemId);
-
+    const { user } = useAuth();
     const passedListing = (routerLocation.state as NavigationState | null)?.listing;
 
     const [form, setForm] = useState<ListingFormState>(EMPTY_FORM);
@@ -97,7 +97,7 @@ export default function OwnerListingForm() {
                 description: passedListing.description ?? "",
                 price: passedListing.price != null ? String(passedListing.price) : "",
                 location: passedListing.location ?? "",
-                ownerID: DEMO_OWNER_ID,
+                ownerID: user?.id ?? "",
                 condition: passedListing.condition ?? ""
 
             });
@@ -157,7 +157,7 @@ export default function OwnerListingForm() {
             formData.append("location", form.location);
             formData.append("price", form.price);
             formData.append("categoryId", form.categoryID);
-            formData.append("ownerId", DEMO_OWNER_ID);
+            formData.append("ownerId", user?.id ?? "");
             formData.append("condition", form.condition);
             // formData.append("weeklyPrice", form.weeklyPrice);
             // formData.append("deposit", form.deposit);

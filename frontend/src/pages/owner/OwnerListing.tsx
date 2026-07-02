@@ -4,7 +4,7 @@ import { Plus,  MapPin, Edit3, Trash2, MoreVertical} from "lucide-react";
 import { TopBar } from "../../components/owner/TopBar";
 import API_BASE_URL from "../../config/api";
 import { ImageSlider } from "../user/ImageSlider";
-const ownerId = "6a24e1db462be5606d0ca55d"
+import {useAuth} from "../../hooks/useAuth.ts";
 
 
 export interface Product {
@@ -115,6 +115,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
 export default function OwnerListing() {
     const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
+    const { user } = useAuth();
     const handleDelete = (id: string) => {
         setProducts((prev) => prev.filter((item) => item.id !== id));
     };
@@ -164,7 +165,7 @@ export default function OwnerListing() {
     }, [])
     const fetchProducts = async () => {
         try {
-            const url = `${API_BASE_URL}/items/getitemsbyownerId/${ownerId}`;
+            const url = `${API_BASE_URL}/items/getitemsbyownerId/${user?.id}`;
 
             const res = await fetch(url);
 

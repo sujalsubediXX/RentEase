@@ -51,6 +51,7 @@ import PaymentFailurePage from "./pages/user/PaymentFailurePage";
 import Unauthorized from "./pages/Unauthorized";
 import Kycviewpage from "./pages/admin/Kycreviewpage";
 import KYCDetailView from "./pages/admin/Kycdetailview";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -168,8 +169,8 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: "/admin/dashboard", element: <DashboardPage /> },
-      { path: "/admin/users", element: <UsersPage roleFilter="user" /> },
-      { path: "/admin/owners", element: <OwnersPage roleFilter="owner" /> },
+      { path: "/admin/users", element: <UsersPage  /> },
+      { path: "/admin/owners", element: <OwnersPage  /> },
       { path: "/admin/listings", element: <ListingsPage /> },
       { path: "/admin/bookings", element: <BookingsPage /> },
       { path: "/admin/revenue", element: <RevenuePage /> },
