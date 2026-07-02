@@ -105,6 +105,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(updatedUser);
   };
 
+
+  
   return (
     <AuthContext.Provider
       value={{

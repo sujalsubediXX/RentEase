@@ -3,7 +3,8 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import "./index.css";
-
+import ForgotPasswordPage from "./pages/user/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/user/ResetPasswordPage";
 import { AuthProvider } from "./contexts/AuthContext"; // ADD THIS
 
 import HowItWorks from "./pages/user/HowItWorks";
@@ -59,6 +60,8 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Body /> },
       { path: "/how-it-works", element: <HowItWorks /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password/:token", element: <ResetPasswordPage /> },
       { path: "/categories/:categoryId", element: <CategoryPage /> },
       { path: "/categories", element: <CategoriesPage /> },
       { path: "/about", element: <About /> },

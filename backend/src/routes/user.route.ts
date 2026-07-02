@@ -12,6 +12,8 @@ import {
   getUserListings,   
 
   changePassword,
+  forgotPassword,
+  resetPassword
 } from "../controllers/user.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 const router = Router();
@@ -39,5 +41,11 @@ router.put("/users/:id", updateUser);
 
 // Deactivate user
 router.patch("/:id/deactivate", deactivateUser);
+// routes/authRoutes.ts
+
+
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 export default router;

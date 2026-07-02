@@ -80,9 +80,10 @@ export const Login: React.FC = () => {
               <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
-            <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              Forgot password?
-            </a>
+           
+            <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+  Forgot password?
+</Link>
           </div>
 
           {error && (

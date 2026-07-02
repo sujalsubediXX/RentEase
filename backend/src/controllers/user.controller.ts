@@ -1,5 +1,7 @@
 const allowedRoles = ["renter", "owner", "admin"] as const;
 type AllowedRole = (typeof allowedRoles)[number];
+import { sendEmail } from "../utils/sendEmail.ts";
+import crypto from "crypto";
 
 import Rental from '../models/Rentels.model.ts';
 import type { Request, Response } from "express";
@@ -513,5 +515,100 @@ export const getAllUsers = async (req: Request, res: Response) => {
       success: false,
       message: "Failed to fetch users",
     });
+  }
+};
+
+
+
+
+// POST /api/auth/forgot-password
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    // Always respond the same way, whether or not the user exists,
+    // so attackers can't use this to check which emails are registered.
+    if (!user) {
+      return res.status(200).json({
+        message: "If that email is registered, a reset link has been sent.",
+      });
+    }
+
+    // Generate a raw token (sent to user) and a hashed version (stored in DB)
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    await user.save();
+
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your RentEase password",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: auto;">
+          <h2>Reset your password</h2>
+          <p>We received a request to reset your RentEase password. This link expires in 15 minutes.</p>
+          <a href="${resetUrl}" style="display:inline-block;background:#b45309;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;margin:16px 0;">
+            Reset Password
+          </a>
+          <p>If you didn't request this, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+
+    return res.status(200).json({
+      message: "If that email is registered, a reset link has been sent.",
+    });
+  } catch (error) {
+    console.error("forgotPassword error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+// POST /api/auth/reset-password/:token
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    // Ensure token is a single string (Express params can be undefined or string[] in typings)
+    if (!token || Array.isArray(token)) {
+      return res.status(400).json({ message: "Invalid or expired reset link" });
+    }
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select("+resetPasswordToken +resetPasswordExpires +password");
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset link" });
+    }
+
+    // Hash once here — make sure your pre-save hook doesn't double-hash
+    // (this bit you already fought with once in RentEase auth)
+    user.password = await bcrypt.hash(password, 10);
+    // set to null to match schema types (NativeDate | null)
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    return res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    console.error("resetPassword error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };

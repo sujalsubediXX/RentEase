@@ -213,4 +213,17 @@ async getUserListings(): Promise<any[]> {
   }
 }
 
+
+
+
+export const requestPasswordReset = async (email: string) => {
+  const { data } = await axios.post(`${API_BASE_URL}/user/forgot-password`, { email });
+  return data;
+};
+
+export const resetPasswordWithToken = async (token: string, password: string) => {
+  const { data } = await axios.post(`${API_BASE_URL}/user/reset-password/${token}`, { password });
+  return data;
+};
+
 export const authService = AuthService.getInstance();
