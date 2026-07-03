@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import Rentals from "../models/Rentels.model.ts";
+import Rentals from "../models/Rentals.model.ts";
 import Item from "../models/items.model.ts";
 import Cart from "../models/Cart.ts";
 

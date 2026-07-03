@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const rentalSchema = new mongoose.Schema({
   itemId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Items',
+    ref: 'Item',
     required: true
   },
   userId: {

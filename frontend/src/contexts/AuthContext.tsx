@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
 
  useEffect(() => {
   const checkAuth = async () => {
@@ -87,6 +88,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(false);
     }
   };
+
+
 
   const logout = async (): Promise<void> => {
     setIsLoading(true);

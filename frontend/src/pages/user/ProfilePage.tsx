@@ -8,7 +8,6 @@ function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [rentals, setRentals] = useState<any[]>([]);
-  const [listings, setListings] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,20 +27,20 @@ function ProfilePage() {
     };
   }
 
+  
+  console.log(rentals)
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
         // Fetch all data in parallel
-        const [rentalsData, listingsData] = await Promise.all([
-          authService.getUserRentals(),
-          authService.getUserListings(),
+        const [rentalsData] = await Promise.all([
+          authService.getUserRentals()       
 
         ]);
 
         setRentals(rentalsData);
-        setListings(listingsData);
 
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -73,7 +72,7 @@ function ProfilePage() {
     { label: "Active Rentals", value: activeRentals.toString(), icon: "📦" },
     { label: "Completed", value: completedRentals.toString(), icon: "✅" },
     { label: "Wishlist", value: wishlist.length.toString(), icon: "❤️" },
-    { label: "Listings", value: listings.length.toString(), icon: "🏠" },
+    { label: "Listings", value: 2, icon: "🏠" },
   ];
 
   return (
@@ -144,14 +143,14 @@ function ProfilePage() {
                     {rental.itemId?.title || rental.itemName || "Item"}
                   </p>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    {rental.startDate && rental.endDate
-                      ? `${new Date(rental.startDate).toLocaleDateString()} – ${new Date(rental.endDate).toLocaleDateString()}`
+                    {rental.startDate && rental.returnDate
+                      ? `${new Date(rental.startDate).toLocaleDateString()} – ${new Date(rental.returnDate).toLocaleDateString()}`
                       : "No dates available"}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-stone-900 text-sm">
-                    Rs. {(rental.totalAmount || rental.price || 0).toLocaleString()}
+                    Rs. {(rental.totalPrice).toLocaleString()}
                   </p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${rental.status === "active"
                       ? "bg-green-100 text-green-700"
@@ -173,34 +172,6 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* User Listings */}
-      {listings.length > 0 && (
-        <div className="mt-6 bg-white border border-stone-200 rounded-2xl p-6">
-          <h3 className="font-bold text-stone-900 mb-4">My Listings</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {listings.map((listing, i) => (
-              <div key={listing._id || i} className="border border-stone-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-lg bg-amber-50 flex items-center justify-center text-2xl">
-                    {listing.images?.[0] ? <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover rounded-lg" /> : "📦"}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-stone-900">{listing.title}</h4>
-                    <p className="text-sm text-stone-500">{listing.category}</p>
-                    <p className="text-sm font-bold text-amber-600">Rs. {listing.price}/day</p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${listing.status === "available"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                    {listing.status || "available"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

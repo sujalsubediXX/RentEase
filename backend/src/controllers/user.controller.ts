@@ -3,7 +3,7 @@ type AllowedRole = (typeof allowedRoles)[number];
 import { sendEmail } from "../utils/sendEmail.ts";
 import crypto from "crypto";
 
-import Rental from '../models/Rentels.model.ts';
+import Rentals from '../models/Rentals.model.ts';
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -43,34 +43,38 @@ export const getMe = async (req: Request, res: Response) => {
   }
 };
 
-// Get user's rental history
+
+
 export const getUserRentals = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
 
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
-   
-    
-    const rentals = await Rental.find({ 
-      $or: [
-        { renterId: userId }, // Rentals made by user
-        { ownerId: userId }   // Rentals of user's items
-      ]
-    }).populate('itemId'); // Populate item details if needed
+    const rentals = await Rentals.find({
+      userId,
+    })
+      .populate("itemId")
+      .sort({ createdAt: -1 });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      rentals: rentals
+      rentals,
     });
-  } catch (err) {
-    console.error("Error in getUserRentals:", err);
-    return res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    console.error("Error fetching rentals:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
-
 
 // Change password
 // Change password
