@@ -139,9 +139,7 @@ async getCurrentUser(): Promise<User | null> {
       role: data.role,
       profileImage: data.profileImage,
       address: data.address,
-      isVerified: data.isVerified,
       kycStatus: data.kycStatus,
-      isKycVerified: data.kycStatus === "verified" || data.kycStatus === "approved",
       createdAt: data.createdAt,
     };
   } catch (err: any) {

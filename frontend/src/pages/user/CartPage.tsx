@@ -4,6 +4,8 @@ import axios from "axios";
 import API_BASE_URL from "../../config/api";
 import { ImageSlider } from "./ImageSlider";
 import { useAuth } from "../../hooks/useAuth";
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 const BASE_URL = "http://localhost:3000";
 interface CartItem {
   _id: string;
@@ -11,7 +13,7 @@ interface CartItem {
     _id: string;
     title: string;
     price: number;
-    images:string[];
+    images: string[];
   };
   quantity: number;
   rentalDays: number;
@@ -22,14 +24,43 @@ interface CartItem {
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-    const {user } = useAuth();
- const navigate = useNavigate();
+  const [blockedRangesMap, setBlockedRangesMap] = useState<
+    Record<string, { start: Date; end: Date }[]>
+  >({});
+  const token = localStorage.getItem("accessToken") || "";
+  const fetchAllAvailability = async (items: CartItem[]) => {
+    const entries = await Promise.all(
+      items.map(async (item) => {
+        try {
+          const res = await axios.get(
+            `${API_BASE_URL}/rentals/availability/${item.itemId._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+          );
+          const ranges = (res.data?.data?.fullyBookedRanges || []).map((r: any) => ({
+            start: new Date(r.start),
+            end: new Date(r.end),
+          }));
+          return [item.itemId._id, ranges] as const;
+        } catch (err) {
+          console.log('Failed to fetch availability for', item.itemId._id, err);
+          return [item.itemId._id, []] as const;
+        }
+      })
+    );
+    setBlockedRangesMap(Object.fromEntries(entries));
+  };
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fetchCart = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/cart/${user?.id}`);
-        setCart(res.data.cart.items || []);
+      const items = res.data.cart.items || [];
+      setCart(items);
+      fetchAllAvailability(items);
     } catch (err) {
       console.log(err);
     } finally {
@@ -93,6 +124,26 @@ export default function CartPage() {
       console.log(err);
     }
   };
+  const handleStartDateChange = (item: CartItem, date: Date | null) => {
+    if (!date) return;
+    const newStart = date.toISOString().split('T')[0];
+
+    const currentEnd = item.endDate ? item.endDate.split('T')[0] : '';
+    // If there's no end date yet, or the new start would land on/after it,
+    // bump the end date up to match the new start so the range stays valid.
+    const newEnd =
+      !currentEnd || new Date(currentEnd) < date ? newStart : currentEnd;
+
+    updateDates(item._id, newStart, newEnd);
+  };
+
+  const handleEndDateChange = (item: CartItem, date: Date | null) => {
+    if (!date) return;
+    const newEnd = date.toISOString().split('T')[0];
+
+    const currentStart = item.startDate ? item.startDate.split('T')[0] : newEnd;
+    updateDates(item._id, currentStart, newEnd);
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 mt-12">
@@ -109,7 +160,7 @@ export default function CartPage() {
         <div className="text-center py-24 text-stone-400">
           <div className="text-6xl mb-4">🛒</div>
           <p className="text-lg font-medium">Your cart is empty</p>
-          <button onClick={()=>navigate("/categories")} className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
+          <button onClick={() => navigate("/categories")} className="mt-6 bg-amber-500 text-stone-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm">
             Browse Items
           </button>
         </div>
@@ -124,7 +175,7 @@ export default function CartPage() {
               >
                 <div className="flex gap-4">
                   <div className="w-28 h-28 rounded-xl  flex items-center justify-center text-3xl shrink-0">
-                   <ImageSlider images={(item.itemId.images).map((img)=>`${BASE_URL}${img}`)} />
+                    <ImageSlider images={(item.itemId.images).map((img) => `${BASE_URL}${img}`)} />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -142,35 +193,26 @@ export default function CartPage() {
                     </div>
 
                     <div className="flex items-center gap-3 mt-2">
-                      {/* START DATE */}
-                      <input
-                        type="date"
-                        value={item.startDate?.split("T")[0] || ""}
-                        onChange={(e) => {
-                          const newStart = e.target.value;
-                          const end = item.endDate;
-
-                          updateDates(item._id, newStart, end);
-                        }}
-                        className="text-xs border border-stone-200 rounded-lg px-2 py-1"
+                      <DatePicker
+                        selected={item.startDate ? new Date(item.startDate) : null}
+                        onChange={(date: Date | null) => handleStartDateChange(item, date)}
+                        excludeDateIntervals={blockedRangesMap[item.itemId._id] || []}
+                        minDate={new Date()}
+                        className="text-xs border border-stone-200 rounded-lg px-2 py-1 w-28"
+                        dateFormat="yyyy-MM-dd"
                       />
 
                       <span className="text-stone-400 text-xs">→</span>
 
-                      {/* END DATE */}
-                      <input
-                        type="date"
-                        value={item.endDate?.split("T")[0] || ""}
-                        onChange={(e) => {
-                          const newEnd = e.target.value;
-                          const start = item.startDate;
-
-                          updateDates(item._id, start, newEnd);
-                        }}
-                        className="text-xs border border-stone-200 rounded-lg px-2 py-1"
+                      <DatePicker
+                        selected={item.endDate ? new Date(item.endDate) : null}
+                        onChange={(date: Date | null) => handleEndDateChange(item, date)}
+                        excludeDateIntervals={blockedRangesMap[item.itemId._id] || []}
+                        minDate={item.startDate ? new Date(item.startDate) : new Date()}
+                        className="text-xs border border-stone-200 rounded-lg px-2 py-1 w-28"
+                        dateFormat="yyyy-MM-dd"
                       />
                     </div>
-
                     <div className="flex items-center justify-between mt-3">
                       {/* DAYS CONTROL */}
                       <div className="flex items-center gap-3">
@@ -241,14 +283,14 @@ export default function CartPage() {
                   items: cart
                 }
               })}
-              className="w-full mt-5 bg-amber-500 text-stone-900 font-bold py-3 rounded-xl">
-              Confirm Booking →
-            </button>
+                className="w-full mt-5 bg-amber-500 text-stone-900 font-bold py-3 rounded-xl">
+                Confirm Booking →
+              </button>
+            </div>
           </div>
         </div>
-        </div>
-  )
-}
+      )
+      }
     </div >
   );
 }

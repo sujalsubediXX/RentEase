@@ -5,7 +5,8 @@ import {
   confirmRental,
   getUserRentals,
   getRentalById,
-  cancelRental
+  cancelRental,
+  getItemAvailability
 } from "../controllers/rental.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 
@@ -32,4 +33,5 @@ router.get("/:id", getRentalById);
 // Cancel rental
 router.put("/:id/cancel", cancelRental);
 
+router.get("/availability/:itemId", getItemAvailability);
 export default router;

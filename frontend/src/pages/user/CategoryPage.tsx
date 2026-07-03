@@ -7,6 +7,7 @@ import axios from 'axios';
 import { ProductCard } from '../../components/user/ProductCard';
 import { ProductListItem } from '../../components/user/ProductListItem';
 import { useAuth } from "../../hooks/useAuth";
+import { toast } from "sonner";
 export interface Product {
   id: string;
   name: string;
@@ -278,14 +279,10 @@ const CategoryPage: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
-  const [showToast, setShowToast] = useState<{ message: string; type: string } | null>(null);
+
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const itemsPerPage = 8;
 
-  const showToastMessage = useCallback((message: string, type: string) => {
-    setShowToast({ message, type });
-    setTimeout(() => setShowToast(null), 2500);
-  }, []);
 
   // Fetch wishlist on mount
   const fetchWishlist = useCallback(async (userId: string) => {
@@ -360,12 +357,12 @@ const CategoryPage: React.FC = () => {
       console.error('Error fetching products:', err);
       const message = err?.message || 'Failed to load products';
       setError(message);
-      showToastMessage('Failed to load products', 'error');
+      toast.error('Failed to load products');
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [categoryId, showToastMessage]);
+  }, [categoryId]);
 
   // Fetch on mount / category change
   useEffect(() => {
@@ -384,16 +381,21 @@ const CategoryPage: React.FC = () => {
 
   const addToCart = async (product: Product) => {
     try {
-      const today = new Date();
-      const end = new Date();
-      end.setDate(today.getDate() + 1);
+    if (!isAuthenticated || !user?.id) {
+      toast.error("Please login first");
+      return;
+    }
+      if(user?.kycStatus !== "verified"){
+        toast.error("Please complete KYC verification to add items to cart.");
+        return;
+      } 
 
       const payload = {
         itemId: product.id,
         quantity: 1,
         rentalDays: 1,
-        startDate: today.toISOString().split("T")[0],
-        endDate: end.toISOString().split("T")[0],
+        // startDate: today.toISOString().split("T")[0],
+        // endDate: end.toISOString().split("T")[0],
       };
 
       const res = await fetch(`${API_BASE_URL}/cart/add/${user?.id}`, {
@@ -408,14 +410,19 @@ const CategoryPage: React.FC = () => {
         throw new Error("Failed to add to cart");
       }
 
-      showToastMessage("Added to cart", "success");
+      toast.success("Added to cart");
     } catch (err) {
       console.log(err);
-      showToastMessage("Failed to add to cart", "error");
+      toast.error("Failed to add to cart");
     }
   };
 
   const toggleWishlist = async (productId: string) => {
+
+   if (!isAuthenticated ) {
+    toast.error("Please login first");
+    return;
+   }
     // Prevent double-clicks while request is in flight
     if (wishlistLoading.has(productId)) return;
 
@@ -431,18 +438,18 @@ const CategoryPage: React.FC = () => {
       if (isInWishlist) {
         // Remove from wishlist
         await axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${productId}`);
-        showToastMessage('Removed from wishlist', 'info');
+        toast.error('Removed from wishlist');
       } else {
         // Add to wishlist
         await axios.post(`${API_BASE_URL}/wishlist/add/${user?.id}`, { itemId: productId });
-        showToastMessage('Added to wishlist', 'success');
+        toast.success('Added to wishlist');
       }
     } catch (error) {
       // Revert optimistic update on failure
       setWishlist(prev =>
         isInWishlist ? [...prev, productId] : prev.filter(id => id !== productId)
       );
-      showToastMessage('Failed to update wishlist', 'error');
+      toast.error('Failed to update wishlist');
     } finally {
       setWishlistLoading(prev => {
         const next = new Set(prev);
@@ -535,6 +542,14 @@ const CategoryPage: React.FC = () => {
 
   // Handler for "Rent Now" from product cards
   const handleRentNow = (product: Product) => {
+        if (!isAuthenticated || !user?.id) {
+      toast.error("Please login first");
+      return;
+    }
+      if(user?.kycStatus !== "verified"){
+        toast.error("Please complete KYC verification to rent items.");
+        return;
+      } 
     navigate("/checkout", {
       state: {
         type: "single",
@@ -564,20 +579,7 @@ const CategoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white text-stone-800 mt-12">
-      {/* Toast */}
-      {showToast && (
-        <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
-          <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
-            ${showToast.type === 'success'
-              ? 'bg-white border-emerald-200 text-emerald-700'
-              : showToast.type === 'error'
-                ? 'bg-white border-red-200 text-red-600'
-                : 'bg-white border-stone-200 text-stone-600'}`}>
-            {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
-          </div>
-        </div>
-      )}
-
+   
       {/* Quick View Modal */}
       {quickViewProduct && (
         <div

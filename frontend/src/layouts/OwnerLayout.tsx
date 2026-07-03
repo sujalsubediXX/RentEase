@@ -2,10 +2,13 @@
 import { Outlet } from "react-router-dom"
 import { SidebarProvider } from "../contexts/SidebarContext"
 import { OwnerSidebar } from "../components/owner/OwnerSidebar"
+import { Toaster } from "sonner";
 export const OwnerLayout = () => {
     return (
         <SidebarProvider>
             <div className="flex bg-stone-50 ">
+                    <Toaster position="top-right" richColors />
+
                 <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700&display=swap');
                 * { font-family: 'Nunito', sans-serif; }

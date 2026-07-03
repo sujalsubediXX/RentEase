@@ -4,7 +4,7 @@ import { ShieldCheck, Calendar, MapPin, CheckCircle, ArrowRight, Loader2, Packag
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
-
+import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** A single line item, whether it came from single-item checkout or the cart */
@@ -100,7 +100,7 @@ const ConfirmBookingPage: React.FC = () => {
 
             const token = localStorage.getItem('accessToken');
             if (!token) {
-                alert('Please login again');
+                toast.error('Please login again');
                 return;
             }
 
@@ -141,12 +141,12 @@ const ConfirmBookingPage: React.FC = () => {
                 setRentalIds(ids);
                 await initiatePayment(ids);
             } else {
-                alert('Failed to create rental. Please try again.');
+                toast.error('Failed to create rental. Please try again.');
                 setCreatingRental(false);
             }
         } catch (error: any) {
             console.error('Error creating rental:', error);
-            alert(error.response?.data?.message || 'Failed to create rental');
+            toast.error(error.response?.data?.message || 'Failed to create rental');
             setCreatingRental(false);
         }
     };
@@ -157,7 +157,7 @@ const ConfirmBookingPage: React.FC = () => {
         try {
             const token = localStorage.getItem('accessToken');
             if (!token) {
-                alert('Please login again');
+                toast.error('Please login again');
                 setLoading(false);
                 return;
             }
@@ -190,12 +190,12 @@ const ConfirmBookingPage: React.FC = () => {
                     if (form) form.submit();
                 }, 300);
             } else {
-                alert('Failed to initialize payment with eSewa.');
+                toast.error('Failed to initialize payment with eSewa.');
                 setLoading(false);
             }
         } catch (err: any) {
             console.error('Payment initiation error:', err);
-            alert(err.response?.data?.message || 'Network error during payment processing.');
+            toast.error(err.response?.data?.message || 'Network error during payment processing.');
             setLoading(false);
         }
     };

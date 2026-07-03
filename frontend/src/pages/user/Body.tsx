@@ -5,7 +5,7 @@ import API_BASE_URL from "../../config/api.ts";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
 import { useNavigate } from "react-router-dom"
-
+import { toast } from "sonner";
 import { ProductCard } from "../../components/user/ProductCard.tsx";
 import { X } from "lucide-react";
 import { ImageSlider } from "./ImageSlider.tsx";
@@ -83,19 +83,15 @@ const testimonials: Testimonial[] = [
 const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "Kayak"];
 
 export default function Body() {
-  const { user } = useAuth();
+  const { user ,isAuthenticated} = useAuth();
   const [query, setQuery] = useState<string>("");
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [items, setItems] = useState<Product[]>([]);
   const [category, setCategory] = useState<dbCategory[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [showToast, setShowToast] = useState<{ message: string; type: string } | null>(null);
+
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
-  const showToastMessage = useCallback((message: string, type: string) => {
-    setShowToast({ message, type });
-    setTimeout(() => setShowToast(null), 2500);
-  }, []);
 
 
   const fetchWishlist = useCallback(async (userId: string) => {
@@ -119,6 +115,15 @@ export default function Body() {
 
 
   const handleRentNow = (product: Product) => {
+
+    if (!isAuthenticated || !user?.id) {
+      toast.error("Please login first");
+      return;
+    }
+    if (user?.kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to rent items.");
+      return;
+    }
     navigate("/checkout", {
       state: {
         type: "single",
@@ -184,7 +189,11 @@ export default function Body() {
 
   const addToCart = async (product: any) => {
     if (!user?.id) {
-      showToastMessage("Please login first", "error");
+      toast.error("Please login first");
+      return;
+    }
+    if (user?.kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to add items to cart.");
       return;
     }
 
@@ -212,16 +221,16 @@ export default function Body() {
 
       if (!res.ok) throw new Error();
 
-      showToastMessage("Added to cart", "success");
+      toast.success("Added to cart");
     } catch {
-      showToastMessage("Failed to add to cart", "error");
+      toast.error("Failed to add to cart");
     }
   };
 
 
   const toggleWishlist = async (productId: string) => {
     if (!user?.id) {
-      showToastMessage("Please login first", "error");
+      toast.error("Please login first");
       return;
     }
 
@@ -242,11 +251,13 @@ export default function Body() {
         await axios.delete(
           `${API_BASE_URL}/wishlist/remove/${user.id}/${productId}`
         );
+        toast.error("Removed from wishlist");
       } else {
         await axios.post(
           `${API_BASE_URL}/wishlist/add/${user.id}`,
           { itemId: productId }
         );
+        toast.success("Added to wishlist");
       }
     } catch (err) {
       // rollback
@@ -255,7 +266,7 @@ export default function Body() {
           ? [...prev, productId]
           : prev.filter((id) => id !== productId)
       );
-      showToastMessage("Failed to update wishlist", "error");
+      toast.error("Failed to update wishlist");
     } finally {
       setWishlistLoading((prev) => {
         const next = new Set(prev);
@@ -269,23 +280,9 @@ export default function Body() {
   return (
     <div>
 
-
-
-
       {/* HERO */}
       <section className="min-h-screen flex flex-col items-center justify-center px-[5vw] pt-28 pb-20 relative overflow-hidden text-center bg-white">
-        {showToast && (
-          <div className="fixed bottom-5 right-5 z-50 animate-slide-up">
-            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border
-                    ${showToast.type === 'success'
-                ? 'bg-white border-emerald-200 text-emerald-700'
-                : showToast.type === 'error'
-                  ? 'bg-white border-red-200 text-red-600'
-                  : 'bg-white border-stone-200 text-stone-600'}`}>
-              {showToast.type === 'success' ? '✓' : showToast.type === 'error' ? '✗' : 'ℹ'} {showToast.message}
-            </div>
-          </div>
-        )}
+
 
         {/* Quick View Modal */}
         {quickViewProduct && (

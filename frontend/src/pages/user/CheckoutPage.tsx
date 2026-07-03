@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   ChevronLeft, Calendar, MapPin, CreditCard,
   User, Phone, ShieldCheck, ShoppingBag, Package
 } from 'lucide-react';
 import axios from 'axios';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import API_BASE_URL from '../../config/api';
 import {authService} from '../../services/auth.services';
+import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Shape of a single product coming from CategoryPage's "Rent Now" */
 interface Product {
   id: string;
   name: string;
@@ -22,10 +24,6 @@ interface Product {
   location?: string;
 }
 
-/**
- * Shape of an item coming from CartPage.
- * The backend returns nested itemId with title/price.
- */
 interface CartItem {
   _id: string;
   itemId: {
@@ -39,6 +37,11 @@ interface CartItem {
   endDate: string;
 }
 
+interface BlockedRange {
+  start: Date;
+  end: Date;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const calcDays = (start: string, end: string): number => {
@@ -49,7 +52,24 @@ const calcDays = (start: string, end: string): number => {
   return Math.max(1, diff);
 };
 
-const today = new Date().toISOString().split('T')[0];
+const toIsoDate = (d: Date) => d.toISOString().split('T')[0];
+
+const isDateBlocked = (date: Date, ranges: BlockedRange[]) =>
+  ranges.some((r) => date >= r.start && date <= r.end);
+
+const findNextAvailableDate = (start: Date, ranges: BlockedRange[]): Date => {
+  const candidate = new Date(start);
+  candidate.setHours(0, 0, 0, 0);
+  let guard = 0;
+  while (isDateBlocked(candidate, ranges) && guard < 365) {
+    candidate.setDate(candidate.getDate() + 1);
+    guard++;
+  }
+  return candidate;
+};
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -74,43 +94,71 @@ const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
- 
   const checkoutType: 'single' | 'cart' = location.state?.type ?? 'single';
   const rawItems: any[] = location.state?.items ?? [];
 
-
-  // For single flow: product info without dates (user picks dates below)
   const singleProduct: Product | null =
     checkoutType === 'single' && rawItems.length > 0
       ? (rawItems[0].item as Product)
       : null;
 
-  // For cart flow: already have dates per item from CartPage
   const cartItems: CartItem[] =
     checkoutType === 'cart' ? (rawItems as CartItem[]) : [];
 
   // ── Form state ───────────────────────────────────────────────────────────
 
-  // Date pickers are only shown for single flow
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const [blockedRanges, setBlockedRanges] = useState<BlockedRange[]>([]);
+  const [availLoading, setAvailLoading] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const token = localStorage.getItem("accessToken") || "";
+  // ── Fetch availability for the direct-rent item ──────────────────────────
+
+  useEffect(() => {
+    if (checkoutType !== 'single' || !singleProduct?.id) return;
+
+    const fetchAvailability = async () => {
+      try {
+        setAvailLoading(true);
+        const res = await axios.get(
+          `${API_BASE_URL}/rentals/availability/${singleProduct.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const ranges: BlockedRange[] = (res.data?.data?.fullyBookedRanges || []).map(
+          (r: any) => ({ start: new Date(r.start), end: new Date(r.end) })
+        );
+        setBlockedRanges(ranges);
+        console.log('Fetched blocked ranges:', ranges);
+
+        if (isDateBlocked(today, ranges)) {
+          const next = findNextAvailableDate(today, ranges);
+          setStartDate(toIsoDate(next));
+        }
+      } catch (err) {
+        console.log('Failed to fetch availability', err);
+      } finally {
+        setAvailLoading(false);
+      }
+    };
+
+    fetchAvailability();
+  }, [checkoutType, singleProduct?.id]);
 
   // ── Calculations ─────────────────────────────────────────────────────────
 
-  /** Rental days for the single-item flow, driven by the date pickers */
   const singleRentalDays = useMemo(
     () => calcDays(startDate, endDate),
     [startDate, endDate]
   );
 
-  
-  
   const subtotal = useMemo(() => {
     if (checkoutType === 'single') {
       return singleProduct ? singleProduct.rentalPrice * singleRentalDays : 0;
@@ -121,7 +169,6 @@ const CheckoutPage: React.FC = () => {
     );
   }, [checkoutType, singleProduct, singleRentalDays, cartItems]);
 
- 
   const securityDeposit = useMemo(() => {
     if (checkoutType === 'single') {
       return singleProduct ? Math.round(singleProduct.rentalPrice * 1.5) : 0;
@@ -134,6 +181,20 @@ const CheckoutPage: React.FC = () => {
 
   const deliveryFee = 150;
   const totalAmount = subtotal + securityDeposit + deliveryFee;
+
+  // ── Date change handlers (single flow) ───────────────────────────────────
+
+  const handleStartDateChange = (date: Date | null) => {
+    if (!date) return;
+    const iso = toIsoDate(date);
+    setStartDate(iso);
+    if (endDate && iso >= endDate) setEndDate('');
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    if (!date) return;
+    setEndDate(toIsoDate(date));
+  };
 
   // ── Guard: nothing to checkout ───────────────────────────────────────────
 
@@ -155,139 +216,147 @@ const CheckoutPage: React.FC = () => {
     );
   }
 
-
   const handlePlaceOrder = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Validate dates for single flow
-  if (checkoutType === 'single' && (!startDate || !endDate)) {
-    alert('Please select rental dates');
-    return;
-  }
+    if (checkoutType === 'single' && (!startDate || !endDate)) {
+      alert('Please select rental dates');
+      return;
+    }
 
-  // Prepare order data
-  const orderData = {
-    type: checkoutType,
-    items: checkoutType === 'single'
-      ? [
-          {
-            id: singleProduct!.id,
-            startDate: startDate,
-            endDate: endDate,
-            rentalDays: singleRentalDays,
-            quantity: 1
-          }
-        ]
-      : cartItems.map((ci) => ({
-          id: ci.itemId._id,
-          name: ci.itemId.title,
-          price: ci.itemId.price,
-          startDate: ci.startDate,
-          endDate: ci.endDate,
-          rentalDays: ci.rentalDays,
-          quantity: ci.quantity
-        })),
-    customer: { 
-      fullName, 
-      phoneNumber, 
-      deliveryAddress 
-    },
-    paymentMethod,
-    subtotal,
-    securityDeposit,
-    deliveryFee,
-    totalAmount,
-  };
+    // Belt-and-suspenders: block submit if the chosen range somehow
+    // overlaps a blocked range (e.g. stale data, fast clicking).
+    if (checkoutType === 'single' && startDate && endDate) {
+      const s = new Date(startDate);
+      const eDate = new Date(endDate);
+      const overlaps = blockedRanges.some((r) => s <= r.end && eDate >= r.start);
+      if (overlaps) {
+        alert('Those dates just became unavailable. Please pick different dates.');
+        return;
+      }
+    }
 
-  if (paymentMethod === 'digital') {
-  if (checkoutType === 'single') {
-    const productData = {
-      id: singleProduct!.id,
-      name: singleProduct!.name,
-      rentalPrice: singleProduct!.rentalPrice,
-      images: singleProduct!.images || [],
-      brand: singleProduct!.brand || 'RentEase',
-      location: singleProduct!.location || 'Kathmandu'
+    const orderData = {
+      type: checkoutType,
+      items: checkoutType === 'single'
+        ? [
+            {
+              id: singleProduct!.id,
+              startDate: startDate,
+              endDate: endDate,
+              rentalDays: singleRentalDays,
+              quantity: 1
+            }
+          ]
+        : cartItems.map((ci) => ({
+            id: ci.itemId._id,
+            name: ci.itemId.title,
+            price: ci.itemId.price,
+            startDate: ci.startDate,
+            endDate: ci.endDate,
+            rentalDays: ci.rentalDays,
+            quantity: ci.quantity
+          })),
+      customer: {
+        fullName,
+        phoneNumber,
+        deliveryAddress
+      },
+      paymentMethod,
+      subtotal,
+      securityDeposit,
+      deliveryFee,
+      totalAmount,
     };
 
-    navigate('/confirm-booking', {
-      state: {
-        product: productData,
-        items: orderData.items,
-        startDate,
-        endDate,
-        fullName,
-        phoneNumber,
-        deliveryAddress,
-        rentalDays: singleRentalDays,
-        totalAmount,
-        subtotal,
-        securityDeposit,
-        deliveryFee,
-        customer: { fullName, phoneNumber, deliveryAddress },
-        paymentMethod,
-        type: checkoutType
-      }
-    });
-  } else {
-    // cart flow — no single "product", pass the cart items instead
-    const productsData = cartItems.map((ci) => ({
-      id: ci.itemId._id,
-      name: ci.itemId.title,
-      rentalPrice: ci.itemId.price,
-      rentalDays: ci.rentalDays,
-      quantity: ci.quantity,
-      startDate: ci.startDate,
-      endDate: ci.endDate,
-    }));
+    if (paymentMethod === 'digital') {
+      if (checkoutType === 'single') {
+        const productData = {
+          id: singleProduct!.id,
+          name: singleProduct!.name,
+          rentalPrice: singleProduct!.rentalPrice,
+          images: singleProduct!.images || [],
+          brand: singleProduct!.brand || 'RentEase',
+          location: singleProduct!.location || 'Kathmandu'
+        };
 
-    navigate('/confirm-booking', {
-      state: {
-        products: productsData,      // plural, since it's multiple items
-        items: orderData.items,
-        fullName,
-        phoneNumber,
-        deliveryAddress,
-        totalAmount,
-        subtotal,
-        securityDeposit,
-        deliveryFee,
-        customer: { fullName, phoneNumber, deliveryAddress },
-        paymentMethod,
-        type: checkoutType
-      }
-    });
-  }
-  return;
-}
+        navigate('/confirm-booking', {
+          state: {
+            product: productData,
+            items: orderData.items,
+            startDate,
+            endDate,
+            fullName,
+            phoneNumber,
+            deliveryAddress,
+            rentalDays: singleRentalDays,
+            totalAmount,
+            subtotal,
+            securityDeposit,
+            deliveryFee,
+            customer: { fullName, phoneNumber, deliveryAddress },
+            paymentMethod,
+            type: checkoutType
+          }
+        });
+      } else {
+        const productsData = cartItems.map((ci) => ({
+          id: ci.itemId._id,
+          name: ci.itemId.title,
+          rentalPrice: ci.itemId.price,
+          rentalDays: ci.rentalDays,
+          quantity: ci.quantity,
+          startDate: ci.startDate,
+          endDate: ci.endDate,
+        }));
 
-  // COD flow - call backend directly
-  try {
-    setIsSubmitting(true);
-    const token = authService.getAccessToken();
-    
-    const response = await axios.post(
-      `${API_BASE_URL}/rentals/create`,
-      orderData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        navigate('/confirm-booking', {
+          state: {
+            products: productsData,
+            items: orderData.items,
+            fullName,
+            phoneNumber,
+            deliveryAddress,
+            totalAmount,
+            subtotal,
+            securityDeposit,
+            deliveryFee,
+            customer: { fullName, phoneNumber, deliveryAddress },
+            paymentMethod,
+            type: checkoutType
+          }
+        });
       }
-    );
-
-    if (response.data.success) {
-      alert('Order placed successfully! Check your rentals.');
-      navigate('/');
+      return;
     }
-  } catch (error: any) {
-    console.error('Error placing order:', error);
-    alert(error.response?.data?.message || 'Failed to place order');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+    // COD flow - call backend directly
+    try {
+      setIsSubmitting(true);
+      const token = authService.getAccessToken();
+
+      const response = await axios.post(
+        `${API_BASE_URL}/rentals/create`,
+        orderData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Order placed successfully! Check your rentals.');
+        navigate('/');
+      }
+    } catch (error: any) {
+      console.error('Error placing order:', error);
+      toast.error(error.response?.data?.message || 'Failed to place order');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -295,7 +364,6 @@ const CheckoutPage: React.FC = () => {
     <div className="min-h-screen bg-stone-50/50 text-stone-800 pt-20 pb-12">
       <div className="container mx-auto px-4 max-w-5xl">
 
-        {/* Back */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors mb-6"
@@ -309,13 +377,11 @@ const CheckoutPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* ── Left: Form ── */}
           <form
             onSubmit={handlePlaceOrder}
             className="lg:col-span-7 space-y-6"
           >
 
-            {/* ── Date picker (single flow only) ── */}
             {checkoutType === 'single' && (
               <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
                 <SectionHeader
@@ -323,41 +389,46 @@ const CheckoutPage: React.FC = () => {
                   label="Rental Period"
                 />
 
-            
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
                       Start Date
                     </label>
-                    <input
-                      type="date"
-                      required
-                      min={today}
-                      value={startDate}
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                        // reset end date if it's before new start
-                        if (endDate && e.target.value > endDate) setEndDate('');
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all"
+                    <DatePicker
+                      selected={startDate ? new Date(startDate) : null}
+                      onChange={handleStartDateChange}
+                      excludeDateIntervals={blockedRanges}
+                      minDate={today}
+                      disabled={availLoading}
+                      placeholderText={availLoading ? 'Checking availability…' : 'Select start date'}
+                      dateFormat="yyyy-MM-dd"
+                      wrapperClassName="w-full"
+                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
                       Return Date
                     </label>
-                    <input
-                      type="date"
-                      required
-                      disabled={!startDate}
-                      min={startDate || today}
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
+                    <DatePicker
+                      selected={endDate ? new Date(endDate) : null}
+                      onChange={handleEndDateChange}
+                      excludeDateIntervals={blockedRanges}
+                      minDate={startDate ? new Date(startDate) : today}
+                      disabled={!startDate || availLoading}
+                      placeholderText="Select return date"
+                      dateFormat="yyyy-MM-dd"
+                      wrapperClassName="w-full"
                       className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
+
+                {blockedRanges.length > 0 && (
+                  <p className="mt-3 text-xs text-stone-500">
+                    This item is already booked on some dates — those are greyed out above.
+                  </p>
+                )}
 
                 {startDate && endDate && (
                   <p className="mt-3 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg w-max">
@@ -368,10 +439,6 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-        
-          
-
-            {/* ── Delivery Details ── */}
             <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
               <SectionHeader icon={<User size={16} />} label="Delivery Details" />
               <div className="space-y-4">
@@ -440,11 +507,9 @@ const CheckoutPage: React.FC = () => {
               </div>
             </div>
 
-            {/* ── Payment Method ── */}
             <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
               <SectionHeader icon={<CreditCard size={16} />} label="Payment Options" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* COD */}
                 <label
                   className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                     paymentMethod === 'cod'
@@ -466,7 +531,6 @@ const CheckoutPage: React.FC = () => {
                   </div>
                 </label>
 
-                {/* Digital */}
                 <label
                   className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                     paymentMethod === 'digital'
@@ -490,7 +554,6 @@ const CheckoutPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile submit */}
             <button
               type="submit"
               disabled={isSubmitting}
@@ -504,38 +567,35 @@ const CheckoutPage: React.FC = () => {
             </button>
           </form>
 
-          {/* ── Right: Order Summary ── */}
           <div className="lg:col-span-5 sticky top-24">
             <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
               <h2 className="font-semibold text-stone-800 text-sm uppercase tracking-wider mb-4 pb-2 border-b border-stone-100">
                 Order Summary
               </h2>
-                  {singleProduct && (
-                  <div className="flex items-center gap-3 mb-4 p-3 bg-stone-50 border border-stone-100 rounded-xl">
-                    {singleProduct.images?.[0] ? (
-                      <img
-                        src={singleProduct.images[0]}
-                        alt={singleProduct.name}
-                        className="w-12 h-12 rounded-lg object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                        <Package size={20} className="text-amber-400" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-stone-800 truncate">
-                        {singleProduct.name}
-                      </p>
-                      <p className="text-xs text-stone-400">
-                        Rs. {singleProduct.rentalPrice.toLocaleString()}/day
-                      </p>
+              {singleProduct && (
+                <div className="flex items-center gap-3 mb-4 p-3 bg-stone-50 border border-stone-100 rounded-xl">
+                  {singleProduct.images?.[0] ? (
+                    <img
+                      src={singleProduct.images[0]}
+                      alt={singleProduct.name}
+                      className="w-12 h-12 rounded-lg object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                      <Package size={20} className="text-amber-400" />
                     </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-stone-800 truncate">
+                      {singleProduct.name}
+                    </p>
+                    <p className="text-xs text-stone-400">
+                      Rs. {singleProduct.rentalPrice.toLocaleString()}/day
+                    </p>
                   </div>
-                )}
-          
+                </div>
+              )}
 
-              {/* Line items */}
               <div className="space-y-2 text-sm pb-4 border-b border-stone-100">
                 {checkoutType === 'single' && singleProduct && (
                   <div className="flex justify-between text-stone-500">
@@ -578,7 +638,6 @@ const CheckoutPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Grand total */}
               <div className="flex justify-between items-baseline pt-4 mb-5">
                 <span className="text-sm font-semibold text-stone-800">Total Amount</span>
                 <span className="text-xl font-black text-stone-900">
@@ -586,7 +645,6 @@ const CheckoutPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Security badge */}
               <div className="flex gap-2.5 bg-stone-50 border border-stone-100 rounded-xl p-3 mb-5">
                 <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-stone-500 leading-relaxed">
@@ -595,7 +653,6 @@ const CheckoutPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Desktop submit */}
               <button
                 disabled={isSubmitting}
                 onClick={(e) => {

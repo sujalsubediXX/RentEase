@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import Rentals from "../models/Rentals.model.ts";
 import Item from "../models/items.model.ts";
 import Cart from "../models/Cart.ts";
-
+import { getFullyBookedRanges, checkAvailability } from "../utils/availability.ts";
 // ───────────────────────────────────────────────────────────────
 // Create Rental / Order
 // ───────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ export const createRental = async (req: Request, res: Response) => {
     // Validate Items
     // ---------------------------------------------------
 
-    for (const item of items) {
+for (const item of items) {
       const itemData = await Item.findById(item.id);
 
       if (!itemData) {
@@ -90,9 +90,23 @@ export const createRental = async (req: Request, res: Response) => {
         });
       }
 
-      const itemTotal =
-        itemData.price * item.rentalDays * item.quantity;
+      // ── Interval-overlap availability check ──
+      const { available, availableFrom } = await checkAvailability(
+        itemData._id.toString(),
+        new Date(item.startDate),
+        new Date(item.endDate),
+        item.quantity,
+        itemData.quantity
+      );
 
+      if (!available) {
+        return res.status(409).json({
+          success: false,
+          message: `"${itemData.title}" is fully booked for the selected dates. Next available from ${availableFrom?.toDateString()}.`,
+        });
+      }
+
+      const itemTotal = itemData.price * item.rentalDays * item.quantity;
       calculatedSubtotal += itemTotal;
 
       rentalItems.push({
@@ -103,12 +117,9 @@ export const createRental = async (req: Request, res: Response) => {
         quantity: item.quantity,
         startDate: item.startDate,
         endDate: item.endDate,
-        securityDeposit:
-          itemData.securityDeposit ??
-          Math.round(itemData.price * 1.5),
+        securityDeposit: itemData.securityDeposit ?? Math.round(itemData.price * 1.5),
       });
     }
-
     // ---------------------------------------------------
     // Create Rentals
     // ---------------------------------------------------
@@ -478,6 +489,9 @@ export const cancelRental = async (req: Request, res: Response) => {
       });
     }
 
+
+    
+
     const rental = await Rentals.findOne({ _id: id, userId });
 
     if (!rental) {
@@ -515,6 +529,45 @@ export const cancelRental = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to cancel rental"
+    });
+  }
+};
+
+
+
+
+// ─── Get Item Availability (for date picker) ──────────────────────────────
+
+export const getItemAvailability = async (req: Request, res: Response) => {
+  try {
+    const { itemId } = req.params as { itemId?: string };
+
+    if (!itemId) {
+      return res.status(400).json({ success: false, message: "Missing itemId parameter" });
+    }
+
+    const item = await Item.findById(itemId);
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Item not found" });
+    }
+
+    const fullyBookedRanges = await getFullyBookedRanges(itemId, item.quantity);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        itemQuantity: item.quantity,
+        fullyBookedRanges: fullyBookedRanges.map((r) => ({
+          start: r.start.toISOString(),
+          end: r.end.toISOString(),
+        })),
+      },
+    });
+  } catch (error: any) {
+    console.error("Error getting availability:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get availability",
     });
   }
 };

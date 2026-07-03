@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../../config/api";
 import { ProductCard, type Product } from "../../components/user/ProductCard";
 import { useAuth } from "../../hooks/useAuth";
+import { toast } from "react-hot-toast/headless";
 interface ItemImage {
   _id: string;
   imageUrl: string;
@@ -46,7 +47,7 @@ function WishlistPage() {
   const [error, setError] = useState<string | null>(null);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [clearingAll, setClearingAll] = useState(false);
-  const {user,isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
@@ -76,6 +77,7 @@ function WishlistPage() {
 
     try {
       await axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${productId}`);
+      toast.success("Removed from wishlist");
     } catch (err) {
       console.error(err);
       setWishlist(snapshot);
@@ -108,23 +110,32 @@ function WishlistPage() {
   };
 
   const handleAddToCart = async (product: Product) => {
+
     try {
-      const today = new Date();
-      const end = new Date();
-      end.setDate(today.getDate() + 1);
+      if (user?.kycStatus !== "verified") {
+        toast.error("Please complete KYC verification to add items to cart.");
+        return;
+      }
+      ;
+
       await axios.post(`${API_BASE_URL}/cart/add/${user?.id}`, {
         itemId: product.id,
         quantity: 1,
         rentalDays: 1,
-        startDate: today.toISOString().split("T")[0],
-        endDate: end.toISOString().split("T")[0],
+
       });
+
+      toast.success("Added to cart");
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }
   };
 
   const handleRentNow = (product: Product) => {
+    if (user?.kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to rent items.");
+      return;
+    }
     navigate("/checkout", {
       state: {
         type: "single",
@@ -172,7 +183,7 @@ function WishlistPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 mt-18">
-      
+
       {/* Header */}
       <div className="bg-stone-900 rounded-3xl p-8 mb-8 shadow-lg">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -220,7 +231,7 @@ function WishlistPage() {
               index={0}
               isInWishlist={true}        // always true — this is the wishlist page
               onToggleWishlist={handleToggleWishlist}
-              onQuickView={() => {}}     // no quick view on wishlist page
+              onQuickView={() => { }}     // no quick view on wishlist page
               onAddToCart={handleAddToCart}
               onRentNow={handleRentNow}
             />

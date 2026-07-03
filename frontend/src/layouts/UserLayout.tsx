@@ -1,6 +1,7 @@
 import { Footer } from "../components/user/Footer"
 import Header from "../components/user/Header"
 import { Outlet } from "react-router-dom"
+import { Toaster } from "sonner";
 export const UserLayout = () => {
     return (
 
@@ -22,7 +23,7 @@ export const UserLayout = () => {
         ::-webkit-scrollbar-track { background: #f9f6f1; }
         ::-webkit-scrollbar-thumb { background: #e0d5c0; border-radius: 99px; }
       `}</style>
-
+    <Toaster position="top-right" richColors />
             <Header />
             <Outlet />
             <Footer />

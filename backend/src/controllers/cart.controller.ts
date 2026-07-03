@@ -1,9 +1,14 @@
 import type { Request, Response } from "express";
 import Cart from "../models/Cart.ts";
 import ItemImage from "../models/itemsImage.model.ts";
-// =========================
-// Add Item To Cart
-// =========================
+import Item from "../models/items.model.ts";
+
+import {
+  getFullyBookedRanges,
+  getNextAvailableStartDate,
+  rangeOverlapsBlocked,
+} from "../utils/availability.ts";
+
 export const addItemToCart = async (req: Request, res: Response) => {
     try {
         const { userId } = req.params;
@@ -23,6 +28,41 @@ export const addItemToCart = async (req: Request, res: Response) => {
             endDate,
         } = req.body;
 
+        const item = await Item.findById(itemId);
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: "Item not found",
+            });
+        }
+
+        // ── Resolve requested dates, defaulting to today ──
+        let finalStart = startDate ? new Date(startDate) : new Date();
+        finalStart.setHours(0, 0, 0, 0);
+
+        let finalEnd = endDate
+            ? new Date(endDate)
+            : new Date(finalStart.getTime() + rentalDays * 24 * 60 * 60 * 1000);
+        finalEnd.setHours(0, 0, 0, 0);
+
+        // ── Check against fully-booked ranges (interval scheduling) ──
+        const blockedRanges = await getFullyBookedRanges(itemId, item.quantity);
+        let dateWasAdjusted = false;
+
+        if (rangeOverlapsBlocked(finalStart, finalEnd, blockedRanges)) {
+            const durationMs = Math.max(
+                finalEnd.getTime() - finalStart.getTime(),
+                24 * 60 * 60 * 1000
+            );
+
+            finalStart = await getNextAvailableStartDate(itemId, item.quantity, finalStart);
+            finalEnd = new Date(finalStart.getTime() + durationMs);
+            dateWasAdjusted = true;
+        }
+
+        const startDateStr = finalStart.toISOString();
+        const endDateStr = finalEnd.toISOString();
+
         let cart = await Cart.findOne({ userId });
 
         if (!cart) {
@@ -39,15 +79,15 @@ export const addItemToCart = async (req: Request, res: Response) => {
         if (existingItem) {
             existingItem.quantity += quantity;
             existingItem.rentalDays = rentalDays;
-            existingItem.startDate = startDate;
-            existingItem.endDate = endDate;
+            existingItem.startDate = startDateStr;
+            existingItem.endDate = endDateStr;
         } else {
             cart.items.push({
                 itemId,
                 quantity,
                 rentalDays,
-                startDate,
-                endDate,
+                startDate: startDateStr,
+                endDate: endDateStr,
             });
         }
 
@@ -55,7 +95,10 @@ export const addItemToCart = async (req: Request, res: Response) => {
 
         return res.status(200).json({
             success: true,
-            message: "Item added to cart",
+            message: dateWasAdjusted
+                ? `This item wasn't available on your selected date, so we moved it to the next open date: ${finalStart.toDateString()}.`
+                : "Item added to cart",
+            dateWasAdjusted,
             cart,
         });
     } catch (error) {
@@ -67,8 +110,6 @@ export const addItemToCart = async (req: Request, res: Response) => {
         });
     }
 };
-
-
 
 
 export const getCart = async (req: Request, res: Response) => {
