@@ -1,38 +1,76 @@
-import { MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import axios from "axios";
+import { useState, useEffect } from "react";
+import API_BASE_URL from "../../config/api";
 interface Booking {
-  id: string;
-  item: string;
-  renter: string;
-  owner: string;
-  amount: number;
-  status: "confirmed" | "pending" | "cancelled" | "completed";
-  date: string;
+  _id: string;
+
+  itemId: {
+    _id: string;
+    title: string;
+    description: string;
+    location: string;
+    price: number;
+    ownerId: {
+      _id: string;
+      fullName: string;
+    };
+  };
+
+  customerDetails: {
+    fullName: string;
+    phoneNumber: string;
+    deliveryAddress: string;
+  };
+
+  userId: string;
+
+  quantity: number;
+  rentalDays: number;
+  totalPrice: number;
+  securityDeposit: number;
+
+  paymentMethod: string;
+  status: "confirmed" | "pending" | "cancelled" | "completed" | "rejected";
+
+  startDate: string;
+  returnDate: string;
+  createdAt: string;
+  updatedAt: string;
 }
-const BOOKINGS: Booking[] = [
-  { id: "B1001", item: "DJI Drone Pro", renter: "Aarav Sharma", owner: "Priya Thapa", amount: 3200, status: "confirmed", date: "Jun 01, 2025" },
-  { id: "B1002", item: "Sony A7 III Camera", renter: "Bikash Magar", owner: "Anita Gurung", amount: 1800, status: "pending", date: "Jun 02, 2025" },
-  { id: "B1003", item: "Camping Tent (6p)", renter: "Rohan Kc", owner: "Sita Rai", amount: 750, status: "cancelled", date: "May 30, 2025" },
-  { id: "B1004", item: "Electric Scooter", renter: "Anita Gurung", owner: "Priya Thapa", amount: 500, status: "completed", date: "May 28, 2025" },
-  { id: "B1005", item: "GoPro Hero 12", renter: "Aarav Sharma", owner: "Bikash Magar", amount: 900, status: "confirmed", date: "Jun 03, 2025" },
-];
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
-    active: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
     confirmed: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
     completed: "bg-sky-500/15 text-sky-400 border border-sky-500/30",
     pending: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
-    suspended: "bg-red-500/15 text-red-400 border border-red-500/30",
     cancelled: "bg-red-500/15 text-red-400 border border-red-500/30",
-    flagged: "bg-orange-500/15 text-orange-400 border border-orange-500/30",
-    inactive: "bg-stone-600/40 text-stone-400 border border-stone-600/50",
+    rejected: "bg-red-500/15 text-red-400 border border-red-500/30",
   };
   return map[status] ?? "bg-stone-700 text-stone-300";
 };
 export const BookingsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
-  const filtered = BOOKINGS.filter(b => statusFilter === "all" || b.status === statusFilter);
+  const [booking, setBooking] = useState<Booking[]>([]);
+  const filtered = booking.filter(b => statusFilter === "all" || b.status === statusFilter);
+  const token = localStorage.getItem("accessToken");
 
+  useEffect(() => {
+    // Fetch bookings from the API
+    const fetchBookings = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/rentals/filterStatus`, {
+          params: { status: statusFilter },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.data;
+        setBooking(data.data); // Assuming the API returns an array of bookings in data.data
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+      }
+    };
+    fetchBookings();
+  }, [statusFilter,token]);
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -55,28 +93,47 @@ export const BookingsPage: React.FC = () => {
       </div>
 
       <div className="bg-stone-900 rounded-2xl border border-stone-800 overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm text-white">
           <thead>
             <tr className="border-b border-stone-800">
-              {["Booking ID", "Item", "Renter", "Owner", "Amount", "Status", "Date", ""].map(h => (
+              {["S.no", "Item", "Renter", "Owner", "Amount", "Status", "Date", ""].map(h => (
                 <th key={h} className="text-left text-xs text-stone-500 font-medium px-5 py-3">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map(b => (
-              <tr key={b.id} className="border-b border-stone-800/50 hover:bg-stone-800/40 transition-colors">
-                <td className="px-5 py-3.5 text-stone-500 font-mono text-xs">{b.id}</td>
-                <td className="px-5 py-3.5 text-stone-200 font-medium">{b.item}</td>
-                <td className="px-5 py-3.5 text-stone-400">{b.renter}</td>
-                <td className="px-5 py-3.5 text-stone-400">{b.owner}</td>
-                <td className="px-5 py-3.5 text-white font-semibold">Rs {b.amount.toLocaleString()}</td>
+            {filtered.map((b, index) => (
+              <tr key={b._id} className="border-b border-stone-800/50 hover:bg-stone-800/40 transition-colors">
+
+                <td className="px-5 py-3.5">{index + 1}</td>
+
                 <td className="px-5 py-3.5">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(b.status)}`}>{b.status}</span>
+                  {b.itemId?.title}
                 </td>
-                <td className="px-5 py-3.5 text-stone-500 text-xs">{b.date}</td>
+
                 <td className="px-5 py-3.5">
-                  <button className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-500 hover:text-stone-300 transition-colors"><MoreHorizontal size={14} /></button>
+                  {b.customerDetails?.fullName}
+                </td>
+
+                <td className="px-5 py-3.5">
+                  {b.itemId?.ownerId?.fullName}
+                </td>
+                <td className="px-5 py-3.5">
+                  {b?.itemId?.location} 
+                </td>
+
+                <td className="px-5 py-3.5 font-semibold">
+                  Rs {(b.totalPrice ?? 0).toLocaleString()}
+                </td>
+
+                <td className="px-5 py-3.5">
+                  <span className={`text-xs px-2.5 py-1 rounded-full ${statusBadge(b.status)}`}>
+                    {b.status}
+                  </span>
+                </td>
+
+                <td className="px-5 py-3.5">
+                  {new Date(b.createdAt).toLocaleDateString()}
                 </td>
               </tr>
             ))}

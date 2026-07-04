@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../../config/api";
 import { ProductCard, type Product } from "../../components/user/ProductCard";
 import { useAuth } from "../../hooks/useAuth";
-import { toast } from "react-hot-toast/headless";
+import {toast} from "sonner";
 interface ItemImage {
   _id: string;
   imageUrl: string;
@@ -48,6 +48,7 @@ function WishlistPage() {
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [clearingAll, setClearingAll] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const token = localStorage.getItem("accessToken");
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
@@ -57,7 +58,9 @@ function WishlistPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${user?.id}`);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/wishitem`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setWishlist(res.data?.items || []);
     } catch (err) {
       console.error(err);
@@ -76,7 +79,9 @@ function WishlistPage() {
     setWishlist(prev => prev.filter(item => item._id !== productId));
 
     try {
-      await axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${productId}`);
+      await axios.delete(`${API_BASE_URL}/wishlist/remove/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("Removed from wishlist");
     } catch (err) {
       console.error(err);
@@ -98,7 +103,9 @@ function WishlistPage() {
     try {
       await Promise.all(
         snapshot.map(item =>
-          axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${item._id}`)
+          axios.delete(`${API_BASE_URL}/wishlist/remove/${item._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
         )
       );
     } catch (err) {
@@ -118,11 +125,12 @@ function WishlistPage() {
       }
       ;
 
-      await axios.post(`${API_BASE_URL}/cart/add/${user?.id}`, {
+      await axios.post(`${API_BASE_URL}/cart/add/`, {
         itemId: product.id,
         quantity: 1,
         rentalDays: 1,
-
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       toast.success("Added to cart");

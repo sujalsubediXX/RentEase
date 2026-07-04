@@ -121,13 +121,15 @@ export default function KYCDetailView() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
+  const token = localStorage.getItem("token");
   useEffect(() => {
     const fetchDetail = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`${API_BASE_URL}/kyc/admin/${id}`);
+        const res = await axios.get(`${API_BASE_URL}/kyc/admin/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = res.data;
         if (res.status !== 200) {
           setError(data.message || "Failed to load submission");
@@ -154,8 +156,10 @@ export default function KYCDetailView() {
 
     try {
       const res = await axios.patch(`${API_BASE_URL}/kyc/admin/${id}/review`, {
-    decision,rejectionReason
-      });
+        decision, rejectionReason
+      }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
       const data = res.data;
 
       if (res.status !== 200) {
@@ -209,7 +213,7 @@ export default function KYCDetailView() {
           <span className={`inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-full ${STATUS_CONFIG[kyc.status].badge}`}>
             {STATUS_CONFIG[kyc.status].label}
           </span>
-  
+
         </div>
 
         {/* Already-decided banner */}
@@ -251,9 +255,9 @@ export default function KYCDetailView() {
           <div className="space-y-5">
             <Section title="Document & Selfie">
               <div className="space-y-4">
-                <ImageCard label="Front Side" src={baseUrlImage+kyc.documentInfo.frontImage} />
-                {needsBackImage && <ImageCard label="Back Side" src={baseUrlImage+kyc.documentInfo.backImage} />}
-                <ImageCard label="Selfie" src={baseUrlImage+kyc.selfieImage} />
+                <ImageCard label="Front Side" src={baseUrlImage + kyc.documentInfo.frontImage} />
+                {needsBackImage && <ImageCard label="Back Side" src={baseUrlImage + kyc.documentInfo.backImage} />}
+                <ImageCard label="Selfie" src={baseUrlImage + kyc.selfieImage} />
               </div>
             </Section>
           </div>

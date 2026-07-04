@@ -585,7 +585,7 @@ export default function KYCVerificationForm() {
   const [consent, setConsent] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-
+const token = localStorage.getItem("token");
   if (user?.kycStatus === "verified" || user?.kycStatus === "under review") {
     navigate("/profile");
   }
@@ -660,8 +660,10 @@ export default function KYCVerificationForm() {
       if (docInfo.backFile) formData.append("backImage", docInfo.backFile);
       if (selfie.selfieFile) formData.append("selfieImage", selfie.selfieFile);
       console.log(user?.id)
-      const res = await axios.post(`${API_BASE_URL}/kyc/submit/${user?.id}`, formData  )
-  
+      const res = await axios.post(`${API_BASE_URL}/kyc/submit/`, formData  , {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
       const data = res.data;
       if (res.status !== 200 || data.status !== "success") {
         setSubmitError(data.message || "Something went wrong while submitting your KYC. Please try again.");

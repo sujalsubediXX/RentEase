@@ -78,11 +78,14 @@ export default function OwnerListingForm() {
     useEffect(() => {
         fetchCategories();
     }, []);
+    const token = localStorage.getItem("token");
 
     const fetchCategories = async () => {
         try {
             const res = await axios.get(
-                `${API_BASE_URL}/category/getcategory`
+                `${API_BASE_URL}/category/getcategory`, {
+                headers: { Authorization: `Bearer ${token}` },
+            }
             );
             setCategories(res.data);
         } catch (error) {
@@ -164,7 +167,7 @@ export default function OwnerListingForm() {
             // formData.append("instantBooking", String(form.instantBooking));
 
             newImages.forEach(file => formData.append("images", file));
-            
+
 
             if (isEditMode) {
                 const keepImages = existingImages.filter(img => !img.markedForRemoval).map(img => img.url);
@@ -179,6 +182,7 @@ export default function OwnerListingForm() {
 
                 method: isEditMode ? "PUT" : "POST",
                 body: formData,
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (!response.ok) {

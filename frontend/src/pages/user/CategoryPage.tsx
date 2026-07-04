@@ -279,15 +279,22 @@ const CategoryPage: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
-
+  const [token, setToken] = useState<string>("");
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const itemsPerPage = 8;
 
+useEffect(() => {
+  if(isAuthenticated && user?.id) {
+    setToken(localStorage.getItem("accessToken") || "");
+  }
+},[isAuthenticated, user?.id]);
 
   // Fetch wishlist on mount
-  const fetchWishlist = useCallback(async (userId: string) => {
+  const fetchWishlist = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${userId}`);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/wishitem`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
       const data = res.data;
 
@@ -306,7 +313,7 @@ const CategoryPage: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
-    fetchWishlist(user.id);
+    fetchWishlist();
   }, [fetchWishlist, isAuthenticated, user?.id]);
 
   // Fetch products from API
@@ -398,10 +405,11 @@ const CategoryPage: React.FC = () => {
         // endDate: end.toISOString().split("T")[0],
       };
 
-      const res = await fetch(`${API_BASE_URL}/cart/add/${user?.id}`, {
+      const res = await fetch(`${API_BASE_URL}/cart/add/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(payload),
       });
@@ -437,11 +445,15 @@ const CategoryPage: React.FC = () => {
     try {
       if (isInWishlist) {
         // Remove from wishlist
-        await axios.delete(`${API_BASE_URL}/wishlist/remove/${user?.id}/${productId}`);
+        await axios.delete(`${API_BASE_URL}/wishlist/remove/${productId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         toast.error('Removed from wishlist');
       } else {
         // Add to wishlist
-        await axios.post(`${API_BASE_URL}/wishlist/add/${user?.id}`, { itemId: productId });
+        await axios.post(`${API_BASE_URL}/wishlist/add/`, { itemId: productId }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         toast.success('Added to wishlist');
       }
     } catch (error) {

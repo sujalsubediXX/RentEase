@@ -17,12 +17,15 @@ export default function Header() {
   const [scrolled, setScrolled] = useState<boolean>(false);
   const [cartLength, setCartLength] = useState<number>(0);
   const { isAuthenticated, user } = useAuth();
+  const token = localStorage.getItem("accessToken");
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     const getCartCount = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/cart/count/${user?.id}`)
+        const res = await axios.get(`${API_BASE_URL}/cart/count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setCartLength(res.data.count);
       } catch (error) {
         console.log("Error fetching cart length", error)

@@ -11,7 +11,7 @@ function ProfilePage() {
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-
+const token = localStorage.getItem("accessToken");
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
@@ -19,7 +19,9 @@ function ProfilePage() {
 
   const fetchWishlist = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/${user?.id}`);
+      const res = await axios.get(`${API_BASE_URL}/wishlist/wishitem`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setWishlist(res.data?.items || []);
     } catch (err) {
       console.error(err);
@@ -27,8 +29,7 @@ function ProfilePage() {
     };
   }
 
-  
-  console.log(rentals)
+
 
   useEffect(() => {
     const fetchUserData = async () => {

@@ -36,7 +36,6 @@ import { ListingsPage } from "./pages/admin/ListingsPage";
 import { BookingsPage } from "./pages/admin/BookingsPage";
 import { RevenuePage } from "./pages/admin/RevenuePage";
 import { ReviewsPage } from "./pages/admin/ReviewsPage";
-import { MessagesPage } from "./pages/admin/MessagesPage";
 import { SettingsPage } from "./pages/admin/SettingsPage";
 import { OwnersPage } from "./pages/admin/OwnersPage";
 import ProfilePage from "./pages/user/ProfilePage";
@@ -180,7 +179,6 @@ const router = createBrowserRouter([
       { path: "/admin/reviews", element: <ReviewsPage /> },
       { path: "/admin/kycreview", element: <Kycviewpage /> },
       { path: "/admin/kyc/:id", element: <KYCDetailView /> },
-      { path: "/admin/messages", element: <MessagesPage /> },
       { path: "/admin/settings", element: <SettingsPage /> },
     ],
   },

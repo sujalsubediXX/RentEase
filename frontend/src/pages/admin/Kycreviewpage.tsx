@@ -63,18 +63,19 @@ export default function Kycreviewpage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
+  const token = localStorage.getItem("accessToken");
   const fetchKYCs = useCallback(async (status: TabFilter) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_BASE_URL}/kyc/admin`,{
-      params: {
-        status: status === "all" ? undefined : status,
-      },
-    });
+      const res = await axios.get(`${API_BASE_URL}/kyc/admin`, {
+        params: {
+          status: status === "all" ? undefined : status,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      
+
       setKycs(res.data.data);
       setCounts(res.data.counts);
     } catch {

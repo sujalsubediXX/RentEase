@@ -3,13 +3,7 @@ import Wishlist from "../models/Wishlist.ts";
 
 export const getWishlist = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
+       const userId = (req as any).user?.id;
         const wishlist = await Wishlist.findOne({ userId }).populate({
             path: "items",
             select: "title description price quantity availability",
@@ -35,7 +29,7 @@ export const getWishlist = async (req: Request, res: Response) => {
 // Add an item to wishlist (idempotent — won't duplicate)
 export const addToWishlist = async (req: Request, res: Response) => {
     try {
-        const userId = req.params.userId as string;
+         const userId = (req as any).user?.id;
         const { itemId } = req.body;
 
         if (!userId || !itemId) {
@@ -66,11 +60,12 @@ export const addToWishlist = async (req: Request, res: Response) => {
 // Remove an item from wishlist (idempotent — no error if not present)
 export const removeFromWishlist = async (req: Request, res: Response) => {
     try {
-        const { userId, itemId } = req.params;
-        if (!userId || !itemId) {
+        const { itemId } = req.params;
+        const userId = (req as any).user?.id;
+        if ( !itemId) {
             return res.status(400).json({
                 success: false,
-                message: "userId and itemId required",
+                message: " itemId required",
             });
         }
         const wishlist = await Wishlist.findOneAndUpdate(

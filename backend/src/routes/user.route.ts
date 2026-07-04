@@ -32,15 +32,15 @@ router.post("/change-password", authMiddleware, changePassword);
 router.get("/role/:role", getUsersByRole);
 
 // Get single user
-router.get("/users/:id", getUserById);
+router.get("/users", authMiddleware, getUserById);
 
 // Create user
 
 // Update user
-router.put("/users/:id", updateUser);
+router.put("/users", authMiddleware, updateUser);
 
 // Deactivate user
-router.patch("/:id/deactivate", deactivateUser);
+router.patch("/deactivate", authMiddleware, deactivateUser);
 // routes/authRoutes.ts
 
 

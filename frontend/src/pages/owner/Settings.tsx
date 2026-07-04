@@ -25,10 +25,10 @@ interface UserSettings {
 
 export const Settings = () => {
     const { user, updateUser } = useAuth();
-    const [isLoading, setIsLoading] = useState(false);
+
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
+const token = authService.getAccessToken();
     // Form state
     const [formData, setFormData] = useState<UserSettings>({
         fullName: '',
@@ -72,10 +72,7 @@ export const Settings = () => {
             setIsSaving(true);
             setMessage(null);
 
-            const token = authService.getAccessToken();
-            if (!token) {
-                throw new Error('Not authenticated');
-            }
+          
 
             if (!user?.id) {
                 throw new Error('User ID not found');
@@ -83,7 +80,7 @@ export const Settings = () => {
 
             // Update user profile
             const response = await axios.put(
-                `${API_BASE_URL}/user/users/${user.id}`,
+                `${API_BASE_URL}/user/users`,
                 {
                     fullName: formData.fullName,
                     phoneNumber: formData.phoneNumber,

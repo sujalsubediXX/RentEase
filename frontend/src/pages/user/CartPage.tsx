@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
 import { ImageSlider } from "./ImageSlider";
-import { useAuth } from "../../hooks/useAuth";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 const BASE_URL = "http://localhost:3000";
@@ -51,13 +50,15 @@ export default function CartPage() {
     setBlockedRangesMap(Object.fromEntries(entries));
   };
 
-  const { user } = useAuth();
+
   const navigate = useNavigate();
 
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/cart/${user?.id}`);
+      const res = await axios.get(`${API_BASE_URL}/cart/getcart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const items = res.data.cart.items || [];
       setCart(items);
       fetchAllAvailability(items);
@@ -85,7 +86,9 @@ export default function CartPage() {
 
     try {
       await axios.delete(
-        `${API_BASE_URL}/cart/remove/${user?.id}/${cartItemId}`
+        `${API_BASE_URL}/cart/remove/${cartItemId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }
       );
 
       fetchCart();
@@ -112,10 +115,13 @@ export default function CartPage() {
   ) => {
     try {
       await axios.put(
-        `${API_BASE_URL}/cart/update-dates/${user?.id}/${cartItemId}`,
+        `${API_BASE_URL}/cart/update-dates/${cartItemId}`,
         {
           startDate,
           endDate,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 

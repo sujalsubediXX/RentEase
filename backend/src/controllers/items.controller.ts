@@ -51,44 +51,6 @@ export const createItem = async (req: Request, res: Response) => {
 
 
 
-// export const getItems = async (req: Request, res: Response) => {
-//   try {
-//     const items = await Item.aggregate([
-//       {
-//         $lookup: {
-//           from: "itemimages",
-//           localField: "_id",
-//           foreignField: "itemId",
-//           as: "image",
-//         },
-//       },
-//       {
-//         $project: {
-//           name: 1,
-//           description: 1,
-//           price: 1,
-//           categoryId: 1,
-//           ownerId: 1,
-//           createdAt: 1,
-//           updatedAt: 1,
-//           image: {
-//             $map: {
-//               input: "$image",
-//               as: "img",
-//               in: "$$img.imageUrl",
-//             },
-//           },
-//         },
-//       },
-//     ]);
-
-//     res.status(200).json(items);
-//   } catch (err: any) {
-//     res.status(500).json({
-//       message: err.message,
-//     });
-//   }
-// };
 
 export const getItems = async (req: Request, res: Response) => {
   try {

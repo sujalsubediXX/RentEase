@@ -11,14 +11,7 @@ import {
 
 export const addItemToCart = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
+       const userId = req.user.id;
 
         const {
             itemId,
@@ -114,15 +107,9 @@ export const addItemToCart = async (req: Request, res: Response) => {
 
 export const getCart = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
+     const userId = req.user.id;
 
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
-
+       
         const cart = await Cart.findOne({ userId }).populate("items.itemId");
 
         if (!cart) {
@@ -179,18 +166,10 @@ export const getCart = async (req: Request, res: Response) => {
 
 export const updateCartItem = async (req: Request, res: Response) => {
     try {
-        const { userId, itemId } = req.params;
+        const { itemId } = req.params;
+        const userId = req.user.id;
 
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
-
-
-
-        const { quantity, rentalDays, startDate, endDate } = req.body;
+            const { quantity, rentalDays, startDate, endDate } = req.body;
 
         const cart = await Cart.findOne({ userId });
 
@@ -239,14 +218,9 @@ export const updateCartItem = async (req: Request, res: Response) => {
 // =========================
 export const removeCartItem = async (req: Request, res: Response) => {
     try {
-        const { userId, itemId } = req.params;
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
-
+        const {itemId } = req.params;
+        const userId = req.user.id;
+     
         const cart = await Cart.findOne({ userId });
 
         if (!cart) {
@@ -282,13 +256,7 @@ export const removeCartItem = async (req: Request, res: Response) => {
 // =========================
 export const clearCart = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
+        const userId = req.user.id;
 
         const cart = await Cart.findOne({ userId });
 
@@ -321,9 +289,10 @@ export const clearCart = async (req: Request, res: Response) => {
 
 export const updateCartItemDates = async (req: Request, res: Response) => {
     try {
-        const { userId, itemId } = req.params;
+        const {itemId } = req.params;
+        const userId = req.user.id;
 
-        if (!userId || !itemId) {
+        if ( !itemId) {
             return res.status(400).json({
                 success: false,
                 message: "User ID and Item ID are required",
@@ -410,15 +379,7 @@ export const updateCartItemDates = async (req: Request, res: Response) => {
 
 export const getCartItemCount = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
-        if (!userId || userId === "undefined") {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required",
-            });
-        }
-
-
+        const userId = req.user.id;
         const cart = await Cart.findOne({ userId });
 
         if (!cart) {

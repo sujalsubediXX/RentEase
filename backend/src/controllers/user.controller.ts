@@ -321,7 +321,6 @@ export const getUsersByRole = async (req: Request, res: Response) => {
   try {
     const roleParam = req.params.role;
     const role = Array.isArray(roleParam) ? roleParam[0] : roleParam;
-    console.log(role)
 
     if (!role || !allowedRoles.includes(role as AllowedRole)) {
       return res.status(400).json({
@@ -370,7 +369,7 @@ export const getUsersByRole = async (req: Request, res: Response) => {
 
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
 
     const user = await User.findById(id);
     if (!user) {
@@ -407,7 +406,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
     const { fullName, phoneNumber, address, profileImage } = req.body;
 
     const user = await User.findByIdAndUpdate(
@@ -419,7 +418,7 @@ export const updateUser = async (req: Request, res: Response) => {
         profileImage,
         updatedAt: new Date(),
       },
-      { new: true, runValidators: true },
+      { new: true, returnDocument: "after" },
     );
 
     if (!user) {
@@ -454,7 +453,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
 export const deactivateUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.user.id;
 
     const user = await User.findById(id);
     if (!user) {

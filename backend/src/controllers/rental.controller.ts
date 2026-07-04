@@ -437,6 +437,40 @@ export const getUserRentals = async (req: Request, res: Response) => {
   }
 };
 
+export const getByRentalStatus = async (req: Request, res: Response) => {
+  try {
+
+    const { status } = req.query;
+    const filter: any = {};
+
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+ 
+ const rentals = await Rentals.find(filter)
+  .populate({
+    path: "itemId",
+    populate: {
+      path: "ownerId",
+      select: "fullName email",
+    },
+  });
+
+
+    return res.status(200).json({
+      success: true,
+      data: rentals
+    });
+
+  } catch (error: any) {
+    console.error("Error getting user rentals:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get rentals"
+    });
+  }
+};
+
 // ─── Get Rental by ID ─────────────────────────────────────────────────────
 
 export const getRentalById = async (req: Request, res: Response) => {
@@ -488,9 +522,6 @@ export const cancelRental = async (req: Request, res: Response) => {
         message: "Unauthorized"
       });
     }
-
-
-    
 
     const rental = await Rentals.findOne({ _id: id, userId });
 

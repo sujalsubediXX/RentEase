@@ -77,14 +77,12 @@ const testimonials: Testimonial[] = [
 ];
 
 
-
-
-
 const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "Kayak"];
 
 export default function Body() {
   const { user ,isAuthenticated} = useAuth();
   const [query, setQuery] = useState<string>("");
+  const [token, setToken] = useState<string>("");
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [items, setItems] = useState<Product[]>([]);
   const [category, setCategory] = useState<dbCategory[]>([]);
@@ -93,11 +91,24 @@ export default function Body() {
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
+useEffect(() => {
+  if(isAuthenticated && user?.id) {
+    setToken(localStorage.getItem("accessToken") || "");
+  }
+},[isAuthenticated, user?.id]);
+ useEffect(() => {
+    if (!user?.id) return;
+    fetchWishlist();
+  }, [user,isAuthenticated]);
 
-  const fetchWishlist = useCallback(async (userId: string) => {
+  const fetchWishlist = useCallback(async () => {
+     const authToken = localStorage.getItem("accessToken");
+  if (!authToken) return;
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/wishlist/${userId}`
+        `${API_BASE_URL}/wishlist/wishitem`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    }
       );
 
       const ids: string[] = (res.data.items ?? [])
@@ -132,16 +143,7 @@ export default function Body() {
     });
   };
 
-  useEffect(() => {
-    if (!user?.id) return;
-    fetchWishlist(user.id);
-  }, [user, fetchWishlist]);
-
-
-  useEffect(() => {
-    if (!user?.id) return;
-    fetchWishlist(user.id);
-  }, [user, fetchWishlist]);
+ 
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -211,10 +213,10 @@ export default function Body() {
       };
 
       const res = await fetch(
-        `${API_BASE_URL}/cart/add/${user.id}`,
+        `${API_BASE_URL}/cart/add`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers:  { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }
       );
@@ -249,13 +251,19 @@ export default function Body() {
     try {
       if (isInWishlist) {
         await axios.delete(
-          `${API_BASE_URL}/wishlist/remove/${user.id}/${productId}`
+          `${API_BASE_URL}/wishlist/remove/${productId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         toast.error("Removed from wishlist");
       } else {
         await axios.post(
-          `${API_BASE_URL}/wishlist/add/${user.id}`,
-          { itemId: productId }
+          `${API_BASE_URL}/wishlist/add`,
+          { itemId: productId },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         toast.success("Added to wishlist");
       }

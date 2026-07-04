@@ -7,7 +7,6 @@ import {
   BarChart3,
   Star,
   Settings,
-  MessageSquare,
   LogOut,
   ShieldCheck,
   UserCheck,
@@ -20,11 +19,11 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ size
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/owners", label: "Owners", icon: UserCheck },
   { href: "/admin/listings", label: "Listings", icon: Package },
-  { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck, badge: 3 },
+  { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/admin/kycreview", label: "KYC Review", icon: ShieldCheck },
   { href: "/admin/revenue", label: "Revenue", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
-  { href: "/admin/messages", label: "Messages", icon: MessageSquare, badge: 8 },
+
 ];
 
 

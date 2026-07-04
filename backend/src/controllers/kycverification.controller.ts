@@ -42,12 +42,7 @@ export const submitKYC = async (req: Request, res: Response) => {
   }
 
   try {
-    const {userId} = (req as any).params;
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-
+     const userId = (req as any).user?.id;
     const existing = await KYC.findOne({ user: userId });
 
     if (existing && existing.status !== "rejected") {
@@ -191,7 +186,7 @@ export const submitKYC = async (req: Request, res: Response) => {
 // GET /api/kyc/status
 export const getMyKYCStatus = async (req: Request, res: Response) => {
   try {
-     const {userId} = (req as any).params;
+     const userId = (req as any).user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }

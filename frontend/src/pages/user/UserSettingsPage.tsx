@@ -10,12 +10,14 @@ function UserSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
+const token = localStorage.getItem("accessToken");
 
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     try{
-      const res = await axios.patch(`${API_BASE_URL}/user/${user?.id}/deactivate`)
+      const res = await axios.patch(`${API_BASE_URL}/user/deactivate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if(res.data.success){
       setMessage({
         type: 'success',
@@ -109,7 +111,7 @@ function UserSettingsPage() {
       }
 
       const response = await axios.put(
-        `${API_BASE_URL}/user/users/${user.id}`,
+        `${API_BASE_URL}/user/users`,
         {
           fullName: formData.fullName,
           phoneNumber: formData.phoneNumber,
