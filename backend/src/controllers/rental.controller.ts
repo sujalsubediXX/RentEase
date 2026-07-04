@@ -437,6 +437,56 @@ export const getUserRentals = async (req: Request, res: Response) => {
   }
 };
 
+// ─── Get Owner's Rentals ─────────────────────────────────────────────────────
+
+export const getOwnerRentals = async (req: Request, res: Response) => {
+  try {
+    const ownerId = (req as any).user?.id;
+
+    if (!ownerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const { status } = req.query;
+
+    // Get all items for this owner
+    const ownerItems = await Item.find({ ownerId: ownerId });
+    const itemIds = ownerItems.map(item => item._id);
+
+    if (itemIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
+    }
+
+    // Get all rentals for these items
+    const filter: any = { itemId: { $in: itemIds } };
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    // ✅ ADD THIS: Populate the itemId field
+    const rentals = await Rentals.find(filter)
+      .populate('itemId') // This fills in the item details
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: rentals
+    });
+
+  } catch (error: any) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get owner rentals"
+    });
+  }
+};
 export const getByRentalStatus = async (req: Request, res: Response) => {
   try {
 

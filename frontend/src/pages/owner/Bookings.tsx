@@ -1,109 +1,428 @@
 import { Check, X, Calendar } from "lucide-react";
-import  { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Avatar } from "../../components/owner/Avatar";
 import { TopBar } from "../../components/owner/TopBar";
-type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+import API_BASE_URL from "../../config/api";
+import { useAuth } from "../../hooks/useAuth";
+import { authService } from "../../services/auth.services";
+
+type BookingStatus = "pending" | "confirmed" | "ongoing" | "completed" | "cancelled" | "rejected";
+
+// Real booking interface matching your backend
 interface Booking {
-    id: string;
-    listing: string;
-    renter: string;
-    renterAvatar: string;
+    _id: string;
+    itemId: {
+        _id: string;
+        title: string;
+        images?: string[];
+        price: number;
+        location?: string;
+        ownerId?: string | { _id: string; fullName: string; email: string };
+    };
+    userId: string;
     startDate: string;
-    endDate: string;
-    amount: number;
+    returnDate: string;
+    totalPrice: number;
     status: BookingStatus;
-    message: string;
+    customerDetails: {
+        fullName: string;
+        phoneNumber: string;
+        deliveryAddress: string;
+    };
+    paymentMethod: "cod" | "digital";
+    rentalDays: number;
+    quantity: number;
+    securityDeposit: number;
+    createdAt: string;
 }
+
 const statusColor: Record<string, string> = {
-    active: "bg-emerald-100 text-emerald-700",
-    paused: "bg-amber-100 text-amber-700",
-    rented: "bg-blue-100 text-blue-700",
     pending: "bg-amber-100 text-amber-700",
     confirmed: "bg-emerald-100 text-emerald-700",
+    ongoing: "bg-blue-100 text-blue-700",
     completed: "bg-slate-100 text-slate-600",
     cancelled: "bg-red-100 text-red-600",
+    rejected: "bg-red-100 text-red-600",
 };
 
-
-const mockBookings: Booking[] = [
-    { id: "BK-001", listing: "Vintage Camera Kit", renter: "Arjun Sharma", renterAvatar: "AS", startDate: "2026-06-01", endDate: "2026-06-03", amount: 2400, status: "confirmed", message: "Need it for a wedding shoot." },
-    { id: "BK-002", listing: "Mountain Bike - Trek", renter: "Priya Thapa", renterAvatar: "PT", startDate: "2026-06-05", endDate: "2026-06-07", amount: 1500, status: "pending", message: "Weekend cycling trip to Nagarkot." },
-    { id: "BK-003", listing: "DSLR Canon EOS 90D", renter: "Rohan KC", renterAvatar: "RK", startDate: "2026-05-25", endDate: "2026-05-27", amount: 4500, status: "completed", message: "Product photography session." },
-    { id: "BK-004", listing: "Camping Tent (6-Person)", renter: "Sita Gurung", renterAvatar: "SG", startDate: "2026-06-10", endDate: "2026-06-13", amount: 2400, status: "confirmed", message: "" },
-    { id: "BK-005", listing: "Electric Guitar + Amp", renter: "Bikash Rai", renterAvatar: "BR", startDate: "2026-05-20", endDate: "2026-05-22", amount: 2100, status: "cancelled", message: "Band practice sessions." },
-];
-
 const BookingsPage = () => {
+    const { user, isAuthenticated } = useAuth();
     const [tab, setTab] = useState<"all" | BookingStatus>("all");
     const [selected, setSelected] = useState<string | null>(null);
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [updating, setUpdating] = useState<string | null>(null);
 
-    const filtered = tab === "all" ? mockBookings : mockBookings.filter(b => b.status === tab);
+    // Fetch bookings from API
+    const fetchBookings = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            // Check if user is authenticated
+            if (!isAuthenticated || !user) {
+                setError('Please login to view bookings');
+                setLoading(false);
+                return;
+            }
+
+            // Get token from auth service
+            const token = authService.getAccessToken();
+            
+            console.log('Token from auth service:', token ? 'Present' : 'Missing');
+            console.log('User:', user);
+            
+            if (!token) {
+                setError('Authentication token not found. Please login again.');
+                setLoading(false);
+                return;
+            }
+
+            const statusFilter = tab === "all" ? "all" : tab;
+            
+            // First try the owner endpoint
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/rentals/owner?status=${statusFilter}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                if (response.data.success) {
+                    setBookings(response.data.data);
+                } else {
+                    setError("Failed to fetch bookings");
+                }
+            } catch (err: any) {
+                // If owner endpoint doesn't exist (404), try filterStatus
+                if (err.response?.status === 404) {
+                    console.log('Owner endpoint not found, using filterStatus');
+                    const response = await axios.get(
+                        `${API_BASE_URL}/rentals/filterStatus?status=${statusFilter}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+
+                    if (response.data.success) {
+                        // Filter bookings where logged-in user is the owner
+                        const ownerBookings = response.data.data.filter((rental: any) => {
+                            const ownerId = rental.itemId?.ownerId?._id || rental.itemId?.ownerId;
+                            return ownerId === user?.id; // Use user.id from auth
+                        });
+                        setBookings(ownerBookings);
+                    } else {
+                        setError("Failed to fetch bookings");
+                    }
+                } else {
+                    throw err;
+                }
+            }
+        } catch (err: any) {
+            console.error("Error fetching bookings:", err);
+            
+            if (err.response?.status === 401) {
+                setError("Session expired. Please login again.");
+            } else if (err.response?.status === 404) {
+                setError("Owner bookings endpoint not found. Please add the /owner endpoint to backend.");
+            } else {
+                setError("Failed to load bookings. Please try again.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Update booking status
+    const updateBookingStatus = async (bookingId: string, newStatus: BookingStatus) => {
+        try {
+            setUpdating(bookingId);
+            const token = authService.getAccessToken();
+            
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            // Handle different status updates
+            if (newStatus === 'cancelled' || newStatus === 'rejected') {
+                await axios.put(
+                    `${API_BASE_URL}/rentals/${bookingId}/cancel`,
+                    {},
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+            } else if (newStatus === 'confirmed') {
+                await axios.put(
+                    `${API_BASE_URL}/rentals/confirm`,
+                    { rentalIds: [bookingId] },
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+            }
+            
+            // Refresh the list
+            await fetchBookings();
+        } catch (err: any) {
+            console.error("Error updating booking:", err);
+            if (err.response?.status === 401) {
+                alert("Session expired. Please login again.");
+            } else {
+                alert("Failed to update booking status. Please try again.");
+            }
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    useEffect(() => {
+        fetchBookings();
+    }, [tab, isAuthenticated]);
+
+    // Get filtered bookings based on tab
+    const filteredBookings = tab === "all" 
+        ? bookings 
+        : bookings.filter(b => b.status === tab);
+
+    // Helper to get initials from name
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    // Helper to format date
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    // Helper to calculate duration
+    const getDuration = (startDate: string, endDate: string) => {
+        const days = Math.ceil(
+            (new Date(endDate).getTime() - new Date(startDate).getTime()) / 
+            (1000 * 60 * 60 * 24)
+        );
+        return Math.max(1, days);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex-1 overflow-y-auto bg-stone-50">
+                <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
+                <div className="p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-8">
+                        <div className="flex items-center justify-center">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto"></div>
+                                <p className="mt-4 text-stone-600">Loading bookings...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex-1 overflow-y-auto bg-stone-50">
+                <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
+                <div className="p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-8">
+                        <div className="text-center">
+                            <p className="text-red-600">{error}</p>
+                            <button 
+                                onClick={fetchBookings}
+                                className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 overflow-y-auto bg-stone-50">
             <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
             <div className="p-6 space-y-4">
                 {/* Tabs */}
-                <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit">
-                    {(["all", "pending", "confirmed", "completed", "cancelled"] as const).map(t => (
-                        <button key={t} onClick={() => setTab(t)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${tab === t ? "bg-amber-600 text-white shadow-sm" : "text-stone-600 hover:bg-stone-50"}`}>
-                            {t}
-                            {t !== "all" && <span className="ml-1.5 text-xs opacity-70">({mockBookings.filter(b => b.status === t).length})</span>}
-                        </button>
-                    ))}
+                <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
+                    {(["all", "pending", "confirmed", "ongoing", "completed", "cancelled", "rejected"] as const).map(t => {
+                        const count = t === "all" 
+                            ? bookings.length 
+                            : bookings.filter(b => b.status === t).length;
+                        return (
+                            <button 
+                                key={t} 
+                                onClick={() => setTab(t)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors whitespace-nowrap ${
+                                    tab === t 
+                                        ? "bg-amber-600 text-white shadow-sm" 
+                                        : "text-stone-600 hover:bg-stone-50"
+                                }`}
+                            >
+                                {t}
+                                <span className="ml-1.5 text-xs opacity-70">({count})</span>
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
                     <div className="divide-y divide-stone-100">
-                        {filtered.map(b => (
-                            <div key={b.id} className={`p-5 hover:bg-stone-50 transition-colors cursor-pointer ${selected === b.id ? "bg-amber-50" : ""}`}
-                                onClick={() => setSelected(selected === b.id ? null : b.id)}>
+                        {filteredBookings.map((b) => (
+                            <div 
+                                key={b._id} 
+                                className={`p-5 hover:bg-stone-50 transition-colors cursor-pointer ${
+                                    selected === b._id ? "bg-amber-50" : ""
+                                }`}
+                                onClick={() => setSelected(selected === b._id ? null : b._id)}
+                            >
                                 <div className="flex items-center gap-4">
-                                    <Avatar initials={b.renterAvatar} size="md" color="bg-stone-600" />
+                                    <Avatar 
+                                        initials={getInitials(b.customerDetails.fullName)} 
+                                        size="md" 
+                                        color="bg-stone-600" 
+                                    />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-stone-800">{b.renter}</p>
+                                            <p className="font-semibold text-stone-800">
+                                                {b.customerDetails.fullName}
+                                            </p>
                                             <span className="text-stone-300">·</span>
-                                            <p className="text-xs text-stone-400 font-mono">{b.id}</p>
+                                            <p className="text-xs text-stone-400 font-mono">
+                                                {b._id.slice(-6).toUpperCase()}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-stone-500 truncate mt-0.5">{b.listing}</p>
+                                        <p className="text-sm text-stone-500 truncate mt-0.5">
+                                            {b.itemId?.title || "Unknown Item"}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-stone-400 sm:hidden">
+                                            <span>रू {b.totalPrice.toLocaleString()}</span>
+                                            <span>·</span>
+                                            <span>{formatDate(b.startDate)} → {formatDate(b.returnDate)}</span>
+                                        </div>
                                     </div>
                                     <div className="text-right hidden sm:block">
-                                        <p className="text-sm font-bold text-stone-900">रू {b.amount.toLocaleString()}</p>
-                                        <p className="text-xs text-stone-400">{b.startDate} → {b.endDate}</p>
+                                        <p className="text-sm font-bold text-stone-900">
+                                            रू {b.totalPrice.toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-stone-400">
+                                            {formatDate(b.startDate)} → {formatDate(b.returnDate)}
+                                        </p>
                                     </div>
-                                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[b.status]}`}>{b.status}</span>
+                                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[b.status]}`}>
+                                        {b.status}
+                                    </span>
                                 </div>
 
-                                {selected === b.id && (
+                                {selected === b._id && (
                                     <div className="mt-4 pt-4 border-t border-stone-100">
-                                        {b.message && (
-                                            <div className="bg-stone-50 rounded-xl p-3 mb-4">
-                                                <p className="text-xs text-stone-500 font-medium mb-1">Message from renter</p>
-                                                <p className="text-sm text-stone-700">"{b.message}"</p>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-3 gap-3 text-center mb-4">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center mb-4">
                                             {[
-                                                ["Pickup", b.startDate],
-                                                ["Return", b.endDate],
-                                                ["Duration", `${Math.max(1, Math.round((new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / (1000 * 60 * 60 * 24)))} days`],
-                                            ].map(([l, v]) => (
-                                                <div key={l} className="bg-stone-50 rounded-xl p-3">
-                                                    <p className="text-xs text-stone-400 mb-1">{l}</p>
-                                                    <p className="text-sm font-semibold text-stone-700">{v}</p>
+                                                ["Pickup", formatDate(b.startDate)],
+                                                ["Return", formatDate(b.returnDate)],
+                                                ["Duration", `${getDuration(b.startDate, b.returnDate)} days`],
+                                                ["Quantity", `${b.quantity} item(s)`],
+                                                ["Payment", b.paymentMethod.toUpperCase()],
+                                                ["Deposit", `रू ${b.securityDeposit.toLocaleString()}`],
+                                            ].map(([label, value]) => (
+                                                <div key={label} className="bg-stone-50 rounded-xl p-3">
+                                                    <p className="text-xs text-stone-400 mb-1">{label}</p>
+                                                    <p className="text-sm font-semibold text-stone-700">{value}</p>
                                                 </div>
                                             ))}
                                         </div>
-                                        {b.status === "pending" && (
+                                        
+                                        {b.customerDetails.deliveryAddress && (
+                                            <div className="bg-stone-50 rounded-xl p-3 mb-4">
+                                                <p className="text-xs text-stone-500 font-medium mb-1">Delivery Address</p>
+                                                <p className="text-sm text-stone-700">{b.customerDetails.deliveryAddress}</p>
+                                                <p className="text-xs text-stone-400 mt-1">📞 {b.customerDetails.phoneNumber}</p>
+                                            </div>
+                                        )}
+
+                                        {(b.status === "pending" || b.status === "confirmed") && (
                                             <div className="flex gap-2">
-                                                <button className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
-                                                    <Check size={16} /> Approve
-                                                </button>
-                                                <button className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors">
-                                                    <X size={16} /> Decline
-                                                </button>
+                                                {b.status === "pending" && (
+                                                    <>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                updateBookingStatus(b._id, "confirmed");
+                                                            }}
+                                                            disabled={updating === b._id}
+                                                            className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                                                        >
+                                                            {updating === b._id ? (
+                                                                <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                                            ) : (
+                                                                <>
+                                                                    <Check size={16} /> Approve
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (confirm("Are you sure you want to reject this booking?")) {
+                                                                    updateBookingStatus(b._id, "rejected");
+                                                                }
+                                                            }}
+                                                            disabled={updating === b._id}
+                                                            className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                                                        >
+                                                            <X size={16} /> Decline
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {b.status === "confirmed" && (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm("Are you sure you want to cancel this confirmed booking?")) {
+                                                                updateBookingStatus(b._id, "cancelled");
+                                                            }
+                                                        }}
+                                                        disabled={updating === b._id}
+                                                        className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                                                    >
+                                                        {updating === b._id ? (
+                                                            <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></span>
+                                                        ) : (
+                                                            <>
+                                                                <X size={16} /> Cancel Booking
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -111,10 +430,13 @@ const BookingsPage = () => {
                             </div>
                         ))}
                     </div>
-                    {filtered.length === 0 && (
+                    {filteredBookings.length === 0 && (
                         <div className="text-center py-16 text-stone-400">
                             <Calendar size={48} className="mx-auto mb-3 opacity-50" />
                             <p>No {tab} bookings</p>
+                            {tab === "all" && (
+                                <p className="text-sm mt-2">When someone rents your items, they'll appear here</p>
+                            )}
                         </div>
                     )}
                 </div>
@@ -122,4 +444,5 @@ const BookingsPage = () => {
         </div>
     );
 };
+
 export default BookingsPage;
