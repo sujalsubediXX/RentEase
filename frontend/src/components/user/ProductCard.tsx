@@ -7,12 +7,11 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  rentalPrice: number;
-  originalPrice?: number;
+  price: number;
   images: string[];
   category: string;
   categoryId: string;
-  brand: string;
+ rentalUnits?: number;
   rating: number;
   reviewCount: number;
   stock: number;
@@ -32,7 +31,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  index,
+
   isInWishlist,
   onToggleWishlist,
   onQuickView,
@@ -40,9 +39,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onRentNow,
   cardRef,
 }) => {
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.rentalPrice) / product.originalPrice) * 100)
-    : null;
 
   return (
     <div
@@ -61,11 +57,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <ImageSlider images={product.images} />
         </div>
 
-        {discount && discount > 0 && (
           <span className="absolute top-3 left-8 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            -{discount}%
+           {product.price}
           </span>
-        )}
+        
         {product.stock === 0 && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
             <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
@@ -95,7 +90,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.brand}</span>
+          <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.location}</span>
           <div className="flex items-center gap-1">
             <Star size={11} className="text-amber-400 fill-amber-400" />
             <span className="text-xs text-stone-700 font-medium">{product.rating}</span>
@@ -113,14 +108,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex items-end justify-between mb-3">
           <div>
             <div className="flex items-baseline gap-1 font-mono">
-              <span className="text-lg font-bold text-stone-900">Rs. {product.rentalPrice.toLocaleString()}</span>
+              <span className="text-lg font-bold text-stone-900">Rs. {product.price}</span>
               <span className="text-xs text-stone-400">/day</span>
             </div>
-            {product.originalPrice && (
-              <span className="text-xs text-stone-400 line-through font-mono">
-                Rs. {product.originalPrice.toLocaleString()}
-              </span>
-            )}
+           
           </div>
           <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full
             ${product.stock > 3

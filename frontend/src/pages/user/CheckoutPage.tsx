@@ -16,12 +16,12 @@ interface Product {
   id: string;
   name: string;
   description?: string;
-  rentalPrice: number;
-  originalPrice?: number;
+  price: number;
+
   images: string[];
   category?: string;
   brand?: string;
-  location?: string;
+  address?: string;
 }
 
 interface CartItem {
@@ -159,7 +159,7 @@ const CheckoutPage: React.FC = () => {
 
   const subtotal = useMemo(() => {
     if (checkoutType === 'single') {
-      return singleProduct ? singleProduct.rentalPrice * singleRentalDays : 0;
+      return singleProduct ? singleProduct.price * singleRentalDays : 0;
     }
     return cartItems.reduce(
       (acc, item) => acc + item.itemId.price * item.rentalDays,
@@ -169,7 +169,7 @@ const CheckoutPage: React.FC = () => {
 
   const securityDeposit = useMemo(() => {
     if (checkoutType === 'single') {
-      return singleProduct ? Math.round(singleProduct.rentalPrice * 1.5) : 0;
+      return singleProduct ? Math.round(singleProduct.price * 1.5) : 0;
     }
     return cartItems.reduce(
       (acc, item) => acc + Math.round(item.itemId.price * 1.5),
@@ -272,10 +272,10 @@ const CheckoutPage: React.FC = () => {
         const productData = {
           id: singleProduct!.id,
           name: singleProduct!.name,
-          rentalPrice: singleProduct!.rentalPrice,
+          price: singleProduct!.price,
           images: singleProduct!.images || [],
           brand: singleProduct!.brand || 'RentEase',
-          location: singleProduct!.location || 'Kathmandu'
+          address: singleProduct!.address || 'Kathmandu'
         };
 
         navigate('/confirm-booking', {
@@ -431,7 +431,7 @@ const CheckoutPage: React.FC = () => {
                 {startDate && endDate && (
                   <p className="mt-3 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg w-max">
                     {singleRentalDays} {singleRentalDays === 1 ? 'day' : 'days'} rental ·
-                    Rs. {(singleProduct!.rentalPrice * singleRentalDays).toLocaleString()} rental fee
+                    Rs. {(singleProduct!.price * singleRentalDays).toLocaleString()} rental fee
                   </p>
                 )}
               </div>
@@ -588,7 +588,7 @@ const CheckoutPage: React.FC = () => {
                       {singleProduct.name}
                     </p>
                     <p className="text-xs text-stone-400">
-                      Rs. {singleProduct.rentalPrice.toLocaleString()}/day
+                      Rs. {singleProduct.price}/day
                     </p>
                   </div>
                 </div>
@@ -604,7 +604,7 @@ const CheckoutPage: React.FC = () => {
                       </span>
                     </span>
                     <span className="font-medium text-stone-800">
-                      Rs. {(singleProduct.rentalPrice * singleRentalDays).toLocaleString()}
+                      Rs. {(singleProduct.price * singleRentalDays).toLocaleString()}
                     </span>
                   </div>
                 )}

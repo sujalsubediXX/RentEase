@@ -4,7 +4,7 @@ import ItemImage from "../models/itemsImage.model.ts";
 import Item from "../models/items.model.ts";
 
 
-import { getFeaturedItems, getRecommendedForUser } from "../utils/recommendation.ts";
+import { getFeaturedItems, getRecommendedForUser,getMostRentedItems } from "../utils/recommendation.ts";
 
 
 export const createItem = async (req: Request, res: Response) => {
@@ -249,3 +249,15 @@ export const recommendedItemsHandler = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: "Failed to load recommendations" });
   }
 }
+
+
+export const fetchMostRentedItems = async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 8, 24);
+    const items = await getMostRentedItems(limit);
+    res.json({ success: true, data: items });
+  } catch (err) {
+    console.error("Error fetching most rented items:", err);
+    res.status(500).json({ success: false, message: "Failed to load most rented items" });
+  }
+};

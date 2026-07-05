@@ -13,12 +13,10 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  rentalPrice: number;
-  originalPrice?: number;
+  price: number;
   images: string[];
   category: string;
   categoryId: string;
-  brand: string;
   rating: number;
   reviewCount: number;
   stock: number;
@@ -114,19 +112,18 @@ const mapItemToProduct = (item: any, categoryId: string): Product => {
       ? item.images.map(buildImageUrl).filter(Boolean)
       : ['https://picsum.photos/id/20/300/300'];
 
-  const rentalPrice = item.rentalPrice ?? item.price ?? 0;
-  const originalPrice = item.originalPrice ?? (rentalPrice ? Math.round(rentalPrice * 1.5) : undefined);
+
+
 
   return {
     id: item._id,
     name: item.name || item.title || 'Unnamed Product',
     description: item.description || 'No description available',
-    rentalPrice,
-    originalPrice,
-    images: imageUrls,
+    price:item.price,
+       images: imageUrls,
     category: item.category || 'Products',
     categoryId: item.categoryId || categoryId,
-    brand: item.brand || item.condition || 'General',
+
     rating: item.rating ?? 4.0,
     reviewCount: item.reviewCount ?? 0,
     stock: item.stock ?? item.quantity ?? 5,
@@ -139,9 +136,7 @@ interface FilterContentProps {
   setSearchTerm: (v: string) => void;
   priceRange: [number, number];
   setPriceRange: (v: [number, number]) => void;
-  availableBrands: string[];
-  selectedBrands: string[];
-  setSelectedBrands: React.Dispatch<React.SetStateAction<string[]>>;
+
   minRating: number;
   setMinRating: (v: number) => void;
   activeFiltersCount: number;
@@ -151,7 +146,7 @@ interface FilterContentProps {
 const FilterContent: React.FC<FilterContentProps> = ({
   searchTerm, setSearchTerm,
   priceRange, setPriceRange,
-  availableBrands, selectedBrands, setSelectedBrands,
+
   minRating, setMinRating,
   activeFiltersCount, clearAllFilters,
 }) => (
@@ -207,38 +202,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
       </div>
     </div>
 
-    {availableBrands.length > 0 && (
-      <div>
-        <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Brands</label>
-        <div className="space-y-2">
-          {availableBrands.map(brand => (
-            <label key={brand} className="flex items-center gap-3 cursor-pointer group">
-              <div
-                className={`w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0
-                  ${selectedBrands.includes(brand)
-                    ? 'bg-stone-900 border-stone-900'
-                    : 'border-stone-300 group-hover:border-stone-400'}`}
-                onClick={() => {
-                  setSelectedBrands(prev =>
-                    prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
-                  );
-                }}
-              >
-                {selectedBrands.includes(brand) && (
-                  <svg className="w-2.5 h-2.5 text-amber-400" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <span className={`text-sm transition-colors ${selectedBrands.includes(brand) ? 'text-stone-800 font-medium' : 'text-stone-500 group-hover:text-stone-700'}`}>
-                {brand}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-    )}
-
+ 
     <div>
       <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Min Rating</label>
       <div className="flex gap-2">
@@ -278,7 +242,6 @@ const CategoryPage: React.FC = () => {
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('featured');
   const [currentPage, setCurrentPage] = useState(1);
@@ -522,31 +485,29 @@ const CategoryPage: React.FC = () => {
       const q = searchTerm.toLowerCase();
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q)
+        p.description.toLowerCase().includes(q) 
+    
       );
     }
 
     filtered = filtered.filter(p =>
-      p.rentalPrice >= priceRange[0] && p.rentalPrice <= priceRange[1]
+      p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter(p => selectedBrands.includes(p.brand));
-    }
+    
 
     if (minRating > 0) {
       filtered = filtered.filter(p => p.rating >= minRating);
     }
 
     return filtered;
-  }, [products, searchTerm, priceRange, selectedBrands, minRating]);
+  }, [products, searchTerm, priceRange, minRating]);
 
   const sortedProducts = useMemo(() => {
     const arr = [...filteredProducts];
     switch (sortBy) {
-      case 'price_low': return arr.sort((a, b) => a.rentalPrice - b.rentalPrice);
-      case 'price_high': return arr.sort((a, b) => b.rentalPrice - a.rentalPrice);
+      case 'price_low': return arr.sort((a, b) => a.price - b.price);
+      case 'price_high': return arr.sort((a, b) => b.price - a.price);
       case 'rating': return arr.sort((a, b) => b.rating - a.rating);
       case 'name_az': return arr.sort((a, b) => a.name.localeCompare(b.name));
       default: return arr;
@@ -562,22 +523,19 @@ const CategoryPage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, priceRange, selectedBrands, minRating, sortBy]);
+  }, [searchTerm, priceRange,  minRating, sortBy]);
 
-  const availableBrands = useMemo(() => (
-    [...new Set(products.map(p => p.brand))]
-  ), [products]);
 
   const clearAllFilters = () => {
     setSearchTerm('');
     setPriceRange([0, 50000]);
-    setSelectedBrands([]);
+
     setMinRating(0);
     setSortBy('featured');
   };
 
   const activeFiltersCount =
-    (searchTerm ? 1 : 0) + selectedBrands.length + (minRating > 0 ? 1 : 0);
+    (searchTerm ? 1 : 0) +  (minRating > 0 ? 1 : 0);
 
   // Handler for "Rent Now" from product cards
   const handleRentNow = (product: Product) => {
@@ -632,7 +590,7 @@ const CategoryPage: React.FC = () => {
             <div className="p-6">
               <div className="flex justify-between items-start mb-5">
                 <div>
-                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.brand}</span>
+                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.category}</span>
                   <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
                 </div>
                 <button
@@ -651,7 +609,7 @@ const CategoryPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {[
-                  { label: 'Brand', value: quickViewProduct.brand },
+                  { label: 'Brand', value: quickViewProduct.category },
                   { label: 'Rating', value: `${quickViewProduct.rating} ★` },
                   { label: 'Location', value: quickViewProduct.location },
                   { label: 'Stock', value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock' },
@@ -671,7 +629,7 @@ const CategoryPage: React.FC = () => {
                     ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
                     : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
               >
-                Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
+                Rent Now — Rs. {quickViewProduct.price.toLocaleString()}/day
               </button>
             </div>
           </div>
@@ -708,9 +666,9 @@ const CategoryPage: React.FC = () => {
               <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">
                 {categoryInfo?.name || 'Category Products'}
               </h1>
-              <p className="text-stone-500 text-sm max-w-xl">
+              {/* <p className="text-stone-500 text-sm max-w-xl">
                 {categoryInfo?.description || 'Browse our collection of products'}
-              </p>
+              </p> */}
             </div>
           </div>
         </div>
@@ -727,9 +685,7 @@ const CategoryPage: React.FC = () => {
                 setSearchTerm={setSearchTerm}
                 priceRange={priceRange}
                 setPriceRange={setPriceRange}
-                availableBrands={availableBrands}
-                selectedBrands={selectedBrands}
-                setSelectedBrands={setSelectedBrands}
+                     
                 minRating={minRating}
                 setMinRating={setMinRating}
                 activeFiltersCount={activeFiltersCount}
@@ -968,9 +924,6 @@ const CategoryPage: React.FC = () => {
                 setSearchTerm={setSearchTerm}
                 priceRange={priceRange}
                 setPriceRange={setPriceRange}
-                availableBrands={availableBrands}
-                selectedBrands={selectedBrands}
-                setSelectedBrands={setSelectedBrands}
                 minRating={minRating}
                 setMinRating={setMinRating}
                 activeFiltersCount={activeFiltersCount}

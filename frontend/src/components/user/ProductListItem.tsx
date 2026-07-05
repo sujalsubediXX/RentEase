@@ -7,12 +7,10 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  rentalPrice: number;
-  originalPrice?: number;
+  price: number;
   images: string[];
   category: string;
   categoryId: string;
-  brand: string;
   rating: number;
   reviewCount: number;
   stock: number;
@@ -30,7 +28,6 @@ interface ProductListItemProps {
 
 export const ProductListItem: React.FC<ProductListItemProps> = ({
   product,
-  index,
   isInWishlist,
   onToggleWishlist,
   onRentNow,
@@ -47,7 +44,7 @@ export const ProductListItem: React.FC<ProductListItemProps> = ({
       <div className="flex-1 p-5 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.brand}</span>
+            <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.category}</span>
             <div className="flex items-center gap-1">
               <Star size={11} className="text-amber-400 fill-amber-400" />
               <span className="text-xs text-stone-700">{product.rating}</span>
@@ -64,12 +61,10 @@ export const ProductListItem: React.FC<ProductListItemProps> = ({
         <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold text-stone-900">Rs. {product.rentalPrice.toLocaleString()}</span>
+              <span className="text-xl font-bold text-stone-900">Rs. {product.price}</span>
               <span className="text-sm text-stone-400">/day</span>
             </div>
-            {product.originalPrice && (
-              <span className="text-xs text-stone-400 line-through">Rs. {product.originalPrice.toLocaleString()}</span>
-            )}
+           
           </div>
           <div className="flex gap-2">
             <button

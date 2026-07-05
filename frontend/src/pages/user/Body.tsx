@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Reveal } from "../../config/MotionFunction.tsx";
 import axios from "axios";
 import API_BASE_URL from "../../config/api.ts";
@@ -23,16 +23,16 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  rentalPrice: number;
-  originalrice?: number;
+  price: number;
   images: string[];
   category: string;
   categoryId: string;
-  brand: string;
   rating: number;
   reviewCount: number;
+  rentalUnits?: number;
   stock: number;
   location: string;
+  createdAt?: string;
 }
 
 
@@ -44,8 +44,6 @@ interface Testimonial {
   featured?: boolean;
 }
 
-// Small reusable "punch hole" notch — the recurring ticket/tag motif used
-// across category cards and testimonial stubs, echoing the rental-tag
 // language already established in ProductCard.
 function TicketNotch({ side }: { side: "left" | "right" }) {
   return (
@@ -81,6 +79,101 @@ const trustPoints = [
   { icon: Clock3, label: "Book by the day", detail: "Rent for one day or several weeks" },
 ];
 
+// ---- Reusable row for every horizontal product section on the page ----
+interface ProductRowProps {
+  eyebrow: string;
+  title: React.ReactNode;
+  subtitle?: string;
+  products: Product[];
+  loading: boolean;
+  wishlist: string[];
+  toggleWishlist: (id: string) => void;
+  onQuickView: (p: Product) => void;
+  addToCart: (p: Product) => void;
+  handleRentNow: (p: Product) => void;
+  emptyMessage?: string;
+  viewAllHref?: string;
+  bg?: "white" | "gray";
+}
+
+function ProductRow({
+  eyebrow,
+  title,
+  subtitle,
+  products,
+  loading,
+  wishlist,
+  toggleWishlist,
+  onQuickView,
+  addToCart,
+  handleRentNow,
+  emptyMessage = "Nothing to show here yet — check back soon.",
+  viewAllHref,
+  bg = "white",
+}: ProductRowProps) {
+  // Don't render empty, non-loading rows at all — keeps the homepage from
+  // being cluttered with dead sections when a filter has no matches.
+  if (!loading && products.length === 0) return null;
+
+  return (
+    <section className={`py-24 px-[5vw] ${bg === "gray" ? "bg-gray-50" : "bg-white"}`}>
+      <div className="max-w-300 mx-auto">
+        <Reveal className="flex items-end justify-between mb-14">
+          <div>
+            <div className="flex items-center gap-2.5 text-[11px] text-amber-500 tracking-[0.15em] uppercase font-medium mb-3">
+              <span className="block w-6 h-px bg-amber-400" />{eyebrow}
+            </div>
+            <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(36px,4.5vw,58px)" }}>
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-gray-500 text-[15px] mt-3 max-w-125">{subtitle}</p>
+            )}
+          </div>
+          {viewAllHref && (
+            <a href={viewAllHref} className="text-amber-500 text-[14px] no-underline pb-0.5 border-b border-amber-300 whitespace-nowrap hover:text-amber-600 transition-colors">
+              View all →
+            </a>
+          )}
+        </Reveal>
+
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-gray-100 overflow-hidden animate-pulse">
+                <div className="aspect-square bg-gray-100" />
+                <div className="p-4 space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-16 border border-dashed border-gray-200 rounded-2xl">
+            <p className="text-gray-500 text-[15px]">{emptyMessage}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {products.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                index={index}
+                isInWishlist={wishlist.includes(product.id)}
+                onToggleWishlist={toggleWishlist}
+                onQuickView={onQuickView}
+                onAddToCart={addToCart}
+                onRentNow={handleRentNow}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function Body() {
   const { user, isAuthenticated } = useAuth();
   const [query, setQuery] = useState<string>("");
@@ -91,14 +184,51 @@ export default function Body() {
   const [category, setCategory] = useState<dbCategory[]>([]);
   const [categoryLoading, setCategoryLoading] = useState<boolean>(true);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const categoryMap = useMemo(
+    () => Object.fromEntries(category.map((c) => [c._id, c.name])),
+    [category]
+  );
 
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-
-
   const token = authService.getAccessToken();
 
+  const [mostRentedItems, setMostRentedItems] = useState<Product[]>([]);
+  const [mostRentedLoading, setMostRentedLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchMostRented = async () => {
+      setMostRentedLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/items/fetch-most-rented-items`);
+        setMostRentedItems(
+          res.data.data.map((item: any) => ({
+            id: item._id,
+            name: item.title,
+            description: item.description,
+            rentalPrice: item.price,
+            images: Array.isArray(item.images)
+              ? item.images.map((img: string) => `${API_BASE_URL}${img}`)
+              : [],
+            category: categoryMap[item.categoryId] || "",
+            categoryId: item.categoryId,
+            rating: item.avgRating ?? 0,
+            reviewCount: item.reviewCount ?? 0,
+            rentalUnits: item.rentalUnits ?? 0,
+            stock: item.quantity || 0,
+            location: item.location,
+            createdAt: item.createdAt,
+          }))
+        );
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setMostRentedLoading(false);
+      }
+    };
+    fetchMostRented();
+  }, [categoryMap]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -174,17 +304,18 @@ export default function Body() {
             id: item._id,
             name: item.title,
             description: item.description,
-            rentalPrice: item.price,
-            originalPrice: item.price,
+            price: item.price,
             images: Array.isArray(item.images)
               ? item.images.map((img: string) => `${API_BASE_URL}${img}`)
               : [],
+            category: categoryMap[item.categoryId] || "",
             categoryId: item.categoryId,
-            brand: item.brand || "Generic",
-            rating: 5,
-            reviewCount: 0,
+            rating: item.avgRating ?? 0,
+            reviewCount: item.reviewCount ?? 0,
+            rentalUnits: item.rentalUnits ?? 0,
             stock: item.quantity || 0,
             location: item.location,
+            createdAt: item.createdAt,
           }))
         );
       } catch (err) {
@@ -309,10 +440,54 @@ export default function Body() {
   };
 
 
+
+  const popularNearYou = useMemo(() => {
+    const userAddress = user?.address?.toLowerCase();
+    if (!userAddress) return items.slice(0, 8);
+    const nearby = items.filter((i) => i.location?.toLowerCase() === userAddress);
+    return (nearby.length > 0 ? nearby : items).slice(0, 8);
+  }, [items, user]);
+
+  const recentlyAdded = useMemo(
+    () =>
+      [...items]
+        .sort((a, b) =>
+          a.createdAt && b.createdAt
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : 0
+        )
+        .slice(0, 8),
+    [items]
+  );
+
+  const budgetRentals = useMemo(
+    () => items.filter((i) => i.price < 500).slice(0, 8),
+    [items]
+  );
+
+  const premiumPicks = useMemo(
+    () => [...items].sort((a, b) => b.price - a.price).slice(0, 8),
+    [items]
+  );
+
+  const weekendEssentials = useMemo(() => {
+    const keywords = ["camp", "tent", "party", "outdoor", "bike", "kayak"];
+    const matches = items.filter((i) =>
+      keywords.some((k) => i.category?.toLowerCase().includes(k) || i.name?.toLowerCase().includes(k))
+    );
+    return (matches.length > 0 ? matches : items).slice(0, 8);
+  }, [items]);
+
+  const seasonalPicks = useMemo(
+    () => [...items].reverse().slice(0, 8),
+    [items]
+  );
+
+
   return (
     <div>
 
-      {/* HERO */}
+      {/* HERO BANNER */}
       <section className="min-h-screen flex flex-col items-center justify-center px-[5vw] pt-28 pb-20 relative overflow-hidden text-center bg-white">
 
 
@@ -329,7 +504,7 @@ export default function Body() {
               <div className="p-6">
                 <div className="flex justify-between items-start mb-5">
                   <div>
-                    <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.brand}</span>
+                    <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.location}</span>
                     <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
                   </div>
                   <button
@@ -349,7 +524,7 @@ export default function Body() {
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {[
-                    { label: 'Brand', value: quickViewProduct.brand },
+                    { label: 'Brand', value: quickViewProduct.price },
                     { label: 'Rating', value: `${quickViewProduct.rating} ★` },
                     { label: 'Location', value: quickViewProduct.location },
                     {
@@ -376,7 +551,7 @@ export default function Body() {
                       ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
                       : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
                 >
-                  Rent Now — Rs. {quickViewProduct.rentalPrice.toLocaleString()}/day
+                  Rent Now — Rs. {quickViewProduct.price.toLocaleString()}/day
                 </button>
               </div>
             </div>
@@ -465,7 +640,7 @@ export default function Body() {
         </div>
       </section>
 
-      {/* CATEGORIES */}
+      {/* TRENDING CATEGORIES */}
       <section id="categories" className="py-24 px-[5vw] bg-gray-50">
         <div className="max-w-300 mx-auto">
           <Reveal delay={(1 % 3) * 0.1} className="mb-14">
@@ -473,7 +648,7 @@ export default function Body() {
               <span className="block w-6 h-px bg-amber-400" />What We Offer
             </div>
             <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(36px,4.5vw,58px)" }}>
-              Browse by <span style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Category</span>
+              Trending <span style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Categories</span>
             </h2>
             <p className="text-gray-500 text-[15px] mt-3 max-w-125">
               Everything from everyday essentials to specialty gear — discover your next rental.
@@ -535,63 +710,121 @@ export default function Body() {
         </div>
       </section>
 
-      {/* FEATURED ITEMS */}
-      <section id="featured" className="py-24 px-[5vw] bg-white">
-        <div className="max-w-300 mx-auto">
-          <Reveal className="flex items-end justify-between mb-14">
-            <div>
-              <div className="flex items-center gap-2.5 text-[11px] text-amber-500 tracking-[0.15em] uppercase font-medium mb-3">
-                <span className="block w-6 h-px bg-amber-400" />Top Picks
-              </div>
-              <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(36px,4.5vw,58px)" }}>
-                Featured <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Rentals</em>
-              </h2>
-            </div>
-            <a href="#" className="text-amber-500 text-[14px] no-underline pb-0.5 border-b border-amber-300 whitespace-nowrap hover:text-amber-600 transition-colors">
-              View all →
-            </a>
-          </Reveal>
+      {/* RECOMMENDED FOR YOU (personalized when logged in, featured otherwise) */}
+      <ProductRow
+        eyebrow="Top Picks"
+        title={<>{isAuthenticated ? "Recommended " : "Featured "}<em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>{isAuthenticated ? "For You" : "Rentals"}</em></>}
+        products={items}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        viewAllHref="#"
+        emptyMessage="No listings yet — be the first to list an item in your area."
+        bg="white"
+      />
 
-          {itemsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-gray-100 overflow-hidden animate-pulse">
-                  <div className="aspect-square bg-gray-100" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-3 bg-gray-100 rounded w-2/3" />
-                    <div className="h-3 bg-gray-100 rounded w-1/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-gray-200 rounded-2xl">
-              <p className="text-gray-500 text-[15px]">No listings yet — be the first to list an item in your area.</p>
-              <button
-                className="mt-5 px-6 py-2.5 rounded-lg font-semibold text-[14px] hover:brightness-110 transition-all"
-                style={{ background: AMBER, color: "#1a1209" }}
-              >
-                List Your Item
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {items.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  index={index}
-                  isInWishlist={wishlist.includes(product.id)}
-                  onToggleWishlist={toggleWishlist}
-                  onQuickView={setQuickViewProduct}
-                  onAddToCart={addToCart}
-                  onRentNow={handleRentNow}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+      {/* MOST RENTED */}
+      <ProductRow
+        eyebrow="Fan Favorites"
+        title={<>Most <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Rented</em></>}
+        products={mostRentedItems}
+        loading={mostRentedLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        bg="gray"
+      />
+
+      {/* POPULAR NEAR YOU */}
+      <ProductRow
+        eyebrow="Nearby"
+        title={<>Popular <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Near You</em></>}
+        products={popularNearYou}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        bg="white"
+      />
+
+      {/* RECENTLY ADDED */}
+      <ProductRow
+        eyebrow="Just Listed"
+        title={<>Recently <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Added</em></>}
+        products={recentlyAdded}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        bg="gray"
+      />
+
+      {/* BUDGET RENTALS */}
+      <ProductRow
+        eyebrow="Easy on the Wallet"
+        title={<>Budget <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Rentals</em></>}
+        subtitle="Quality gear under Rs. 500/day."
+        products={budgetRentals}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        emptyMessage="No budget listings under Rs. 500/day right now."
+        bg="white"
+      />
+
+      {/* PREMIUM PICKS */}
+      <ProductRow
+        eyebrow="Top Shelf"
+        title={<>Premium <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Picks</em></>}
+        products={premiumPicks}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        bg="gray"
+      />
+
+      {/* WEEKEND ESSENTIALS */}
+      <ProductRow
+        eyebrow="Plan Your Weekend"
+        title={<>Weekend <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Essentials</em></>}
+        products={weekendEssentials}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        bg="white"
+      />
+
+      {/* SEASONAL PICKS */}
+      <ProductRow
+        eyebrow="Right Now"
+        title={<>Seasonal <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Picks</em></>}
+        products={seasonalPicks}
+        loading={itemsLoading}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        onQuickView={setQuickViewProduct}
+        addToCart={addToCart}
+        handleRentNow={handleRentNow}
+        bg="gray"
+      />
 
 
       {/* TESTIMONIALS */}
