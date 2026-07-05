@@ -116,12 +116,12 @@ src/
 ├── contexts/             # Context API providers
 ├── hooks/                # Custom hooks
 ├── layouts/              # Layout components
-├── pages/                # Application pages
-│   ├── auth/
+├── pages/                # Application pages 
 │   ├── user/
 │   └── owner/
 │
 ├── routes/               # Route configuration
+├── auth/              
 ├── services/             # API calls and services
 ├── types/                # TypeScript types
 ├── utils/                # Utility/helper functions
