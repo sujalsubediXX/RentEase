@@ -10,12 +10,12 @@ function UserSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-const token = localStorage.getItem("accessToken");
+      const token = authService.getAccessToken();
 
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     try{
-      const res = await axios.patch(`${API_BASE_URL}/user/deactivate`, {}, {
+      const res = await axios.patch(`${API_BASE_URL}/api/user/deactivate`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if(res.data.success){
@@ -111,7 +111,7 @@ const token = localStorage.getItem("accessToken");
       }
 
       const response = await axios.put(
-        `${API_BASE_URL}/user/users`,
+        `${API_BASE_URL}/api/user/users`,
         {
           fullName: formData.fullName,
           phoneNumber: formData.phoneNumber,
@@ -171,7 +171,7 @@ const token = localStorage.getItem("accessToken");
 
       // Call the password change endpoint
       const response = await axios.post(
-        `${API_BASE_URL}/user/change-password`,
+        `${API_BASE_URL}/api/user/change-password`,
         {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,

@@ -23,7 +23,7 @@ export default function Header() {
     if (!isAuthenticated || !user?.id) return;
     const getCartCount = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/cart/count`, {
+        const res = await axios.get(`${API_BASE_URL}/api/cart/count`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCartLength(res.data.count);

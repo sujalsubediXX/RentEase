@@ -1,0 +1,60 @@
+[{
+  "_id": {
+    "$oid": "6a4a194ce8e08ce1ab9f4723"
+  },
+  "name": "Camping & Outdoor",
+  "description": "Rental items for outdoor activities such as trekking, hiking, camping, and travel adventures. Includes tents, sleeping bags, backpacks, cooking gear, and survival equipment designed for short-term outdoor use.",
+  "image": "1783241035796-985701545.jpg",
+  "createdAt": {
+    "$date": "2026-07-05T08:43:56.262Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T08:43:56.262Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4a1991e8e08ce1ab9f4724"
+  },
+  "name": "Clothing & Fashion",
+  "description": "A collection of wearable items available for rent including casual wear, formal outfits, seasonal clothing, traditional dresses, and special occasion costumes. Useful for events, photoshoots, and temporary fashion needs.",
+  "image": "1783241104649-479838444.jpg",
+  "createdAt": {
+    "$date": "2026-07-05T08:45:05.054Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T08:45:05.054Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4a19d6e8e08ce1ab9f4725"
+  },
+  "name": "Electronics (Laptops & Devices)",
+  "description": "Technology devices available for short-term use such as laptops, tablets, chargers, and essential accessories. Ideal for students, professionals, and travelers who need temporary access to computing devices.",
+  "image": "1783241174447-787631549.jpg",
+  "createdAt": {
+    "$date": "2026-07-05T08:46:14.849Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T08:46:14.849Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4a1a10e8e08ce1ab9f4726"
+  },
+  "name": "Bags & Travel Gear",
+  "description": "Travel and utility bags including backpacks, laptop bags, suitcases, duffle bags, and other carrying solutions. Suitable for travel, relocation, and daily temporary use.",
+  "image": "1783241232207-69905476.jpg",
+  "createdAt": {
+    "$date": "2026-07-05T08:47:12.639Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T08:47:12.639Z"
+  },
+  "__v": 0
+}]

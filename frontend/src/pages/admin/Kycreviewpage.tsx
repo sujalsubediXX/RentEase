@@ -5,6 +5,7 @@ import axios from "axios";
 type KycStatus = "pending" | "under_review" | "verified" | "rejected";
 type TabFilter = "all" | KycStatus;
 import API_BASE_URL from "../../config/api";
+import { authService } from "../../services/auth.services";
 interface KYCListItem {
   _id: string;
   user: { _id: string; name: string; email: string };
@@ -63,12 +64,12 @@ export default function Kycreviewpage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const token = localStorage.getItem("accessToken");
+      const token = authService.getAccessToken();
   const fetchKYCs = useCallback(async (status: TabFilter) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_BASE_URL}/kyc/admin`, {
+      const res = await axios.get(`${API_BASE_URL}/api/kyc/admin`, {
         params: {
           status: status === "all" ? undefined : status,
         },

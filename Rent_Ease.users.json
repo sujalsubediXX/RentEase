@@ -1,0 +1,65 @@
+[{
+  "_id": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "fullName": "Sujal Subedidcfvb",
+  "email": "sujalsubedi541@gmail.com",
+  "phoneNumber": "9828290052",
+  "password": "$2b$10$Do/sF5pe6LgMnKrReJgZ..WSbPyj2X7O/H22MBCdLkbAy96nWQGPm",
+  "profileImage": "",
+  "role": "renter",
+  "address": "Nepaltar",
+  "kycStatus": "verified",
+  "createdAt": {
+    "$date": "2026-07-01T06:19:53.576Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-04T13:29:07.954Z"
+  },
+  "__v": 0,
+  "status": "active",
+  "resetPasswordToken": null,
+  "resetPasswordExpires": null
+},
+{
+  "_id": {
+    "$oid": "6a44b1ba81e8097e88f1447b"
+  },
+  "fullName": "Sujal Owner",
+  "email": "sujalsubedi555@gmail.com",
+  "phoneNumber": "9828290052",
+  "password": "$2b$10$4gTE4fTIHbJd2EfsZgTJFeWxX5FIWHNVUloDy3NXmTsm1sqpYpTdS",
+  "profileImage": "",
+  "role": "owner",
+  "address": "dadagaun",
+  "kycStatus": "pending",
+  "createdAt": {
+    "$date": "2026-07-01T06:20:42.890Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-04T05:58:11.209Z"
+  },
+  "__v": 0,
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "6a44c79404cb81f0bea5a47e"
+  },
+  "fullName": "Admin@123",
+  "email": "admin@admin.com",
+  "phoneNumber": "9828290052",
+  "password": "$2b$10$1sOTsRqbh4dI8zJI9DCG/eDRuMhqBqTPopO75lxI/Dr6KtciFDsFS",
+  "profileImage": "",
+  "role": "admin",
+  "address": "dadagaun",
+  "kycStatus": "pending",
+  "createdAt": {
+    "$date": "2026-07-01T07:53:56.077Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-01T07:53:56.077Z"
+  },
+  "__v": 0,
+  "status": "active"
+}]

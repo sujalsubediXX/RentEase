@@ -7,21 +7,16 @@ const AMBER_LIGHT = "#e8ac50";
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner";
 import { ProductCard } from "../../components/user/ProductCard.tsx";
-import { X } from "lucide-react";
+import { X, ShieldCheck, Clock3, MapPin } from "lucide-react";
 import { ImageSlider } from "./ImageSlider.tsx";
 import { useAuth } from "../../hooks/useAuth.ts";
-interface Category {
-  icon: string;
-  name: string;
-  count: string;
-  badge?: string;
-  featured?: boolean;
-}
+import { authService } from "../../services/auth.services.ts";
 interface dbCategory {
   _id: string;
   name: string;
   description: string;
   image: string;
+  productCount?: number;
 }
 
 export interface Product {
@@ -49,17 +44,18 @@ interface Testimonial {
   featured?: boolean;
 }
 
-
-const categories: Category[] = [
-  { icon: "📸", name: "Photography & Film", count: "1,240", badge: "Most Popular", featured: true },
-  { icon: "🏕️", name: "Outdoor & Camping", count: "876" },
-  { icon: "🔧", name: "Tools & Equipment", count: "2,105" },
-  { icon: "🎉", name: "Party & Events", count: "654" },
-  { icon: "🚲", name: "Sports & Recreation", count: "988" },
-  { icon: "💻", name: "Electronics & Tech", count: "1,432" },
-];
-
-
+// Small reusable "punch hole" notch — the recurring ticket/tag motif used
+// across category cards and testimonial stubs, echoing the rental-tag
+// language already established in ProductCard.
+function TicketNotch({ side }: { side: "left" | "right" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gray-50 border border-gray-200 ${side === "left" ? "-left-2" : "-right-2"
+        }`}
+    />
+  );
+}
 
 const testimonials: Testimonial[] = [
   {
@@ -79,36 +75,44 @@ const testimonials: Testimonial[] = [
 
 const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "Kayak"];
 
+const trustPoints = [
+  { icon: ShieldCheck, label: "Verified owners", detail: "KYC-checked before they list" },
+  { icon: MapPin, label: "Kathmandu Valley only", detail: "Pickup nearby, not nationwide guesswork" },
+  { icon: Clock3, label: "Book by the day", detail: "Rent for one day or several weeks" },
+];
+
 export default function Body() {
-  const { user ,isAuthenticated} = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [query, setQuery] = useState<string>("");
-  const [token, setToken] = useState<string>("");
+
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [items, setItems] = useState<Product[]>([]);
+  const [itemsLoading, setItemsLoading] = useState<boolean>(true);
   const [category, setCategory] = useState<dbCategory[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState<boolean>(true);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-useEffect(() => {
-  if(isAuthenticated && user?.id) {
-    setToken(localStorage.getItem("accessToken") || "");
-  }
-},[isAuthenticated, user?.id]);
- useEffect(() => {
+
+
+  const token = authService.getAccessToken();
+
+
+  useEffect(() => {
     if (!user?.id) return;
     fetchWishlist();
-  }, [user,isAuthenticated]);
+  }, [user, isAuthenticated, token]);
 
   const fetchWishlist = useCallback(async () => {
-     const authToken = localStorage.getItem("accessToken");
-  if (!authToken) return;
+
+    if (!token) return;
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/wishlist/wishitem`, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    }
+        `${API_BASE_URL}/api/wishlist/wishitem`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }
       );
 
       const ids: string[] = (res.data.items ?? [])
@@ -143,12 +147,27 @@ useEffect(() => {
     });
   };
 
- 
+
 
   useEffect(() => {
     const fetchItems = async () => {
+      setItemsLoading(true);
       try {
-        const res = await axios.get(`${API_BASE_URL}/items/getitems`);
+        let res = null;
+        if (isAuthenticated && token) {
+          res = await axios.get(
+            `${API_BASE_URL}/api/items/fetch-user-recommended-items`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+        } else {
+          res = await axios.get(
+            `${API_BASE_URL}/api/items/fetch-featured-items`
+          );
+        }
 
         setItems(
           res.data.data.map((item: any) => ({
@@ -158,7 +177,7 @@ useEffect(() => {
             rentalPrice: item.price,
             originalPrice: item.price,
             images: Array.isArray(item.images)
-              ? item.images.map((img: string) => `http://localhost:3000${img}`)
+              ? item.images.map((img: string) => `${API_BASE_URL}${img}`)
               : [],
             categoryId: item.categoryId,
             brand: item.brand || "Generic",
@@ -170,19 +189,24 @@ useEffect(() => {
         );
       } catch (err) {
         console.log(err);
+      } finally {
+        setItemsLoading(false);
       }
     };
 
     fetchItems();
-  }, []);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     const fetchCategory = async () => {
+      setCategoryLoading(true);
       try {
-        const res = await axios.get(`${API_BASE_URL}/category/getcategory`);
-        setCategory(res.data);
+        const res = await axios.get(`${API_BASE_URL}/api/category/getcategory`);
+        setCategory(Array.isArray(res.data) ? res.data : res.data?.data || []);
       } catch (err) {
         console.log(err);
+      } finally {
+        setCategoryLoading(false);
       }
     };
 
@@ -213,10 +237,10 @@ useEffect(() => {
       };
 
       const res = await fetch(
-        `${API_BASE_URL}/cart/add`,
+        `${API_BASE_URL}/api/cart/add`,
         {
           method: "POST",
-          headers:  { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }
       );
@@ -251,7 +275,7 @@ useEffect(() => {
     try {
       if (isInWishlist) {
         await axios.delete(
-          `${API_BASE_URL}/wishlist/remove/${productId}`,
+          `${API_BASE_URL}/api/wishlist/remove/${productId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -259,7 +283,7 @@ useEffect(() => {
         toast.error("Removed from wishlist");
       } else {
         await axios.post(
-          `${API_BASE_URL}/wishlist/add`,
+          `${API_BASE_URL}/api/wishlist/add`,
           { itemId: productId },
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -310,7 +334,8 @@ useEffect(() => {
                   </div>
                   <button
                     onClick={() => setQuickViewProduct(null)}
-                    className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all"
+                    aria-label="Close quick view"
+                    className="w-8 h-8 rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                   >
                     <X size={16} />
                   </button>
@@ -327,11 +352,18 @@ useEffect(() => {
                     { label: 'Brand', value: quickViewProduct.brand },
                     { label: 'Rating', value: `${quickViewProduct.rating} ★` },
                     { label: 'Location', value: quickViewProduct.location },
-                    { label: 'Stock', value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock' },
-                  ].map(({ label, value }) => (
+                    {
+                      label: 'Stock',
+                      value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock',
+                      dot: quickViewProduct.stock > 0 ? "bg-emerald-500" : "bg-stone-300",
+                    },
+                  ].map(({ label, value, dot }) => (
                     <div key={label} className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3">
                       <p className="text-[11px] text-stone-400 uppercase tracking-wider mb-0.5">{label}</p>
-                      <p className="text-sm font-medium text-stone-700">{value}</p>
+                      <p className="text-sm font-medium text-stone-700 flex items-center gap-1.5">
+                        {dot && <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />}
+                        {value}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -339,7 +371,7 @@ useEffect(() => {
                 <button
                   disabled={quickViewProduct.stock === 0}
                   onClick={() => navigate('/checkout', { state: { product: quickViewProduct } })}
-                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all
+                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all font-mono tracking-tight
                           ${quickViewProduct.stock > 0
                       ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
                       : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
@@ -361,7 +393,7 @@ useEffect(() => {
           <br />You Need, Today
         </h1>
 
-        <p className="anim-2 max-w-130 text-[16px] text-gray-500 leading-relaxed mx-auto mb-12">
+        <p className="anim-2 max-w-130 text-[16px] text-gray-500 leading-relaxed mx-auto mb-10">
           From power tools to party supplies, cameras to camping gear — find exactly what you need without the commitment of buying.
         </p>
 
@@ -372,11 +404,13 @@ useEffect(() => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="What do you want to rent?"
+              aria-label="Search for an item to rent"
               className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-gray-800 text-[15px] placeholder-gray-400"
             />
             <div className="w-px h-6 bg-amber-100" />
 
             <select
+              aria-label="Filter by category"
               className="bg-transparent border-none outline-none px-5 py-4 text-gray-500 text-[14px] cursor-pointer whitespace-nowrap"
               onChange={(e) => {
                 const value = e.target.value;
@@ -396,7 +430,10 @@ useEffect(() => {
                 </option>
               ))}
             </select>
-            <button className="m-1.5 px-6 py-2.5 border-none rounded-md font-semibold text-[14px] cursor-pointer whitespace-nowrap transition-all duration-200 hover:brightness-110" style={{ background: AMBER, color: "#1a1209" }}>
+            <button
+              className="m-1.5 px-6 py-2.5 border-none rounded-md font-semibold text-[14px] cursor-pointer whitespace-nowrap transition-all duration-200 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+              style={{ background: AMBER, color: "#1a1209" }}
+            >
               Search
             </button>
           </div>
@@ -406,6 +443,23 @@ useEffect(() => {
               <a key={t} href="#" className="text-[12px] text-gray-500 no-underline px-3 py-1 border border-gray-200 rounded-full hover:text-amber-600 hover:border-amber-300 transition-all duration-200">
                 {t}
               </a>
+            ))}
+          </div>
+
+          {/* Trust strip — a receipt-style dashed divider tying back to the
+              rental-tag visual language, carrying real reassurance copy
+              instead of decorative filler. */}
+          <div className="mt-12 pt-8 border-t border-dashed border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
+            {trustPoints.map(({ icon: Icon, label, detail }) => (
+              <div key={label} className="flex items-start gap-3">
+                <span className="shrink-0 w-9 h-9 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
+                  <Icon size={16} style={{ color: AMBER }} />
+                </span>
+                <div>
+                  <p className="text-[13px] font-medium text-gray-800">{label}</p>
+                  <p className="text-[12px] text-gray-400 mt-0.5">{detail}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -419,30 +473,65 @@ useEffect(() => {
               <span className="block w-6 h-px bg-amber-400" />What We Offer
             </div>
             <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(36px,4.5vw,58px)" }}>
-              Browse by <p style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Category</p>
+              Browse by <span style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Category</span>
             </h2>
             <p className="text-gray-500 text-[15px] mt-3 max-w-125">
               Everything from everyday essentials to specialty gear — discover your next rental.
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((c, i) => (
-              <Reveal key={i} delay={(i % 3) * 0.1} className={c.featured ? "md:col-span-2" : ""}>
-                <div className={`relative rounded-xl overflow-hidden cursor-pointer border border-gray-200 hover:border-amber-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-end p-5 group bg-white shadow-sm hover:shadow-md ${c.featured ? "min-h-45" : "aspect-3/2"}`}>
-                  <div className="absolute inset-0 flex items-center justify-center text-[120px] opacity-[0.03] pointer-events-none select-none">{c.icon}</div>
-                  <span className="text-[36px] mb-2.5 block group-hover:scale-110 transition-transform duration-300">{c.icon}</span>
-                  <div className="font-display text-[22px] font-normal text-gray-800">{c.name}</div>
-                  <div className="text-[12px] text-gray-400 mt-0.5">{c.count} items available</div>
-                  {c.badge && (
-                    <span className="absolute top-3.5 right-3.5 bg-amber-50 border border-amber-200 text-amber-600 text-[10px] tracking-widest uppercase px-2.5 py-1 rounded-full">
-                      {c.badge}
-                    </span>
-                  )}
+          {categoryLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-gray-100 aspect-3/2 bg-white overflow-hidden animate-pulse">
+                  <div className="w-full h-full bg-gray-100" />
                 </div>
-              </Reveal>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : category.length === 0 ? (
+            <div className="text-center py-16 border border-dashed border-gray-200 rounded-2xl bg-white">
+              <p className="text-gray-500 text-[15px]">No categories available yet — check back soon.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {category.map((c, i) => (
+                <Reveal key={c._id} delay={(i % 3) * 0.1} className={i === 0 ? "md:col-span-2" : ""}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/categories/${c._id}`)}
+                    aria-label={`Browse ${c.name}`}
+                    className={`relative rounded-xl overflow-hidden cursor-pointer border border-gray-200 hover:border-amber-300 hover:-translate-y-1 hover:rotate-[0.5deg] transition-all duration-300 flex flex-col justify-end p-5 group bg-white shadow-sm hover:shadow-md w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${i === 0 ? "min-h-45" : "aspect-3/2"}`}
+                  >
+                    {/* punched tag hole, top-left, like a real hanging price tag */}
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-3 left-3 z-20 w-3 h-3 rounded-full border-2 border-white/80 group-hover:border-amber-300 transition-colors"
+                    />
+                    {c.image ? (
+                      <>
+                        <img
+                          src={`${API_BASE_URL}/uploads/categories/${c.image}`}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gray-50" />
+                    )}
+                    <div className="relative z-10">
+                      <div className={`font-display text-[22px] font-normal ${c.image ? "text-white" : "text-gray-800"}`}>
+                        {c.name}
+                      </div>
+                      <div className={`text-[12px] mt-0.5 font-mono ${c.image ? "text-white/80" : "text-gray-400"}`}>
+                        {typeof c.productCount === "number" ? `${c.productCount} items available` : "Explore items"}
+                      </div>
+                    </div>
+                  </button>
+                </Reveal>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -463,10 +552,31 @@ useEffect(() => {
             </a>
           </Reveal>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {items.map((product, index) => {
-              // const shouldAttachRef = index === paginatedProducts.length - 1 && hasMore && !loading;
-              return (
+          {itemsLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-gray-100 overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-gray-100" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-3 bg-gray-100 rounded w-2/3" />
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="text-center py-20 border border-dashed border-gray-200 rounded-2xl">
+              <p className="text-gray-500 text-[15px]">No listings yet — be the first to list an item in your area.</p>
+              <button
+                className="mt-5 px-6 py-2.5 rounded-lg font-semibold text-[14px] hover:brightness-110 transition-all"
+                style={{ background: AMBER, color: "#1a1209" }}
+              >
+                List Your Item
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {items.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -476,15 +586,10 @@ useEffect(() => {
                   onQuickView={setQuickViewProduct}
                   onAddToCart={addToCart}
                   onRentNow={handleRentNow}
-                // cardRef={shouldAttachRef ? lastProductElementRef : undefined}
                 />
-              );
-            })
-
-            }
-          </div>
-
-
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -504,11 +609,16 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {testimonials.map((t, i) => (
               <Reveal key={i} delay={i * 0.1}>
-                <div className={`rounded-xl p-7 border transition-all duration-300 hover:border-amber-200 hover:shadow-md ${t.featured ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-white"}`}>
+                <div
+                  className={`relative rounded-xl p-7 border transition-all duration-300 hover:border-amber-200 hover:shadow-md ${t.featured ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-white"}`}
+                >
+                  {/* movie-ticket style punch notches, echoing the tag motif from categories */}
+                  <TicketNotch side="left" />
+                  <TicketNotch side="right" />
                   <div className="text-amber-400 text-[13px] tracking-[2px] mb-3">★★★★★</div>
                   <div className="font-display text-[80px] leading-[0.5] mb-4 opacity-20" style={{ color: AMBER }}>"</div>
                   <p className="text-[15px] text-gray-500 leading-[1.7] mb-6 italic">{t.text}</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 pt-4 border-t border-dashed border-gray-200">
                     <div className="w-10.5 h-10.5 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center font-display text-[18px]" style={{ color: AMBER }}>
                       {t.initial}
                     </div>
@@ -535,11 +645,14 @@ useEffect(() => {
                 <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Earn while it sits.</em>
               </h2>
               <p className="text-[15px] text-gray-500 mt-3 max-w-110">
-                List your gear for free and earn passive income. Over 24,000 items already earning money for their owners.
+                List your gear for free and earn passive income from renters right here in the Valley.
               </p>
             </div>
             <div className="flex gap-3 shrink-0">
-              <button className="px-8 py-3.5 border-none rounded-lg text-[15px] font-semibold cursor-pointer whitespace-nowrap hover:brightness-110 transition-all duration-200" style={{ background: AMBER, color: "#1a1209" }}>
+              <button
+                className="px-8 py-3.5 border-none rounded-lg text-[15px] font-semibold cursor-pointer whitespace-nowrap hover:brightness-110 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+                style={{ background: AMBER, color: "#1a1209" }}
+              >
                 List Your Item
               </button>
               <button className="px-8 py-3.5 bg-transparent border border-gray-300 rounded-lg text-gray-500 text-[15px] cursor-pointer whitespace-nowrap hover:border-amber-400 hover:text-amber-600 transition-all duration-200">

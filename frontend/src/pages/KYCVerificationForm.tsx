@@ -660,7 +660,7 @@ const token = localStorage.getItem("token");
       if (docInfo.backFile) formData.append("backImage", docInfo.backFile);
       if (selfie.selfieFile) formData.append("selfieImage", selfie.selfieFile);
       console.log(user?.id)
-      const res = await axios.post(`${API_BASE_URL}/kyc/submit/`, formData  , {
+      const res = await axios.post(`${API_BASE_URL}/api/kyc/submit/`, formData  , {
         headers: { Authorization: `Bearer ${token}` },
       })
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import API_BASE_URL from "../../config/api";
 import axios from "axios";
-const baseUrlImage = "http://localhost:3000/";
+import API_BASE_URL from "../../config/api";
+import { authService } from "../../services/auth.services";
+
 type KycStatus = "pending" | "under review" | "verified" | "rejected";
 
 interface KYCDetail {
@@ -121,13 +122,18 @@ export default function KYCDetailView() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const token = localStorage.getItem("token");
+      const token = authService.getAccessToken();
   useEffect(() => {
-    const fetchDetail = async () => {
+ if(token){
+   fetchDetail();
+
+ }
+  }, [id, user]);
+   const fetchDetail = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`${API_BASE_URL}/kyc/admin/${id}`, {
+        const res = await axios.get(`${API_BASE_URL}/api/kyc/admin/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data;
@@ -142,9 +148,6 @@ export default function KYCDetailView() {
         setLoading(false);
       }
     };
-    fetchDetail();
-  }, [id, user]);
-
   const handleDecision = async (decision: "verified" | "rejected") => {
     if (decision === "rejected" && !rejectionReason.trim()) {
       setActionError("Please provide a reason for rejection.");
@@ -155,7 +158,7 @@ export default function KYCDetailView() {
     setActionError(null);
 
     try {
-      const res = await axios.patch(`${API_BASE_URL}/kyc/admin/${id}/review`, {
+      const res = await axios.patch(`${API_BASE_URL}/api/kyc/admin/${id}/review`, {
         decision, rejectionReason
       }, {
       headers: { Authorization: `Bearer ${token}` },
@@ -186,7 +189,7 @@ export default function KYCDetailView() {
       <div className="min-h-screen bg-stone-950 flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-red-400 text-sm mb-4">{error || "Submission not found"}</p>
-          <button onClick={() => navigate("/admin/kyc")} className="text-amber-400 text-sm font-semibold hover:underline">
+          <button onClick={() => navigate("/admin/kycreview")} className="text-amber-400 text-sm font-semibold hover:underline">
             ← Back to KYC list
           </button>
         </div>
@@ -255,9 +258,9 @@ export default function KYCDetailView() {
           <div className="space-y-5">
             <Section title="Document & Selfie">
               <div className="space-y-4">
-                <ImageCard label="Front Side" src={baseUrlImage + kyc.documentInfo.frontImage} />
-                {needsBackImage && <ImageCard label="Back Side" src={baseUrlImage + kyc.documentInfo.backImage} />}
-                <ImageCard label="Selfie" src={baseUrlImage + kyc.selfieImage} />
+                <ImageCard label="Front Side" src={API_BASE_URL + "/" + kyc.documentInfo.frontImage} />
+                {needsBackImage && <ImageCard label="Back Side" src={API_BASE_URL + "/" + kyc.documentInfo.backImage} />}
+                <ImageCard label="Selfie" src={API_BASE_URL + "/" + kyc.selfieImage} />
               </div>
             </Section>
           </div>

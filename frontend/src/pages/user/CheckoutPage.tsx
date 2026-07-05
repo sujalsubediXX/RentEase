@@ -118,9 +118,7 @@ const CheckoutPage: React.FC = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const token = localStorage.getItem("accessToken") || "";
-  // ── Fetch availability for the direct-rent item ──────────────────────────
-
+       const token = authService.getAccessToken();
   useEffect(() => {
     if (checkoutType !== 'single' || !singleProduct?.id) return;
 
@@ -128,7 +126,7 @@ const CheckoutPage: React.FC = () => {
       try {
         setAvailLoading(true);
         const res = await axios.get(
-          `${API_BASE_URL}/rentals/availability/${singleProduct.id}`, {
+          `${API_BASE_URL}/api/rentals/availability/${singleProduct.id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
@@ -336,7 +334,7 @@ const CheckoutPage: React.FC = () => {
       const token = authService.getAccessToken();
 
       const response = await axios.post(
-        `${API_BASE_URL}/rentals/create`,
+        `${API_BASE_URL}/api/rentals/create`,
         orderData,
         {
           headers: {

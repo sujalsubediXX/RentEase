@@ -8,6 +8,7 @@ import { ProductCard } from '../../components/user/ProductCard';
 import { ProductListItem } from '../../components/user/ProductListItem';
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
+import { authService } from '../../services/auth.services';
 export interface Product {
   id: string;
   name: string;
@@ -24,7 +25,12 @@ export interface Product {
   location: string;
 }
 
-
+interface CategoryInfo {
+  _id: string;
+  name: string;
+  description: string;
+  image?: string;
+}
 
 // ============ TYPES ============
 
@@ -95,7 +101,7 @@ const extractItems = (responseData: any): { items: any[]; totalPages: number } =
   return { items: [], totalPages: 1 };
 };
 
-const mapItemToProduct = (item: any, categoryId: string, API_BASE_URL: string): Product => {
+const mapItemToProduct = (item: any, categoryId: string): Product => {
   const buildImageUrl = (img: string): string => {
     if (!img) return '';
     if (img.startsWith('http')) return img;
@@ -265,6 +271,7 @@ const CategoryPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [categoryInfo, setCategoryInfo] = useState<CategoryInfo | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const navigate = useNavigate();
 
@@ -279,20 +286,19 @@ const CategoryPage: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState<Set<string>>(new Set());
-  const [token, setToken] = useState<string>("");
+
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const itemsPerPage = 8;
 
-useEffect(() => {
-  if(isAuthenticated && user?.id) {
-    setToken(localStorage.getItem("accessToken") || "");
-  }
-},[isAuthenticated, user?.id]);
+
+      const token = authService.getAccessToken();
+
+
 
   // Fetch wishlist on mount
   const fetchWishlist = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/wishitem`, {
+      const res = await axios.get(`${API_BASE_URL}/api/wishlist/wishitem`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -312,9 +318,30 @@ useEffect(() => {
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
+    if (!token) {
+      return;
+    }
 
     fetchWishlist();
   }, [fetchWishlist, isAuthenticated, user?.id]);
+
+  // Fetch this category's own name/description so the hero says something
+  // real instead of a generic "Category Products" label. Failing silently
+  // here just falls back to the generic copy — it never blocks the page.
+  useEffect(() => {
+    if (!categoryId) return;
+    const fetchCategoryInfo = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/category/getcategory`);
+        const match = (Array.isArray(res.data) ? res.data : res.data?.data || [])
+          .find((c: CategoryInfo) => c._id === categoryId);
+        if (match) setCategoryInfo(match);
+      } catch (err) {
+        console.error('Failed to fetch category info:', err);
+      }
+    };
+    fetchCategoryInfo();
+  }, [categoryId]);
 
   // Fetch products from API
   const fetchProducts = useCallback(async (pageNum: number, reset: boolean = false) => {
@@ -327,7 +354,7 @@ useEffect(() => {
       setLoading(true);
       setError(null);
 
-      const url = `${API_BASE_URL}/items/getitemsbycategory/${categoryId}`;
+      const url = `${API_BASE_URL}/api/items/getitemsbycategory/${categoryId}`;
 
       const res = await fetch(url, {
         method: 'GET',
@@ -349,7 +376,7 @@ useEffect(() => {
       }
 
       const newItems = itemsArray.map((item: any) =>
-        mapItemToProduct(item, categoryId, "http://localhost:3000")
+        mapItemToProduct(item, categoryId)
       );
 
       if (reset) {
@@ -405,7 +432,7 @@ useEffect(() => {
         // endDate: end.toISOString().split("T")[0],
       };
 
-      const res = await fetch(`${API_BASE_URL}/cart/add/`, {
+      const res = await fetch(`${API_BASE_URL}/api/cart/add/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -445,13 +472,13 @@ useEffect(() => {
     try {
       if (isInWishlist) {
         // Remove from wishlist
-        await axios.delete(`${API_BASE_URL}/wishlist/remove/${productId}`, {
+        await axios.delete(`${API_BASE_URL}/api/wishlist/remove/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.error('Removed from wishlist');
       } else {
         // Add to wishlist
-        await axios.post(`${API_BASE_URL}/wishlist/add/`, { itemId: productId }, {
+        await axios.post(`${API_BASE_URL}/api/wishlist/add/`, { itemId: productId }, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Added to wishlist');
@@ -651,7 +678,9 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Category Hero */}
+      {/* Category Hero — now shows the real category name/description when
+          available, with a small punched-hole accent on the icon tile to
+          keep the tag motif consistent with Home and the Categories page */}
       <div className="bg-white border-b border-stone-100">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-2 text-xs text-stone-400 mb-5">
@@ -659,16 +688,29 @@ useEffect(() => {
             <ChevronRight size={12} />
             <Link to="/categories" className="hover:text-stone-600 transition-colors">Categories</Link>
             <ChevronRight size={12} />
-            <span className="text-stone-600">Products</span>
+            <span className="text-stone-600">{categoryInfo?.name || 'Products'}</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0">
-              📦
+            <div className="relative w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+              <span aria-hidden="true" className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full border-2 border-stone-700" />
+              {categoryInfo?.image ? (
+                <img
+                  src={`${API_BASE_URL}/uploads/categories/${categoryInfo.image}`}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                '📦'
+              )}
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">Category Products</h1>
-              <p className="text-stone-500 text-sm">Browse our collection of products</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">
+                {categoryInfo?.name || 'Category Products'}
+              </h1>
+              <p className="text-stone-500 text-sm max-w-xl">
+                {categoryInfo?.description || 'Browse our collection of products'}
+              </p>
             </div>
           </div>
         </div>
@@ -728,7 +770,7 @@ useEffect(() => {
                   )}
                 </button>
 
-                <span className="text-xs text-stone-400 hidden sm:block">
+                <span className="text-xs text-stone-400 hidden sm:block font-mono">
                   {sortedProducts.length} item{sortedProducts.length !== 1 ? 's' : ''}
                 </span>
               </div>

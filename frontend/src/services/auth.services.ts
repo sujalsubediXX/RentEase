@@ -29,7 +29,7 @@ class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/user/login`,
+        `${API_BASE_URL}/api/user/login`,
         {
           email: credentials.email,
           password: credentials.password,
@@ -81,7 +81,7 @@ class AuthService {
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/user/register`,
+        `${API_BASE_URL}/api/user/register`,
         userData,
         {
           headers: {
@@ -123,7 +123,7 @@ async getCurrentUser(): Promise<User | null> {
   if (!token) return null;
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/me`, {
+    const response = await axios.get(`${API_BASE_URL}/api/user/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -156,7 +156,7 @@ async getUserRentals(): Promise<any[]> {
   if (!token) return [];
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/rentals`, {
+    const response = await axios.get(`${API_BASE_URL}/api/user/rentals`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data.rentals || [];
@@ -171,7 +171,7 @@ async getUserListings(): Promise<any[]> {
   if (!token) return [];
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/listings`, {
+    const response = await axios.get(`${API_BASE_URL}/api/user/listings`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data.listings || [];
@@ -215,12 +215,12 @@ async getUserListings(): Promise<any[]> {
 
 
 export const requestPasswordReset = async (email: string) => {
-  const { data } = await axios.post(`${API_BASE_URL}/user/forgot-password`, { email });
+  const { data } = await axios.post(`${API_BASE_URL}/api/user/forgot-password`, { email });
   return data;
 };
 
 export const resetPasswordWithToken = async (token: string, password: string) => {
-  const { data } = await axios.post(`${API_BASE_URL}/user/reset-password/${token}`, { password });
+  const { data } = await axios.post(`${API_BASE_URL}/api/user/reset-password/${token}`, { password });
   return data;
 };
 

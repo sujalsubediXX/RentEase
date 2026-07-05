@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 import { toast } from "sonner";
+import { authService } from '../../services/auth.services';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** A single line item, whether it came from single-item checkout or the cart */
@@ -78,7 +79,7 @@ const ConfirmBookingPage: React.FC = () => {
     }
 
     const items = checkoutData.items;
-    console.log(items)
+
     const isMultiItem = items.length > 1;
 
     // ── Contact / delivery info ──
@@ -98,7 +99,7 @@ const ConfirmBookingPage: React.FC = () => {
         try {
             setCreatingRental(true);
 
-            const token = localStorage.getItem('accessToken');
+                const token = authService.getAccessToken();
             if (!token) {
                 toast.error('Please login again');
                 return;
@@ -126,7 +127,7 @@ const ConfirmBookingPage: React.FC = () => {
             };
 
             const response = await axios.post(
-                `${API_BASE_URL}/rentals/create`,
+                `${API_BASE_URL}/api/rentals/create`,
                 orderData,
                 {
                     headers: {
@@ -163,7 +164,7 @@ const ConfirmBookingPage: React.FC = () => {
             }
 
             const response = await axios.post(
-                `${API_BASE_URL}/payment/initiate`,
+                `${API_BASE_URL}/api/payment/initiate`,
                 {
                     amount: subtotal,
                     tax_amount: 0,

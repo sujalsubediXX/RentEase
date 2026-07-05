@@ -1,0 +1,1062 @@
+[{
+  "_id": {
+    "$oid": "6a4a2106e8e08ce1ab9f4728"
+  },
+  "itemId": {
+    "$oid": "6a4a2106e8e08ce1ab9f4727"
+  },
+  "imageUrl": "/uploads/items/1783243014011-583319938.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:16:54.572Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:16:54.572Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2106e8e08ce1ab9f4729"
+  },
+  "itemId": {
+    "$oid": "6a4a2106e8e08ce1ab9f4727"
+  },
+  "imageUrl": "/uploads/items/1783243014012-274226398.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:16:54.573Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:16:54.573Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2162e8e08ce1ab9f472b"
+  },
+  "itemId": {
+    "$oid": "6a4a2162e8e08ce1ab9f472a"
+  },
+  "imageUrl": "/uploads/items/1783243106090-727460076.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:18:26.515Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:18:26.515Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2162e8e08ce1ab9f472c"
+  },
+  "itemId": {
+    "$oid": "6a4a2162e8e08ce1ab9f472a"
+  },
+  "imageUrl": "/uploads/items/1783243106090-984934807.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:18:26.515Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:18:26.515Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2162e8e08ce1ab9f472d"
+  },
+  "itemId": {
+    "$oid": "6a4a2162e8e08ce1ab9f472a"
+  },
+  "imageUrl": "/uploads/items/1783243106091-403857962.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:18:26.515Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:18:26.515Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a21c2e8e08ce1ab9f472f"
+  },
+  "itemId": {
+    "$oid": "6a4a21c2e8e08ce1ab9f472e"
+  },
+  "imageUrl": "/uploads/items/1783243201970-871056232.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:20:02.331Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:20:02.331Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a21c2e8e08ce1ab9f4730"
+  },
+  "itemId": {
+    "$oid": "6a4a21c2e8e08ce1ab9f472e"
+  },
+  "imageUrl": "/uploads/items/1783243201970-284769171.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:20:02.331Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:20:02.331Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a21c2e8e08ce1ab9f4731"
+  },
+  "itemId": {
+    "$oid": "6a4a21c2e8e08ce1ab9f472e"
+  },
+  "imageUrl": "/uploads/items/1783243201971-135439480.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:20:02.331Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:20:02.331Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2235e8e08ce1ab9f4733"
+  },
+  "itemId": {
+    "$oid": "6a4a2235e8e08ce1ab9f4732"
+  },
+  "imageUrl": "/uploads/items/1783243317578-519437067.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:21:57.979Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:21:57.979Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2235e8e08ce1ab9f4734"
+  },
+  "itemId": {
+    "$oid": "6a4a2235e8e08ce1ab9f4732"
+  },
+  "imageUrl": "/uploads/items/1783243317578-39445600.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:21:57.979Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:21:57.979Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2235e8e08ce1ab9f4735"
+  },
+  "itemId": {
+    "$oid": "6a4a2235e8e08ce1ab9f4732"
+  },
+  "imageUrl": "/uploads/items/1783243317579-410366882.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:21:57.980Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:21:57.980Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2293e8e08ce1ab9f4737"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "imageUrl": "/uploads/items/1783243411922-742148384.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:23:31.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:23:31.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2293e8e08ce1ab9f4738"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "imageUrl": "/uploads/items/1783243411922-870565777.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:23:31.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:23:31.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2293e8e08ce1ab9f4739"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "imageUrl": "/uploads/items/1783243411922-519084085.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:23:31.933Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:23:31.933Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a230de8e08ce1ab9f473b"
+  },
+  "itemId": {
+    "$oid": "6a4a230de8e08ce1ab9f473a"
+  },
+  "imageUrl": "/uploads/items/1783243533521-434809829.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:25:33.652Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:25:33.652Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a230de8e08ce1ab9f473c"
+  },
+  "itemId": {
+    "$oid": "6a4a230de8e08ce1ab9f473a"
+  },
+  "imageUrl": "/uploads/items/1783243533522-373048509.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:25:33.652Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:25:33.652Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a230de8e08ce1ab9f473d"
+  },
+  "itemId": {
+    "$oid": "6a4a230de8e08ce1ab9f473a"
+  },
+  "imageUrl": "/uploads/items/1783243533522-658257198.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:25:33.653Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:25:33.653Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a236ce8e08ce1ab9f473f"
+  },
+  "itemId": {
+    "$oid": "6a4a236ce8e08ce1ab9f473e"
+  },
+  "imageUrl": "/uploads/items/1783243628456-493434016.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:27:08.826Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:27:08.826Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a236ce8e08ce1ab9f4740"
+  },
+  "itemId": {
+    "$oid": "6a4a236ce8e08ce1ab9f473e"
+  },
+  "imageUrl": "/uploads/items/1783243628456-673524079.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:27:08.826Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:27:08.826Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a236ce8e08ce1ab9f4741"
+  },
+  "itemId": {
+    "$oid": "6a4a236ce8e08ce1ab9f473e"
+  },
+  "imageUrl": "/uploads/items/1783243628457-439775781.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:27:08.826Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:27:08.826Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4743"
+  },
+  "itemId": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4742"
+  },
+  "imageUrl": "/uploads/items/1783243716688-434152925.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:28:37.082Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:28:37.082Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4744"
+  },
+  "itemId": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4742"
+  },
+  "imageUrl": "/uploads/items/1783243716689-84288602.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:28:37.082Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:28:37.082Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4745"
+  },
+  "itemId": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4742"
+  },
+  "imageUrl": "/uploads/items/1783243716689-413190732.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:28:37.082Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:28:37.082Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2404e8e08ce1ab9f4747"
+  },
+  "itemId": {
+    "$oid": "6a4a2404e8e08ce1ab9f4746"
+  },
+  "imageUrl": "/uploads/items/1783243780780-171489876.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:29:40.792Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:29:40.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2404e8e08ce1ab9f4748"
+  },
+  "itemId": {
+    "$oid": "6a4a2404e8e08ce1ab9f4746"
+  },
+  "imageUrl": "/uploads/items/1783243780780-618822439.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:29:40.792Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:29:40.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2404e8e08ce1ab9f4749"
+  },
+  "itemId": {
+    "$oid": "6a4a2404e8e08ce1ab9f4746"
+  },
+  "imageUrl": "/uploads/items/1783243780781-502150441.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:29:40.792Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:29:40.792Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2460e8e08ce1ab9f474b"
+  },
+  "itemId": {
+    "$oid": "6a4a2460e8e08ce1ab9f474a"
+  },
+  "imageUrl": "/uploads/items/1783243872067-288848083.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:31:12.419Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:31:12.419Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2460e8e08ce1ab9f474c"
+  },
+  "itemId": {
+    "$oid": "6a4a2460e8e08ce1ab9f474a"
+  },
+  "imageUrl": "/uploads/items/1783243872068-77636344.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:31:12.420Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:31:12.420Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2460e8e08ce1ab9f474d"
+  },
+  "itemId": {
+    "$oid": "6a4a2460e8e08ce1ab9f474a"
+  },
+  "imageUrl": "/uploads/items/1783243872068-179308709.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:31:12.420Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:31:12.420Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474f"
+  },
+  "itemId": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474e"
+  },
+  "imageUrl": "/uploads/items/1783243960685-945334887.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:32:41.097Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:32:41.097Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a24b9e8e08ce1ab9f4750"
+  },
+  "itemId": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474e"
+  },
+  "imageUrl": "/uploads/items/1783243960685-423382008.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:32:41.097Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:32:41.097Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a24b9e8e08ce1ab9f4751"
+  },
+  "itemId": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474e"
+  },
+  "imageUrl": "/uploads/items/1783243960685-954107096.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:32:41.097Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:32:41.097Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a24f6e8e08ce1ab9f4753"
+  },
+  "itemId": {
+    "$oid": "6a4a24f6e8e08ce1ab9f4752"
+  },
+  "imageUrl": "/uploads/items/1783244022117-75304931.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:33:42.123Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:33:42.123Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a24f6e8e08ce1ab9f4754"
+  },
+  "itemId": {
+    "$oid": "6a4a24f6e8e08ce1ab9f4752"
+  },
+  "imageUrl": "/uploads/items/1783244022117-293898543.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:33:42.123Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:33:42.123Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a24f6e8e08ce1ab9f4755"
+  },
+  "itemId": {
+    "$oid": "6a4a24f6e8e08ce1ab9f4752"
+  },
+  "imageUrl": "/uploads/items/1783244022118-405040413.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:33:42.123Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:33:42.123Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a253ee8e08ce1ab9f4757"
+  },
+  "itemId": {
+    "$oid": "6a4a253ee8e08ce1ab9f4756"
+  },
+  "imageUrl": "/uploads/items/1783244093956-699767306.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:34:54.318Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:34:54.318Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a253ee8e08ce1ab9f4758"
+  },
+  "itemId": {
+    "$oid": "6a4a253ee8e08ce1ab9f4756"
+  },
+  "imageUrl": "/uploads/items/1783244093956-918135792.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:34:54.318Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:34:54.318Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a253ee8e08ce1ab9f4759"
+  },
+  "itemId": {
+    "$oid": "6a4a253ee8e08ce1ab9f4756"
+  },
+  "imageUrl": "/uploads/items/1783244093956-504746061.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:34:54.318Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:34:54.318Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475b"
+  },
+  "itemId": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475a"
+  },
+  "imageUrl": "/uploads/items/1783244211524-246908585.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:36:51.530Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:36:51.530Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475c"
+  },
+  "itemId": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475a"
+  },
+  "imageUrl": "/uploads/items/1783244211524-258027433.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:36:51.530Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:36:51.530Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475d"
+  },
+  "itemId": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475a"
+  },
+  "imageUrl": "/uploads/items/1783244211524-949355430.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:36:51.530Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:36:51.530Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a25ffe8e08ce1ab9f475f"
+  },
+  "itemId": {
+    "$oid": "6a4a25ffe8e08ce1ab9f475e"
+  },
+  "imageUrl": "/uploads/items/1783244287180-155283760.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:38:07.184Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:38:07.184Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a25ffe8e08ce1ab9f4760"
+  },
+  "itemId": {
+    "$oid": "6a4a25ffe8e08ce1ab9f475e"
+  },
+  "imageUrl": "/uploads/items/1783244287180-448381263.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:38:07.185Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:38:07.185Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a25ffe8e08ce1ab9f4761"
+  },
+  "itemId": {
+    "$oid": "6a4a25ffe8e08ce1ab9f475e"
+  },
+  "imageUrl": "/uploads/items/1783244287180-938209372.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:38:07.185Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:38:07.185Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2655e8e08ce1ab9f4763"
+  },
+  "itemId": {
+    "$oid": "6a4a2655e8e08ce1ab9f4762"
+  },
+  "imageUrl": "/uploads/items/1783244373029-600138915.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:39:33.390Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:39:33.390Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2655e8e08ce1ab9f4764"
+  },
+  "itemId": {
+    "$oid": "6a4a2655e8e08ce1ab9f4762"
+  },
+  "imageUrl": "/uploads/items/1783244373029-96382075.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:39:33.390Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:39:33.390Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2655e8e08ce1ab9f4765"
+  },
+  "itemId": {
+    "$oid": "6a4a2655e8e08ce1ab9f4762"
+  },
+  "imageUrl": "/uploads/items/1783244373029-943794661.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:39:33.391Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:39:33.391Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2697e8e08ce1ab9f4767"
+  },
+  "itemId": {
+    "$oid": "6a4a2697e8e08ce1ab9f4766"
+  },
+  "imageUrl": "/uploads/items/1783244439051-847728394.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:40:39.425Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:40:39.425Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2697e8e08ce1ab9f4768"
+  },
+  "itemId": {
+    "$oid": "6a4a2697e8e08ce1ab9f4766"
+  },
+  "imageUrl": "/uploads/items/1783244439051-663589180.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:40:39.426Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:40:39.426Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2697e8e08ce1ab9f4769"
+  },
+  "itemId": {
+    "$oid": "6a4a2697e8e08ce1ab9f4766"
+  },
+  "imageUrl": "/uploads/items/1783244439052-599282135.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:40:39.426Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:40:39.426Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a26e4e8e08ce1ab9f476b"
+  },
+  "itemId": {
+    "$oid": "6a4a26e4e8e08ce1ab9f476a"
+  },
+  "imageUrl": "/uploads/items/1783244516559-425200744.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:41:56.566Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:41:56.566Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a26e4e8e08ce1ab9f476c"
+  },
+  "itemId": {
+    "$oid": "6a4a26e4e8e08ce1ab9f476a"
+  },
+  "imageUrl": "/uploads/items/1783244516560-230018235.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:41:56.566Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:41:56.566Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a26e4e8e08ce1ab9f476d"
+  },
+  "itemId": {
+    "$oid": "6a4a26e4e8e08ce1ab9f476a"
+  },
+  "imageUrl": "/uploads/items/1783244516560-400062822.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:41:56.566Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:41:56.566Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2729e8e08ce1ab9f476f"
+  },
+  "itemId": {
+    "$oid": "6a4a2729e8e08ce1ab9f476e"
+  },
+  "imageUrl": "/uploads/items/1783244585134-516402465.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:43:05.142Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:43:05.142Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2729e8e08ce1ab9f4770"
+  },
+  "itemId": {
+    "$oid": "6a4a2729e8e08ce1ab9f476e"
+  },
+  "imageUrl": "/uploads/items/1783244585135-61472765.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:43:05.142Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:43:05.142Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a2729e8e08ce1ab9f4771"
+  },
+  "itemId": {
+    "$oid": "6a4a2729e8e08ce1ab9f476e"
+  },
+  "imageUrl": "/uploads/items/1783244585135-750666534.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:43:05.142Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:43:05.142Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4773"
+  },
+  "itemId": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4772"
+  },
+  "imageUrl": "/uploads/items/1783244724423-520219957.jpg",
+  "isPrimary": true,
+  "displayOrder": 0,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:45:24.430Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:45:24.430Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4774"
+  },
+  "itemId": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4772"
+  },
+  "imageUrl": "/uploads/items/1783244724423-157136226.jpg",
+  "isPrimary": false,
+  "displayOrder": 1,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:45:24.430Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:45:24.430Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4775"
+  },
+  "itemId": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4772"
+  },
+  "imageUrl": "/uploads/items/1783244724423-776995325.jpg",
+  "isPrimary": false,
+  "displayOrder": 2,
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-07-05T09:45:24.430Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T09:45:24.430Z"
+  }
+}]

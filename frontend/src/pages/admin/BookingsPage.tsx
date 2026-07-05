@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
 import API_BASE_URL from "../../config/api";
+import { authService } from "../../services/auth.services";
 interface Booking {
   _id: string;
 
@@ -51,13 +52,12 @@ export const BookingsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [booking, setBooking] = useState<Booking[]>([]);
   const filtered = booking.filter(b => statusFilter === "all" || b.status === statusFilter);
-  const token = localStorage.getItem("accessToken");
-
+      const token = authService.getAccessToken();
   useEffect(() => {
     // Fetch bookings from the API
     const fetchBookings = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/rentals/filterStatus`, {
+        const response = await axios.get(`${API_BASE_URL}/api/rentals/filterStatus`, {
           params: { status: statusFilter },
           headers: {
             Authorization: `Bearer ${token}`,

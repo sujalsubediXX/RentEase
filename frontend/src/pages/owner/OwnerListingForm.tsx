@@ -60,7 +60,7 @@ const EMPTY_FORM: ListingFormState = {
 export default function OwnerListingForm() {
     const navigate = useNavigate();
     const { itemId } = useParams<{ itemId: string }>();
-    console.log(itemId)
+
     const routerLocation = useLocation();
     const isEditMode = Boolean(itemId);
     const { user } = useAuth();
@@ -83,7 +83,7 @@ export default function OwnerListingForm() {
     const fetchCategories = async () => {
         try {
             const res = await axios.get(
-                `${API_BASE_URL}/category/getcategory`, {
+                `${API_BASE_URL}/api/category/getcategory`, {
                 headers: { Authorization: `Bearer ${token}` },
             }
             );
@@ -174,7 +174,7 @@ export default function OwnerListingForm() {
                 formData.append("existingImages", JSON.stringify(keepImages));
             }
 
-            const url = isEditMode ? `${API_BASE_URL}/edititem/${itemId}` : `${API_BASE_URL}/items/additems`;
+            const url = isEditMode ? `${API_BASE_URL}/api/edititem/${itemId}` : `${API_BASE_URL}/api/items/additems`;
 
 
 

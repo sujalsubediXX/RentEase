@@ -44,7 +44,7 @@ const CategoryManagement = () => {
       setLoading(true);
 
       const res = await axios.get(
-        `${API_BASE_URL}/category/getcategory`, {
+        `${API_BASE_URL}/api/category/getcategory`, {
         headers: { Authorization: `Bearer ${token}` },
       }
       );
@@ -93,7 +93,7 @@ const CategoryManagement = () => {
       }
 
       await axios.post(
-        `${API_BASE_URL}/category/addcategory`,
+        `${API_BASE_URL}/api/category/addcategory`,
         data,
         {
           headers: {
@@ -126,7 +126,7 @@ const CategoryManagement = () => {
       }
 
       await axios.put(
-        `${API_BASE_URL}/category/updatecategory/${editingId}`,
+        `${API_BASE_URL}/api/category/updatecategory/${editingId}`,
         data,
         {
           headers: {
@@ -156,7 +156,7 @@ const CategoryManagement = () => {
 
     try {
       await axios.delete(
-        `${API_BASE_URL}/category/deletecategory/${id}`, {
+        `${API_BASE_URL}/api/category/deletecategory/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     }
       );
@@ -178,19 +178,19 @@ const CategoryManagement = () => {
     });
 
     setPreview(
-      `http://localhost:3000/uploads/categories/${category.image}`
+      `${API_BASE_URL}/uploads/categories/${category.image}`
     );
   };
 
   return (
-    <main className="bg-gray-100 min-h-screen overflow-y-auto">
+    <main className="bg-gray-100 min-h-screen overflow-y-auto w-full">
       <TopBar title="Category Management" subtitle="  Manage rental categories" />
-      <div className=" px-6 pt-4 h-fit ">
+      <div className=" px-6 pt-4  h-[91vh]">
 
 
-        <div className="flex gap-6  ">
+        <div className="flex gap-6  w-full ">
           {/* FORM */}
-          <div className="max-h-[80vh] overflow-y-auto xl:col-span-4 w-[65%]">
+          <div className=" w-[32%]">
             <div className="bg-white rounded-3xl p-6  shadow-sm sticky top-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="bg-orange-100 p-3 rounded-xl">
@@ -305,15 +305,15 @@ const CategoryManagement = () => {
             </div>
           </div>
 
-          {/* CATEGORY GRID */}
 
-          <div className="xl:col-span-8 h-fit">
+
+
             {loading ? (
               <div className="text-center py-20">
                 Loading...
               </div>
             ) : (
-              <div className="max-h-[80vh] overflow-y-auto">
+              <div className="max-h-[87vh] overflow-y-auto w-[68%] ">
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {categories.map(
                     (category, index) => {
@@ -338,7 +338,7 @@ const CategoryManagement = () => {
                               }`}
                           >
                             <img
-                              src={`http://localhost:3000/uploads/categories/${category.image}`}
+                              src={`${API_BASE_URL}/uploads/categories/${category.image}`}
                               alt={
                                 category.name
                               }
@@ -405,7 +405,7 @@ const CategoryManagement = () => {
             )}
           </div>
         </div>
-      </div>
+  
     </main>
 
   );

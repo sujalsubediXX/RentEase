@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, Loader2, AlertCircle, Calendar,  ArrowRight } from 'lucide-react';
-
+import API_BASE_URL from '../../config/api';
 interface VerifiedDetails {
   transaction_uuid: string;
   total_amount: string;
@@ -26,7 +26,7 @@ const PaymentSuccessPage: React.FC = () => {
 
       try {
         // Forward token to backend server hook for secure cryptographic verification
-        const response = await fetch('http://localhost:3000/api/payment/esewa/verify-payment', {
+        const response = await fetch(`${API_BASE_URL}/api/payment/esewa/verify-payment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data: dataToken }),

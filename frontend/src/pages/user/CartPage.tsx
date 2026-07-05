@@ -5,7 +5,8 @@ import API_BASE_URL from "../../config/api";
 import { ImageSlider } from "./ImageSlider";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-const BASE_URL = "http://localhost:3000";
+import { authService } from "../../services/auth.services";
+
 interface CartItem {
   _id: string;
   itemId: {
@@ -26,13 +27,13 @@ export default function CartPage() {
   const [blockedRangesMap, setBlockedRangesMap] = useState<
     Record<string, { start: Date; end: Date }[]>
   >({});
-  const token = localStorage.getItem("accessToken") || "";
+      const token = authService.getAccessToken();
   const fetchAllAvailability = async (items: CartItem[]) => {
     const entries = await Promise.all(
       items.map(async (item) => {
         try {
           const res = await axios.get(
-            `${API_BASE_URL}/rentals/availability/${item.itemId._id}`, {
+            `${API_BASE_URL}/api/rentals/availability/${item.itemId._id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }
           );
@@ -49,14 +50,14 @@ export default function CartPage() {
     );
     setBlockedRangesMap(Object.fromEntries(entries));
   };
-
+console.log(blockedRangesMap)
 
   const navigate = useNavigate();
 
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/cart/getcart`, {
+      const res = await axios.get(`${API_BASE_URL}/api/cart/getcart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const items = res.data.cart.items || [];
@@ -86,7 +87,7 @@ export default function CartPage() {
 
     try {
       await axios.delete(
-        `${API_BASE_URL}/cart/remove/${cartItemId}`, {
+        `${API_BASE_URL}/api/cart/remove/${cartItemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       }
       );
@@ -115,7 +116,7 @@ export default function CartPage() {
   ) => {
     try {
       await axios.put(
-        `${API_BASE_URL}/cart/update-dates/${cartItemId}`,
+        `${API_BASE_URL}/api/cart/update-dates/${cartItemId}`,
         {
           startDate,
           endDate,
@@ -181,7 +182,7 @@ export default function CartPage() {
               >
                 <div className="flex gap-4">
                   <div className="w-28 h-28 rounded-xl  flex items-center justify-center text-3xl shrink-0">
-                    <ImageSlider images={(item.itemId.images).map((img) => `${BASE_URL}${img}`)} />
+                    <ImageSlider images={(item.itemId.images).map((img) => `${API_BASE_URL}${img}`)} />
                   </div>
 
                   <div className="flex-1 min-w-0">

@@ -85,7 +85,7 @@ const BookingsPage = () => {
             // First try the owner endpoint
             try {
                 const response = await axios.get(
-                    `${API_BASE_URL}/rentals/owner?status=${statusFilter}`,
+                    `${API_BASE_URL}/api/rentals/owner?status=${statusFilter}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -104,7 +104,7 @@ const BookingsPage = () => {
                 if (err.response?.status === 404) {
                     console.log('Owner endpoint not found, using filterStatus');
                     const response = await axios.get(
-                        `${API_BASE_URL}/rentals/filterStatus?status=${statusFilter}`,
+                        `${API_BASE_URL}/api/rentals/filterStatus?status=${statusFilter}`,
                         {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -156,7 +156,7 @@ const BookingsPage = () => {
             // Handle different status updates
             if (newStatus === 'cancelled' || newStatus === 'rejected') {
                 await axios.put(
-                    `${API_BASE_URL}/rentals/${bookingId}/cancel`,
+                    `${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
                     {},
                     {
                         headers: {
@@ -167,7 +167,7 @@ const BookingsPage = () => {
                 );
             } else if (newStatus === 'confirmed') {
                 await axios.put(
-                    `${API_BASE_URL}/rentals/confirm`,
+                    `${API_BASE_URL}/api/rentals/confirm`,
                     { rentalIds: [bookingId] },
                     {
                         headers: {

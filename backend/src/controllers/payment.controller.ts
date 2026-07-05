@@ -6,8 +6,8 @@ const ESEWA_CONFIG = {
   PRODUCT_CODE: 'EPAYTEST',
   SECRET_KEY: '8gBm/:&EnhH.1/q', // Official eSewa test secret key
   GATEWAY_URL: 'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
-  SUCCESS_URL: 'http://localhost:5173/payment-success', // Your frontend redirect routes
-  FAILURE_URL: 'http://localhost:5173/payment-failure'
+  SUCCESS_URL: `${process.env.API_BASE_URL}/payment-success`, // Your frontend redirect routes
+  FAILURE_URL: `${process.env.API_BASE_URL}/payment-failure`
 };
 
 

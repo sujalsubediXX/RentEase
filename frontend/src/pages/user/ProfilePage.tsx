@@ -19,7 +19,7 @@ const token = localStorage.getItem("accessToken");
 
   const fetchWishlist = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/wishlist/wishitem`, {
+      const res = await axios.get(`${API_BASE_URL}/api/wishlist/wishitem`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWishlist(res.data?.items || []);

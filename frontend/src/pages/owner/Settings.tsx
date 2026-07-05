@@ -80,7 +80,7 @@ const token = authService.getAccessToken();
 
             // Update user profile
             const response = await axios.put(
-                `${API_BASE_URL}/user/users`,
+                `${API_BASE_URL}/api/user/users`,
                 {
                     fullName: formData.fullName,
                     phoneNumber: formData.phoneNumber,

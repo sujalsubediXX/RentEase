@@ -41,7 +41,7 @@ export const OwnersPage = () => {
   useEffect(()=>{
     const fetchUser = async()=>{
       try {
-        const res = await axios.get(`${API_BASE_URL}/user/role/owner`)
+        const res = await axios.get(`${API_BASE_URL}/api/user/role/owner`)
         setUsers(res.data.users)
       } catch (error) {
         console.log(error)

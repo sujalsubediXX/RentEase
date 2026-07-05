@@ -1,7 +1,8 @@
-import {createItem, getItems, getItemsByCategoryId, getItemsByOwnerId } from "../controllers/items.controller.ts";
+import {createItem, fetchFeaturedItems, getItems, getItemsByCategoryId, getItemsByOwnerId, recommendedItemsHandler } from "../controllers/items.controller.ts";
 import {Router} from "express";
 const router = Router();
 import {uploadItem} from "../config/upload.ts"
+import { authMiddleware } from "../middleware/auth.middleware.ts";
 router.post(
   "/additems",
   uploadItem.array("images", 10), 
@@ -10,4 +11,9 @@ router.post(
 router.get("/getitems", getItems);
 router.get("/getitemsbycategory/:categoryId", getItemsByCategoryId);
 router.get("/getitemsbyownerId/:ownerId", getItemsByOwnerId);
+router.get("/fetch-featured-items", fetchFeaturedItems);
+router.get("/fetch-user-recommended-items", authMiddleware, recommendedItemsHandler);
+
+
+
 export default router;

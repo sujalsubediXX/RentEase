@@ -3,6 +3,10 @@ import type { Request, Response } from "express";
 import ItemImage from "../models/itemsImage.model.ts";
 import Item from "../models/items.model.ts";
 
+
+import { getFeaturedItems, getRecommendedForUser } from "../utils/recommendation.ts";
+
+
 export const createItem = async (req: Request, res: Response) => {
   try {
     const {
@@ -213,3 +217,35 @@ export const getItemsByOwnerId = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
+
+export const fetchFeaturedItems = async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 8, 24);
+    const items = await getFeaturedItems(limit);
+    res.json({ success: true, data: items });
+  } catch (err) {
+    console.error("Error fetching featured items:", err);
+    res.status(500).json({ success: false, message: "Failed to load featured items" });
+  }
+}
+
+export const recommendedItemsHandler = async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 8, 24);
+    const userId = (req as any).user?.id;
+    
+    if (!userId) {
+      const items = await getFeaturedItems(limit);
+      return res.json({ success: true, personalized: false, data: items });
+    }
+
+    const items = await getRecommendedForUser(userId, limit);
+    res.json({ success: true, personalized: true, data: items });
+  } catch (err) {
+    console.error("Error fetching recommended items:", err);
+    res.status(500).json({ success: false, message: "Failed to load recommendations" });
+  }
+}

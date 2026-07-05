@@ -128,20 +128,17 @@ export default function OwnerListing() {
         });
     };
 
-    const mapItemToProduct = (
-        item: any,
-        baseUrl: string
-    ): Product => {
+    const mapItemToProduct = ( item: any): Product => {
         const buildImageUrl = (img: string): string => {
             if (!img) return "";
 
             if (img.startsWith("http")) return img;
 
             if (img.startsWith("/")) {
-                return `${baseUrl}${img}`;
+                return `${API_BASE_URL}${img}`;
             }
 
-            return `${baseUrl}/uploads/items/${img}`;
+            return `${API_BASE_URL}/uploads/items/${img}`;
         };
 
         const imageUrls =
@@ -165,7 +162,7 @@ export default function OwnerListing() {
     }, [])
     const fetchProducts = async () => {
         try {
-            const url = `${API_BASE_URL}/items/getitemsbyownerId/${user?.id}`;
+            const url = `${API_BASE_URL}/api/items/getitemsbyownerId/${user?.id}`;
 
             const res = await fetch(url);
 
@@ -195,7 +192,7 @@ export default function OwnerListing() {
             }
 
             const newItems: Product[] = rawItems.map((item: any) =>
-                mapItemToProduct(item, "http://localhost:3000")
+                mapItemToProduct(item)
             );
             setProducts(newItems);
         } catch (err) {

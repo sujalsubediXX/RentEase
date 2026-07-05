@@ -5,6 +5,7 @@ import API_BASE_URL from "../../config/api";
 import { ProductCard, type Product } from "../../components/user/ProductCard";
 import { useAuth } from "../../hooks/useAuth";
 import {toast} from "sonner";
+import { authService } from "../../services/auth.services";
 interface ItemImage {
   _id: string;
   imageUrl: string;
@@ -30,7 +31,7 @@ const mapWishlistItemToProduct = (item: WishlistItem): Product => ({
   name: item.title,
   description: item.description,
   rentalPrice: item.price,
-  images: item.images.map(img => `http://localhost:3000${img.imageUrl}`),
+  images: item.images.map(img => `${API_BASE_URL}${img.imageUrl}`),
   category: "",
   categoryId: "",
   brand: "",
@@ -48,7 +49,7 @@ function WishlistPage() {
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [clearingAll, setClearingAll] = useState(false);
   const { user, isAuthenticated } = useAuth();
-  const token = localStorage.getItem("accessToken");
+        const token = authService.getAccessToken();
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
@@ -58,7 +59,7 @@ function WishlistPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`${API_BASE_URL}/wishlist/wishitem`, {
+      const res = await axios.get(`${API_BASE_URL}/api/wishlist/wishitem`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWishlist(res.data?.items || []);
@@ -79,7 +80,7 @@ function WishlistPage() {
     setWishlist(prev => prev.filter(item => item._id !== productId));
 
     try {
-      await axios.delete(`${API_BASE_URL}/wishlist/remove/${productId}`, {
+      await axios.delete(`${API_BASE_URL}/api/wishlist/remove/${productId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Removed from wishlist");
@@ -103,7 +104,7 @@ function WishlistPage() {
     try {
       await Promise.all(
         snapshot.map(item =>
-          axios.delete(`${API_BASE_URL}/wishlist/remove/${item._id}`, {
+          axios.delete(`${API_BASE_URL}/api/wishlist/remove/${item._id}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
         )
@@ -125,7 +126,7 @@ function WishlistPage() {
       }
       ;
 
-      await axios.post(`${API_BASE_URL}/cart/add/`, {
+      await axios.post(`${API_BASE_URL}/api/cart/add/`, {
         itemId: product.id,
         quantity: 1,
         rentalDays: 1,
