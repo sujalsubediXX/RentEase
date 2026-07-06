@@ -408,6 +408,8 @@ export const confirmRental = async (req: Request, res: Response) => {
 
 // ─── Get User Rentals ─────────────────────────────────────────────────────
 
+import ItemRating from "../models/itemRating.model.ts";
+
 export const getUserRentals = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
@@ -421,11 +423,22 @@ export const getUserRentals = async (req: Request, res: Response) => {
 
     const rentals = await Rentals.find({ userId })
       .populate('itemId')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Find which of these rentals already have a review
+    const rentalIds = rentals.map(r => r._id);
+    const reviews = await ItemRating.find({ rental: { $in: rentalIds } }).select('rental');
+    const reviewedSet = new Set(reviews.map(r => r.rentalID.toString()));
+
+    const rentalsWithReviewFlag = rentals.map(r => ({
+      ...r,
+      hasReview: reviewedSet.has(r._id.toString()),
+    }));
 
     return res.status(200).json({
       success: true,
-      data: rentals
+      data: rentalsWithReviewFlag
     });
 
   } catch (error: any) {

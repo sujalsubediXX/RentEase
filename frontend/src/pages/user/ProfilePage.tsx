@@ -4,14 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/auth.services";
 import API_BASE_URL from "../../config/api";
 import axios from "axios";
+import { ReviewModal } from "../../components/user/ReviewModal";
 function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [rentals, setRentals] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-const token = localStorage.getItem("accessToken");
+   const [reviewingBooking, setReviewingBooking] = useState<any>(null); 
+  const token = authService.getAccessToken();
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
@@ -37,7 +38,7 @@ const token = localStorage.getItem("accessToken");
         setLoading(true);
         // Fetch all data in parallel
         const [rentalsData] = await Promise.all([
-          authService.getUserRentals()       
+          authService.getUserRentals()
 
         ]);
 
@@ -91,14 +92,14 @@ const token = localStorage.getItem("accessToken");
               {user.email} · {user.address || "Nepal"}
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${user.kycStatus=="verified" || user.kycStatus =="under review"
-                  ? "bg-green-500/20 text-green-400 border-green-500/30"
-                  : "bg-red-500/20 text-red-400 border-red-500/30"
+              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${user.kycStatus == "verified" || user.kycStatus == "under review"
+                ? "bg-green-500/20 text-green-400 border-green-500/30"
+                : "bg-red-500/20 text-red-400 border-red-500/30"
                 }`}>
-                {user.kycStatus == "verified"? "✓ KYC Verified" : user.kycStatus =="under_review"?"✓ KYC Under Review":"✗ KYC Not Verified"}
+                {user.kycStatus == "verified" ? "✓ KYC Verified" : user.kycStatus == "under_review" ? "✓ KYC Under Review" : "✗ KYC Not Verified"}
               </span>
               <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full font-medium border border-green-500/30">
-                
+
                 ● Active Member
               </span>
               <span className="bg-stone-700 text-stone-300 text-xs px-3 py-1 rounded-full font-medium">
@@ -135,7 +136,9 @@ const token = localStorage.getItem("accessToken");
         <div className="divide-y divide-stone-100">
           {rentals.length > 0 ? (
             rentals.map((rental, i) => (
+              
               <div key={rental._id || i} className="flex items-center gap-4 px-6 py-4 hover:bg-stone-50 transition-colors">
+           
                 <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-2xl shrink-0">
                   {rental.image || "📦"}
                 </div>
@@ -149,19 +152,33 @@ const token = localStorage.getItem("accessToken");
                       : "No dates available"}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-stone-900 text-sm">
-                    Rs. {(rental.totalPrice).toLocaleString()}
-                  </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${rental.status === "active"
-                      ? "bg-green-100 text-green-700"
-                      : rental.status === "completed"
-                        ? "bg-stone-100 text-stone-500"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                    {rental.status === "active" ? "● Active" : rental.status === "completed" ? "✓ Done" : rental.status || "Pending"}
-                  </span>
-                </div>
+             <div className="text-right flex flex-col items-end gap-1.5">
+  <p className="font-semibold text-stone-900 text-sm">
+    Rs. {(rental.totalPrice).toLocaleString()}
+  </p>
+
+  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+    rental.status === "active"
+      ? "bg-green-100 text-green-700"
+      : rental.status === "completed"
+        ? "bg-stone-100 text-stone-500"
+        : "bg-yellow-100 text-yellow-700"
+  }`}>
+    {rental.status === "active" ? "● Active" : rental.status === "completed" ? "✓ Done" : rental.status || "Pending"}
+  </span>
+
+  {rental.status === "completed" && !rental.hasReview && (
+    <button
+      onClick={() => setReviewingBooking(rental)}
+      className="rounded-full border border-amber-700/30 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 transition"
+    >
+      Rate & Review
+    </button>
+  )}
+  {rental.status === "completed" && rental.hasReview && (
+    <span className="text-xs text-stone-500 italic">Reviewed ✓</span>
+  )}
+</div>
               </div>
             ))
           ) : (
@@ -172,7 +189,19 @@ const token = localStorage.getItem("accessToken");
           )}
         </div>
       </div>
-
+ {reviewingBooking && (
+        <ReviewModal
+          booking={reviewingBooking}
+          onClose={() => setReviewingBooking(null)}
+          onSubmitted={() => {
+            setRentals((prev) =>
+              prev.map((r) =>
+                r._id === reviewingBooking._id ? { ...r, hasReview: true } : r
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -38,7 +38,7 @@ const itemSchema = new mongoose.Schema(
 
     condition: {
       type: String,
-      enum: ["new", "like new", "used","old"],
+      enum: ["new", "like new", "used", "old"],
       default: "used"
     },
 
@@ -58,7 +58,9 @@ const itemSchema = new mongoose.Schema(
       default: 1,
       min: 1
     },
-
+    // Item schema additions
+    avgRating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
     isApproved: {
       type: Boolean,
       default: false

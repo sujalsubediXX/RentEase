@@ -7,10 +7,10 @@ import Wishlist from "../models/Wishlist.ts";
 
 const RENTALS_COLLECTION = "rentals";
 const WISHLISTS_COLLECTION = "wishlists";
-const RATINGS_COLLECTION = "ratings"; // adjust once you confirm this model
 const ITEM_IMAGES_COLLECTION = "itemimages"; // confirm this matches your actual collection name
 
-const RATING_ITEM_FIELD = "itemId"; // adjust once you confirm this model
+const RATINGS_COLLECTION = "itemratings"; // matches mongoose.model('ItemRating', ...)
+const RATING_ITEM_FIELD = "itemID"; // matches your schema field name
 
 // Only these statuses represent real demand — a pending/cancelled/rejected
 // rental never actually happened and shouldn't boost an item's ranking.

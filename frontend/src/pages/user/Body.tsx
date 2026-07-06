@@ -27,12 +27,13 @@ export interface Product {
   images: string[];
   category: string;
   categoryId: string;
-  rating: number;
+  avgRating?:number;
   reviewCount: number;
   rentalUnits?: number;
   stock: number;
   location: string;
   createdAt?: string;
+
 }
 
 
@@ -213,7 +214,7 @@ export default function Body() {
               : [],
             category: categoryMap[item.categoryId] || "",
             categoryId: item.categoryId,
-            rating: item.avgRating ?? 0,
+            avgRating: item.avgRating ?? 0,
             reviewCount: item.reviewCount ?? 0,
             rentalUnits: item.rentalUnits ?? 0,
             stock: item.quantity || 0,
@@ -221,6 +222,7 @@ export default function Body() {
             createdAt: item.createdAt,
           }))
         );
+        console.log(mostRentedItems)
       } catch (err) {
         console.log(err);
       } finally {
@@ -310,7 +312,7 @@ export default function Body() {
               : [],
             category: categoryMap[item.categoryId] || "",
             categoryId: item.categoryId,
-            rating: item.avgRating ?? 0,
+            avgRating: item.avgRating ?? 0,
             reviewCount: item.reviewCount ?? 0,
             rentalUnits: item.rentalUnits ?? 0,
             stock: item.quantity || 0,
@@ -525,7 +527,7 @@ export default function Body() {
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {[
                     { label: 'Brand', value: quickViewProduct.price },
-                    { label: 'Rating', value: `${quickViewProduct.rating} ★` },
+                    { label: 'Rating', value: `${quickViewProduct.avgRating} ★` },
                     { label: 'Location', value: quickViewProduct.location },
                     {
                       label: 'Stock',

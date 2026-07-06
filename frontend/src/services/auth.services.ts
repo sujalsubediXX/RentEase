@@ -159,7 +159,7 @@ async getUserRentals(): Promise<any[]> {
     const response = await axios.get(`${API_BASE_URL}/api/user/rentals`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return response.data.rentals || [];
+    return response.data.data || [];
   } catch (error) {
     console.error("Error fetching rentals:", error);
     return [];

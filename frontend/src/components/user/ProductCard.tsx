@@ -11,8 +11,8 @@ export interface Product {
   images: string[];
   category: string;
   categoryId: string;
- rentalUnits?: number;
-  rating: number;
+  rentalUnits?: number;
+  avgRating?: number;
   reviewCount: number;
   stock: number;
   location: string;
@@ -57,10 +57,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <ImageSlider images={product.images} />
         </div>
 
-          <span className="absolute top-3 left-8 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-           {product.price}
-          </span>
-        
+        <span className="absolute top-3 left-8 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          {product.price}
+        </span>
+
         {product.stock === 0 && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
             <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
@@ -93,7 +93,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.location}</span>
           <div className="flex items-center gap-1">
             <Star size={11} className="text-amber-400 fill-amber-400" />
-            <span className="text-xs text-stone-700 font-medium">{product.rating}</span>
+            <span className="text-xs text-stone-700 font-medium">{product.avgRating}</span>
             <span className="text-xs text-stone-400">({product.reviewCount})</span>
           </div>
         </div>
@@ -111,7 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-lg font-bold text-stone-900">Rs. {product.price}</span>
               <span className="text-xs text-stone-400">/day</span>
             </div>
-           
+
           </div>
           <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full
             ${product.stock > 3

@@ -9,6 +9,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/Users.model.ts";
 import Item from '../models/items.model.ts';
+import ItemRating from "../models/itemRating.model.ts";
+
 export const getMe = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
@@ -48,34 +50,30 @@ export const getMe = async (req: Request, res: Response) => {
 export const getUserRentals = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const rentals = await Rentals.find({
-      userId,
-    })
-      .populate("itemId")
-      .sort({ createdAt: -1 });
+    const rentals = await Rentals.find({ userId })
+      .populate('itemId')
+      .sort({ createdAt: -1 })
+      .lean();
 
-    return res.status(200).json({
-      success: true,
-      rentals,
-    });
-  } catch (error) {
-    console.error("Error fetching rentals:", error);
+    const rentalIds = rentals.map(r => r._id);
+    const reviews = await ItemRating.find({ rentalID: { $in: rentalIds } }).select('rentalID');
+    const reviewedSet = new Set(reviews.map(r => r.rentalID.toString()));
 
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    const rentalsWithReviewFlag = rentals.map(r => ({
+      ...r,
+      hasReview: reviewedSet.has(r._id.toString()),
+    }));
+
+    return res.status(200).json({ success: true, data: rentalsWithReviewFlag });
+  } catch (error: any) {
+    console.error("Error getting user rentals:", error);
+    return res.status(500).json({ success: false, message: error.message || "Failed to get rentals" });
   }
 };
-
 // Change password
 // Change password
 export const changePassword = async (req: Request, res: Response) => {
