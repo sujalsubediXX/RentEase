@@ -8,7 +8,7 @@ export const ImageSlider = ({ images }: { images: string[] }) => {
         <SwiperSlide key={i}>
           <img
             src={img}
-            className="w-full h-full object-cover rounded-xl "
+            className="w-full h-full object-cover rounded-t-xl "
           />
         </SwiperSlide>
       ))}

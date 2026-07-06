@@ -207,7 +207,7 @@ export default function Body() {
             id: item._id,
             name: item.title,
             description: item.description,
-            rentalPrice: item.price,
+            price: item.price,
             images: Array.isArray(item.images)
               ? item.images.map((img: string) => `${API_BASE_URL}${img}`)
               : [],
