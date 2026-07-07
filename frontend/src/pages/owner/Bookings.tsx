@@ -112,7 +112,16 @@ const BookingsPage = () => {
         bookingId: null
     });
 
-    // ✅ Fetch ALL bookings once (no status filter)
+    // Helper to build API URL with /api prefix
+    const getApiUrl = (endpoint: string) => {
+        // If API_BASE_URL already ends with /api, don't add it again
+        if (API_BASE_URL.endsWith('/api')) {
+            return `${API_BASE_URL}${endpoint}`;
+        }
+        // Otherwise add /api
+        return `${API_BASE_URL}/api${endpoint}`;
+    };
+
     const fetchAllBookings = async () => {
         try {
             setLoading(true);
@@ -132,9 +141,8 @@ const BookingsPage = () => {
                 return;
             }
 
-            // ✅ Always fetch ALL bookings (status=all)
             const response = await axios.get(
-                `${API_BASE_URL}/rentals/owner?status=all`,
+                getApiUrl('/rentals/owner?status=all'),
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -176,7 +184,7 @@ const BookingsPage = () => {
 
             if (newStatus === 'rejected') {
                 await axios.put(
-                    `${API_BASE_URL}/rentals/${bookingId}/cancel`,
+                    getApiUrl(`/rentals/${bookingId}/cancel`),
                     { 
                         reason: reason || 'No reason provided',
                         action: 'reject'
@@ -191,9 +199,9 @@ const BookingsPage = () => {
                 toast.success('Booking rejected successfully');
             } else if (newStatus === 'cancelled') {
                 await axios.put(
-                    `${API_BASE_URL}/rentals/${bookingId}/cancel`,
+                    getApiUrl(`/rentals/${bookingId}/cancel`),
                     { 
-                        reason: reason || 'Cancelled by user',
+                        reason: reason || 'Cancelled by user or owner',
                         action: 'cancel'
                     },
                     {
@@ -206,7 +214,7 @@ const BookingsPage = () => {
                 toast.success('Booking cancelled successfully');
             } else if (newStatus === 'confirmed') {
                 await axios.put(
-                    `${API_BASE_URL}/rentals/approve`,
+                    getApiUrl('/rentals/approve'),
                     { rentalIds: [bookingId] },
                     {
                         headers: {
@@ -218,7 +226,6 @@ const BookingsPage = () => {
                 toast.success('Booking approved successfully');
             }
             
-            // ✅ Refetch ALL bookings after update
             await fetchAllBookings();
         } catch (err: any) {
             console.error("Error updating booking:", err);
@@ -233,12 +240,10 @@ const BookingsPage = () => {
         }
     };
 
-    // ✅ Only fetch on mount and when auth changes
     useEffect(() => {
         fetchAllBookings();
     }, [isAuthenticated]);
 
-    // ✅ Filter bookings locally based on selected tab
     const filteredBookings = tab === "all" 
         ? bookings 
         : bookings.filter(b => b.status === tab);
@@ -311,7 +316,6 @@ const BookingsPage = () => {
         <div className="flex-1 overflow-y-auto bg-stone-50">
             <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
             
-            {/* Reject Modal */}
             <RejectModal
                 isOpen={rejectModal.isOpen}
                 onClose={() => setRejectModal({ isOpen: false, bookingId: null })}
@@ -321,10 +325,9 @@ const BookingsPage = () => {
             />
 
             <div className="p-6 space-y-4">
-                {/* Tabs with correct counts */}
+                {/* Tabs */}
                 <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
                     {(["all", "pending", "confirmed", "ongoing", "completed", "cancelled", "rejected"] as const).map(t => {
-                        // ✅ Count from full bookings state
                         const count = t === "all" 
                             ? bookings.length 
                             : bookings.filter(b => b.status === t).length;
