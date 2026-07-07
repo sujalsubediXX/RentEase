@@ -1,6 +1,7 @@
 import { Check, X, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import { Avatar } from "../../components/owner/Avatar";
 import { TopBar } from "../../components/owner/TopBar";
 import API_BASE_URL from "../../config/api";
@@ -9,7 +10,6 @@ import { authService } from "../../services/auth.services";
 
 type BookingStatus = "pending" | "confirmed" | "ongoing" | "completed" | "cancelled" | "rejected";
 
-// Real booking interface matching your backend
 interface Booking {
     _id: string;
     itemId: {
@@ -25,6 +25,7 @@ interface Booking {
     returnDate: string;
     totalPrice: number;
     status: BookingStatus;
+    rejectionReason?: string;
     customerDetails: {
         fullName: string;
         phoneNumber: string;
@@ -46,6 +47,58 @@ const statusColor: Record<string, string> = {
     rejected: "bg-red-100 text-red-600",
 };
 
+// Reject Modal Component
+const RejectModal = ({ 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    bookingId,
+    updating 
+}: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onConfirm: (bookingId: string, reason: string) => void; 
+    bookingId: string;
+    updating: boolean;
+}) => {
+    const [reason, setReason] = useState("");
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-semibold text-stone-900 mb-2">Reject Booking</h3>
+                <p className="text-sm text-stone-500 mb-4">Please provide a reason for rejecting this booking.</p>
+                
+                <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Enter reason for rejection..."
+                    className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                    rows={4}
+                />
+                
+                <div className="flex gap-3 mt-4">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 px-4 py-2 border border-stone-200 text-stone-600 rounded-xl hover:bg-stone-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => onConfirm(bookingId, reason)}
+                        disabled={updating || !reason.trim()}
+                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {updating ? "Rejecting..." : "Reject Booking"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const BookingsPage = () => {
     const { user, isAuthenticated } = useAuth();
     const [tab, setTab] = useState<"all" | BookingStatus>("all");
@@ -54,25 +107,33 @@ const BookingsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updating, setUpdating] = useState<string | null>(null);
+    const [rejectModal, setRejectModal] = useState<{ isOpen: boolean; bookingId: string | null }>({
+        isOpen: false,
+        bookingId: null
+    });
 
-    // Fetch bookings from API
-    const fetchBookings = async () => {
+    // Helper to build API URL with /api prefix
+    const getApiUrl = (endpoint: string) => {
+        // If API_BASE_URL already ends with /api, don't add it again
+        if (API_BASE_URL.endsWith('/api')) {
+            return `${API_BASE_URL}${endpoint}`;
+        }
+        // Otherwise add /api
+        return `${API_BASE_URL}/api${endpoint}`;
+    };
+
+    const fetchAllBookings = async () => {
         try {
             setLoading(true);
             setError(null);
             
-            // Check if user is authenticated
             if (!isAuthenticated || !user) {
                 setError('Please login to view bookings');
                 setLoading(false);
                 return;
             }
 
-            // Get token from auth service
             const token = authService.getAccessToken();
-            
-            console.log('Token from auth service:', token ? 'Present' : 'Missing');
-            console.log('User:', user);
             
             if (!token) {
                 setError('Authentication token not found. Please login again.');
@@ -80,84 +141,54 @@ const BookingsPage = () => {
                 return;
             }
 
-            const statusFilter = tab === "all" ? "all" : tab;
-            
-            // First try the owner endpoint
-            try {
-                const response = await axios.get(
-                    `${API_BASE_URL}/api/rentals/owner?status=${statusFilter}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
+            const response = await axios.get(
+                getApiUrl('/rentals/owner?status=all'),
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
-                );
-
-                if (response.data.success) {
-                    setBookings(response.data.data);
-                } else {
-                    setError("Failed to fetch bookings");
                 }
-            } catch (err: any) {
-                // If owner endpoint doesn't exist (404), try filterStatus
-                if (err.response?.status === 404) {
-                    console.log('Owner endpoint not found, using filterStatus');
-                    const response = await axios.get(
-                        `${API_BASE_URL}/api/rentals/filterStatus?status=${statusFilter}`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
+            );
 
-                    if (response.data.success) {
-                        // Filter bookings where logged-in user is the owner
-                        const ownerBookings = response.data.data.filter((rental: any) => {
-                            const ownerId = rental.itemId?.ownerId?._id || rental.itemId?.ownerId;
-                            return ownerId === user?.id; // Use user.id from auth
-                        });
-                        setBookings(ownerBookings);
-                    } else {
-                        setError("Failed to fetch bookings");
-                    }
-                } else {
-                    throw err;
-                }
+            if (response.data.success) {
+                setBookings(response.data.data);
+            } else {
+                setError("Failed to fetch bookings");
+                toast.error("Failed to fetch bookings");
             }
         } catch (err: any) {
             console.error("Error fetching bookings:", err);
             
             if (err.response?.status === 401) {
                 setError("Session expired. Please login again.");
-            } else if (err.response?.status === 404) {
-                setError("Owner bookings endpoint not found. Please add the /owner endpoint to backend.");
+                toast.error("Session expired. Please login again.");
             } else {
                 setError("Failed to load bookings. Please try again.");
+                toast.error("Failed to load bookings. Please try again.");
             }
         } finally {
             setLoading(false);
         }
     };
 
-    // Update booking status
-    const updateBookingStatus = async (bookingId: string, newStatus: BookingStatus) => {
+    const updateBookingStatus = async (bookingId: string, newStatus: BookingStatus, reason?: string) => {
         try {
             setUpdating(bookingId);
             const token = authService.getAccessToken();
             
             if (!token) {
-                alert('Please login first');
+                toast.error('Please login first');
                 return;
             }
 
-            // Handle different status updates
-            if (newStatus === 'cancelled' || newStatus === 'rejected') {
+            if (newStatus === 'rejected') {
                 await axios.put(
-                    `${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
-                    {},
+                    getApiUrl(`/rentals/${bookingId}/cancel`),
+                    { 
+                        reason: reason || 'No reason provided',
+                        action: 'reject'
+                    },
                     {
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -165,9 +196,25 @@ const BookingsPage = () => {
                         }
                     }
                 );
+                toast.success('Booking rejected successfully');
+            } else if (newStatus === 'cancelled') {
+                await axios.put(
+                    getApiUrl(`/rentals/${bookingId}/cancel`),
+                    { 
+                        reason: reason || 'Cancelled by user or owner',
+                        action: 'cancel'
+                    },
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                toast.success('Booking cancelled successfully');
             } else if (newStatus === 'confirmed') {
                 await axios.put(
-                    `${API_BASE_URL}/api/rentals/confirm`,
+                    getApiUrl('/rentals/approve'),
                     { rentalIds: [bookingId] },
                     {
                         headers: {
@@ -176,32 +223,31 @@ const BookingsPage = () => {
                         }
                     }
                 );
+                toast.success('Booking approved successfully');
             }
             
-            // Refresh the list
-            await fetchBookings();
+            await fetchAllBookings();
         } catch (err: any) {
             console.error("Error updating booking:", err);
             if (err.response?.status === 401) {
-                alert("Session expired. Please login again.");
+                toast.error("Session expired. Please login again.");
             } else {
-                alert("Failed to update booking status. Please try again.");
+                toast.error(err.response?.data?.message || "Failed to update booking status. Please try again.");
             }
         } finally {
             setUpdating(null);
+            setRejectModal({ isOpen: false, bookingId: null });
         }
     };
 
     useEffect(() => {
-        fetchBookings();
-    }, [tab, isAuthenticated]);
+        fetchAllBookings();
+    }, [isAuthenticated]);
 
-    // Get filtered bookings based on tab
     const filteredBookings = tab === "all" 
         ? bookings 
         : bookings.filter(b => b.status === tab);
 
-    // Helper to get initials from name
     const getInitials = (name: string) => {
         return name
             .split(' ')
@@ -211,7 +257,6 @@ const BookingsPage = () => {
             .slice(0, 2);
     };
 
-    // Helper to format date
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -220,7 +265,6 @@ const BookingsPage = () => {
         });
     };
 
-    // Helper to calculate duration
     const getDuration = (startDate: string, endDate: string) => {
         const days = Math.ceil(
             (new Date(endDate).getTime() - new Date(startDate).getTime()) / 
@@ -256,7 +300,7 @@ const BookingsPage = () => {
                         <div className="text-center">
                             <p className="text-red-600">{error}</p>
                             <button 
-                                onClick={fetchBookings}
+                                onClick={fetchAllBookings}
                                 className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                             >
                                 Retry
@@ -271,6 +315,15 @@ const BookingsPage = () => {
     return (
         <div className="flex-1 overflow-y-auto bg-stone-50">
             <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
+            
+            <RejectModal
+                isOpen={rejectModal.isOpen}
+                onClose={() => setRejectModal({ isOpen: false, bookingId: null })}
+                onConfirm={(bookingId, reason) => updateBookingStatus(bookingId, 'rejected', reason)}
+                bookingId={rejectModal.bookingId || ''}
+                updating={updating === rejectModal.bookingId}
+            />
+
             <div className="p-6 space-y-4">
                 {/* Tabs */}
                 <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
@@ -369,6 +422,13 @@ const BookingsPage = () => {
                                             </div>
                                         )}
 
+                                        {b.rejectionReason && (
+                                            <div className="bg-red-50 rounded-xl p-3 mb-4 border border-red-100">
+                                                <p className="text-xs text-red-500 font-medium mb-1">Rejection Reason</p>
+                                                <p className="text-sm text-red-700">{b.rejectionReason}</p>
+                                            </div>
+                                        )}
+
                                         {(b.status === "pending" || b.status === "confirmed") && (
                                             <div className="flex gap-2">
                                                 {b.status === "pending" && (
@@ -392,9 +452,7 @@ const BookingsPage = () => {
                                                         <button 
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (confirm("Are you sure you want to reject this booking?")) {
-                                                                    updateBookingStatus(b._id, "rejected");
-                                                                }
+                                                                setRejectModal({ isOpen: true, bookingId: b._id });
                                                             }}
                                                             disabled={updating === b._id}
                                                             className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"

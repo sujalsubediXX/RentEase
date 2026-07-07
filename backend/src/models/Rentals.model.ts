@@ -28,6 +28,10 @@ const rentalSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'ongoing', 'completed', 'cancelled', 'rejected'],
     default: 'pending'
   },
+  rejectionReason: { 
+    type: String,
+    default: ''
+  },
   customerDetails: {
     fullName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
