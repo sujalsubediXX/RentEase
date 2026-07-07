@@ -37,7 +37,7 @@ interface EarningsStats {
     listings: Listing[];
 }
 
-// ─── Helper Functions ─────────────────────────────────────────────────────
+//  Helper Functions 
 const getApiUrl = (endpoint: string) => {
     if (API_BASE_URL.endsWith('/api')) {
         return `${API_BASE_URL}${endpoint}`;
@@ -45,7 +45,6 @@ const getApiUrl = (endpoint: string) => {
     return `${API_BASE_URL}/api${endpoint}`;
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────
 export const Earnings = () => {
     const { user, isAuthenticated } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -106,13 +105,11 @@ export const Earnings = () => {
             const items = itemsResponse.data.data || itemsResponse.data || [];
             const bookings = bookingsResponse.data.data || [];
 
-            // Create a map of item IDs for quick lookup
             const itemMap = new Map();
             items.forEach((item: any) => {
                 itemMap.set(item._id.toString(), item);
             });
 
-            // Filter bookings to only those where the owner owns the item
             const ownerBookings = bookings.filter((booking: any) => {
                 let itemId = null;
                 if (booking.itemId) {

@@ -26,7 +26,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";
 import API_BASE_URL from "../../config/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────
+// ─── Types 
 interface StatCardProps {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
@@ -169,7 +169,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   return null;
 };
 
-// ─── Main Dashboard ──────────────────────────────────────────────────────
+//  Main Dashboard 
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -310,7 +310,7 @@ export default function Dashboard() {
         totalReviews,
         monthlyData,
         recentReviews,
-        recentListings: [], // You can populate this if needed
+        recentListings: [], 
       });
     } catch (err: any) {
       console.error("Error fetching dashboard data:", err);
