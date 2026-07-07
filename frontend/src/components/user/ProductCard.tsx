@@ -2,21 +2,7 @@
 import React from 'react';
 import { Heart, Eye, MapPin, Star } from 'lucide-react';
 import { ImageSlider } from '../../pages/user/ImageSlider'; // adjust path as needed
-// types/product.ts
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  categoryId: string;
-  rentalUnits?: number;
-  avgRating?: number;
-  reviewCount: number;
-  stock: number;
-  location: string;
-}
+import type { Product } from '../../types/index';
 
 interface ProductCardProps {
   product: Product;
@@ -39,7 +25,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onRentNow,
   cardRef,
 }) => {
-
   return (
     <div
       ref={cardRef}

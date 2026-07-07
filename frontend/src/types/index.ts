@@ -111,3 +111,18 @@ export interface Notification {
   subtitle: string;
   color: string;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  images: string[];
+  category: string;
+  categoryId: string;
+  avgRating: number;
+  reviewCount: number;
+  stock: number;
+  location: string;
+  createdAt?:Date;
+}

@@ -9,19 +9,7 @@ import { ProductListItem } from '../../components/user/ProductListItem';
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 import { authService } from '../../services/auth.services';
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  categoryId: string;
-  rating: number;
-  reviewCount: number;
-  stock: number;
-  location: string;
-}
+import type { Product } from '../../types/index';
 
 interface CategoryInfo {
   _id: string;
@@ -124,10 +112,11 @@ const mapItemToProduct = (item: any, categoryId: string): Product => {
     category: item.category || 'Products',
     categoryId: item.categoryId || categoryId,
 
-    rating: item.rating ?? 4.0,
+    avgRating: item.avgRating ?? 4.0,
     reviewCount: item.reviewCount ?? 0,
     stock: item.stock ?? item.quantity ?? 5,
     location: item.location || 'Kathmandu',
+    createdAt: item.createdAt 
   };
 };
 
@@ -497,7 +486,7 @@ const CategoryPage: React.FC = () => {
     
 
     if (minRating > 0) {
-      filtered = filtered.filter(p => p.rating >= minRating);
+      filtered = filtered.filter(p => p.avgRating >= minRating);
     }
 
     return filtered;
@@ -508,7 +497,7 @@ const CategoryPage: React.FC = () => {
     switch (sortBy) {
       case 'price_low': return arr.sort((a, b) => a.price - b.price);
       case 'price_high': return arr.sort((a, b) => b.price - a.price);
-      case 'rating': return arr.sort((a, b) => b.rating - a.rating);
+      case 'rating': return arr.sort((a, b) => b.avgRating - a.avgRating);
       case 'name_az': return arr.sort((a, b) => a.name.localeCompare(b.name));
       default: return arr;
     }
@@ -590,7 +579,7 @@ const CategoryPage: React.FC = () => {
             <div className="p-6">
               <div className="flex justify-between items-start mb-5">
                 <div>
-                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.category}</span>
+                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{quickViewProduct.location}</span>
                   <h2 className="text-xl font-bold text-stone-800 mt-0.5">{quickViewProduct.name}</h2>
                 </div>
                 <button
@@ -609,8 +598,8 @@ const CategoryPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {[
-                  { label: 'Brand', value: quickViewProduct.category },
-                  { label: 'Rating', value: `${quickViewProduct.rating} ★` },
+                  { label: 'Price', value: `Rs ${quickViewProduct.price}` },
+                  { label: 'Rating', value: `${quickViewProduct.avgRating} ★` },
                   { label: 'Location', value: quickViewProduct.location },
                   { label: 'Stock', value: quickViewProduct.stock > 0 ? `${quickViewProduct.stock} available` : 'Out of stock' },
                 ].map(({ label, value }) => (

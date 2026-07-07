@@ -11,6 +11,7 @@ import { X, ShieldCheck, Clock3, MapPin } from "lucide-react";
 import { ImageSlider } from "./ImageSlider.tsx";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { authService } from "../../services/auth.services.ts";
+import type { Product } from "../../types/index.ts";
 interface dbCategory {
   _id: string;
   name: string;
@@ -19,22 +20,7 @@ interface dbCategory {
   productCount?: number;
 }
 
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  categoryId: string;
-  avgRating?:number;
-  reviewCount: number;
-  rentalUnits?: number;
-  stock: number;
-  location: string;
-  createdAt?: string;
 
-}
 
 
 interface Testimonial {
@@ -222,7 +208,6 @@ export default function Body() {
             createdAt: item.createdAt,
           }))
         );
-        console.log(mostRentedItems)
       } catch (err) {
         console.log(err);
       } finally {
@@ -526,7 +511,7 @@ export default function Body() {
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {[
-                    { label: 'Brand', value: quickViewProduct.price },
+                    { label: 'Price', value: `Rs ${quickViewProduct.price}` },
                     { label: 'Rating', value: `${quickViewProduct.avgRating} ★` },
                     { label: 'Location', value: quickViewProduct.location },
                     {
@@ -536,7 +521,7 @@ export default function Body() {
                     },
                   ].map(({ label, value, dot }) => (
                     <div key={label} className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3">
-                      <p className="text-[11px] text-stone-400 uppercase tracking-wider mb-0.5">{label}</p>
+                      <p className="text-[11px] text-stone-400 uppercase tracking-wider mb-0.5 text-start">{label}</p>
                       <p className="text-sm font-medium text-stone-700 flex items-center gap-1.5">
                         {dot && <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />}
                         {value}

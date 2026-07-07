@@ -325,14 +325,14 @@ const BookingsPage = () => {
                                             {b.itemId?.title || "Unknown Item"}
                                         </p>
                                         <div className="flex items-center gap-2 mt-1 text-xs text-stone-400 sm:hidden">
-                                            <span>रू {b.totalPrice.toLocaleString()}</span>
+                                            <span>Rs {b.totalPrice.toLocaleString()}</span>
                                             <span>·</span>
                                             <span>{formatDate(b.startDate)} → {formatDate(b.returnDate)}</span>
                                         </div>
                                     </div>
                                     <div className="text-right hidden sm:block">
                                         <p className="text-sm font-bold text-stone-900">
-                                            रू {b.totalPrice.toLocaleString()}
+                                            Rs {b.totalPrice.toLocaleString()}
                                         </p>
                                         <p className="text-xs text-stone-400">
                                             {formatDate(b.startDate)} → {formatDate(b.returnDate)}
@@ -352,7 +352,7 @@ const BookingsPage = () => {
                                                 ["Duration", `${getDuration(b.startDate, b.returnDate)} days`],
                                                 ["Quantity", `${b.quantity} item(s)`],
                                                 ["Payment", b.paymentMethod.toUpperCase()],
-                                                ["Deposit", `रू ${b.securityDeposit.toLocaleString()}`],
+                                                ["Deposit", `Rs ${b.securityDeposit.toLocaleString()}`],
                                             ].map(([label, value]) => (
                                                 <div key={label} className="bg-stone-50 rounded-xl p-3">
                                                     <p className="text-xs text-stone-400 mb-1">{label}</p>
