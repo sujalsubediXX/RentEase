@@ -30,6 +30,7 @@ connectDB().then(() => {
   console.error("Database connection error:", err);
   process.exit(1);
 });
+app.use("/api/rating", ratingRouter);
 app.use("/api/user", userrouter)
 app.use("/api/category", categoryrouter)
 app.use("/api/items", itemrouter)
@@ -38,7 +39,6 @@ app.use("/api/cart", cartroute)
 app.use("/api/wishlist", wishlistroute)
 app.use("/api/rentals", rentalrouter);
 app.use("/api/kyc", kycRoutes);
-app.use("/api/rating", ratingRouter);
 
 
 app.listen(PORT, () => {
