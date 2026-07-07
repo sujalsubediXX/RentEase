@@ -450,6 +450,77 @@ export const getUserRentals = async (req: Request, res: Response) => {
   }
 };
 
+
+// ─── Approve Rental (Owner approves pending booking) ──────────────────────
+export const approveRental = async (req: Request, res: Response) => {
+  try {
+    const ownerId = (req as any).user?.id;
+    const { rentalIds } = req.body;
+
+    if (!ownerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    if (!rentalIds || rentalIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No rental IDs provided"
+      });
+    }
+
+    // Find the rentals
+    const rentals = await Rentals.find({ _id: { $in: rentalIds } });
+
+    if (rentals.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Rentals not found"
+      });
+    }
+
+    // Verify the owner owns the items
+    const itemIds = rentals.map(r => r.itemId);
+    const items = await Item.find({ _id: { $in: itemIds }, ownerId: ownerId });
+    
+    if (items.length !== itemIds.length) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't own one or more of these items"
+      });
+    }
+
+    // Update rentals to confirmed
+    await Rentals.updateMany(
+      { _id: { $in: rentalIds } },
+      { status: 'confirmed' }
+    );
+
+    // Update items availability to rented
+    await Item.updateMany(
+      { _id: { $in: itemIds } },
+      { availability: 'rented' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking approved successfully",
+      data: {
+        confirmedCount: rentals.length
+      }
+    });
+
+  } catch (error: any) {
+    console.error("Error approving rental:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to approve rental"
+    });
+  }
+};
+
 // ─── Get Owner's Rentals ─────────────────────────────────────────────────────
 
 export const getOwnerRentals = async (req: Request, res: Response) => {
@@ -572,12 +643,12 @@ export const getRentalById = async (req: Request, res: Response) => {
   }
 };
 
-// ─── Cancel Rental ────────────────────────────────────────────────────────
-
+// ─── Cancel / Reject Rental ───────────────────────────────────────────────
 export const cancelRental = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const { id } = req.params;
+    const { reason, action } = req.body; 
 
     if (!userId) {
       return res.status(401).json({
@@ -586,7 +657,8 @@ export const cancelRental = async (req: Request, res: Response) => {
       });
     }
 
-    const rental = await Rentals.findOne({ _id: id, userId });
+    // Find the rental
+    const rental = await Rentals.findById(id);
 
     if (!rental) {
       return res.status(404).json({
@@ -595,15 +667,38 @@ export const cancelRental = async (req: Request, res: Response) => {
       });
     }
 
-    // Only allow cancellation if status is pending or confirmed
-    if (rental.status !== 'pending' && rental.status !== 'confirmed') {
-      return res.status(400).json({
+    // Check if the user is either the renter or the owner
+    const isRenter = rental.userId.toString() === userId;
+    const isOwner = await checkIfUserIsOwner(userId, rental.itemId.toString());
+
+    if (!isRenter && !isOwner) {
+      return res.status(403).json({
         success: false,
-        message: "Cannot cancel rental at this stage"
+        message: "You don't have permission to cancel this booking"
       });
     }
 
-    rental.status = 'cancelled';
+    // Only allow if status is pending or confirmed
+    if (rental.status !== 'pending' && rental.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel booking with status: ${rental.status}`
+      });
+    }
+
+    // Determine the new status
+    let newStatus = 'cancelled';
+    if (action === 'reject' && isOwner) {
+      newStatus = 'rejected'; // Owner rejected → goes to rejected tab
+    } else if (action === 'cancel' || isRenter) {
+      newStatus = 'cancelled'; // Renter cancelled or owner cancelled → goes to cancelled tab
+    }
+
+    // Update rental status
+    rental.status = newStatus as any;
+    if (reason) {
+      rental.rejectionReason = reason;
+    }
     await rental.save();
 
     // Make item available again
@@ -614,7 +709,7 @@ export const cancelRental = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: "Rental cancelled successfully",
+      message: `Booking ${newStatus} successfully`,
       data: rental
     });
 
@@ -627,8 +722,12 @@ export const cancelRental = async (req: Request, res: Response) => {
   }
 };
 
-
-
+// Helper function to check if user owns the item
+async function checkIfUserIsOwner(userId: string, itemId: string) {
+  const item = await Item.findById(itemId);
+  if (!item) return false;
+  return item.ownerId.toString() === userId;
+}
 
 // ─── Get Item Availability (for date picker) ──────────────────────────────
 

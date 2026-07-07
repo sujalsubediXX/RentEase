@@ -8,7 +8,8 @@ import {
   cancelRental,
   getItemAvailability,
   getByRentalStatus,
-  getOwnerRentals
+  getOwnerRentals,
+  approveRental
 } from "../controllers/rental.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 
@@ -20,6 +21,7 @@ const router = Router();
 router.get("/checkout-summary", authMiddleware, getCheckoutSummary);
 router.get("/filterStatus", authMiddleware, getByRentalStatus);
 router.get("/owner", authMiddleware, getOwnerRentals);
+router.put("/approve", authMiddleware, approveRental);
 
 // Create rental/order
 router.post("/create", authMiddleware, createRental);
