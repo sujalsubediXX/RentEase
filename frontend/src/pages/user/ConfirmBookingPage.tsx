@@ -159,7 +159,7 @@ const ConfirmBookingPage: React.FC = () => {
             }
 
             const response = await axios.post(
-                `${API_BASE_URL}/api/payment/initiate-payment`,
+                `${API_BASE_URL}/api/payment/esewa/initiate-payment`,
                 {
            
                     tax_amount: 0,

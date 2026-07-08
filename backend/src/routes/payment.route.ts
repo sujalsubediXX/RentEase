@@ -7,8 +7,8 @@ import { authMiddleware } from "../middleware/auth.middleware.ts";
 
 const router = Router();
 
-router.post("/initiate-payment", authMiddleware, initiatePayment);
-router.post("/verify-payment", verifyPayment);
+router.post("/esewa/initiate-payment", authMiddleware, initiatePayment);
+router.post("/esewa/verify-payment", verifyPayment);
 
 
 export default router;
