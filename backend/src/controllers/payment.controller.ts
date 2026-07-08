@@ -12,12 +12,10 @@ const ESEWA_CONFIG = {
 
 
 
-console.log(ESEWA_CONFIG.SUCCESS_URL)
-console.log(ESEWA_CONFIG.FAILURE_URL)
+
 
 export const initiatePayment = async (req: Request, res: Response) => {
-  console.log(ESEWA_CONFIG.SUCCESS_URL,"from initiatePayment")
-console.log(ESEWA_CONFIG.FAILURE_URL)
+
   try {
     const { rentalIds, tax_amount = 0, product_service_charge = 0, product_delivery_charge = 0 } = req.body;
 

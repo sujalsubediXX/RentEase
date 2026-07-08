@@ -7,10 +7,8 @@ import { authMiddleware } from "../middleware/auth.middleware.ts";
 
 const router = Router();
 
-// Public route for eSewa to call back
-router.post("/verify", verifyPayment);
+router.post("/initiate-payment", authMiddleware, initiatePayment);
+router.post("/verify-payment", verifyPayment);
 
-// Protected route for initiating payment
-router.post("/initiate", authMiddleware, initiatePayment);
 
 export default router;
