@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import type { Request, Response } from "express";
 import ItemImage from "../models/itemsImage.model.ts";
 import Item from "../models/items.model.ts";
-
+import Rentals from "../models/Rentals.model.ts";
 
 import { getFeaturedItems, getRecommendedForUser,getMostRentedItems } from "../utils/recommendation.ts";
 
@@ -259,5 +259,54 @@ export const fetchMostRentedItems = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Error fetching most rented items:", err);
     res.status(500).json({ success: false, message: "Failed to load most rented items" });
+  }
+};
+
+export const changeItemAvailabilityStatus = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { rentalId } = req.params;
+
+    const rental = await Rentals.findById(rentalId);
+
+    if (!rental) {
+      return res.status(404).json({
+        success: false,
+        message: "Rental not found"
+      });
+    }
+
+    const item = await Item.findByIdAndUpdate(
+      rental.itemId,
+      {
+        $set: {
+          availability: "rented"
+        }
+      },
+      { returnDocument: 'after' }
+    );
+
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: "Item not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Item availability updated",
+      item
+    });
+
+  } catch (err) {
+    console.error("Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update item availability"
+    });
   }
 };

@@ -42,8 +42,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <ImageSlider images={product.images} />
         </div>
 
-        <span className="absolute top-3 left-8 z-20 bg-stone-900 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-          {product.price}
+        <span className= {`${product.availability == "available"?"bg-amber-400  text-black ":"bg-stone-900 text-amber-400"} absolute top-3 left-8 z-20 text-[10px] font-bold px-2 py-0.5 rounded-full text-xl`}>
+          {product.availability}
         </span>
 
         {product.stock === 0 && (
@@ -125,7 +125,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 ? 'bg-stone-900 text-amber-400 hover:bg-amber-500 hover:text-stone-950 shadow-sm hover:shadow-md'
                 : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
           >
-            Rent Now
+            {
+              product.availability=="available"?"Rent Now":"Book Item"
+            }
+            
           </button>
         </div>
       </div>

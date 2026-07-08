@@ -131,22 +131,35 @@ console.log(blockedRangesMap)
       console.log(err);
     }
   };
+  const toIsoDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// parses a "YYYY-MM-DD" string as a local date, not UTC
+const parseLocalDate = (dateStr: string) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
   const handleStartDateChange = (item: CartItem, date: Date | null) => {
     if (!date) return;
-    const newStart = date.toISOString().split('T')[0];
+    const newStart = toIsoDate(date);
 
     const currentEnd = item.endDate ? item.endDate.split('T')[0] : '';
-    // If there's no end date yet, or the new start would land on/after it,
-    // bump the end date up to match the new start so the range stays valid.
-    const newEnd =
-      !currentEnd || new Date(currentEnd) < date ? newStart : currentEnd;
+ 
+  const newEnd =
+    !currentEnd || parseLocalDate(currentEnd) < date ? newStart : currentEnd;
 
     updateDates(item._id, newStart, newEnd);
   };
+  
 
   const handleEndDateChange = (item: CartItem, date: Date | null) => {
     if (!date) return;
-    const newEnd = date.toISOString().split('T')[0];
+    const newEnd = toIsoDate(date);
 
     const currentStart = item.startDate ? item.startDate.split('T')[0] : newEnd;
     updateDates(item._id, currentStart, newEnd);

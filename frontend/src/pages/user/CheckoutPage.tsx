@@ -17,7 +17,6 @@ interface Product {
   name: string;
   description?: string;
   price: number;
-
   images: string[];
   category?: string;
   brand?: string;
@@ -52,7 +51,12 @@ const calcDays = (start: string, end: string): number => {
   return Math.max(1, diff);
 };
 
-const toIsoDate = (d: Date) => d.toISOString().split('T')[0];
+const toIsoDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const isDateBlocked = (date: Date, ranges: BlockedRange[]) =>
   ranges.some((r) => date >= r.start && date <= r.end);
@@ -218,7 +222,7 @@ const CheckoutPage: React.FC = () => {
     e.preventDefault();
 
     if (checkoutType === 'single' && (!startDate || !endDate)) {
-      alert('Please select rental dates');
+      toast.error('Please select rental dates');
       return;
     }
 
@@ -229,7 +233,7 @@ const CheckoutPage: React.FC = () => {
       const eDate = new Date(endDate);
       const overlaps = blockedRanges.some((r) => s <= r.end && eDate >= r.start);
       if (overlaps) {
-        alert('Those dates just became unavailable. Please pick different dates.');
+        toast.error('Those dates just became unavailable. Please pick different dates.');
         return;
       }
     }

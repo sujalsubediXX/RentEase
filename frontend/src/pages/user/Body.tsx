@@ -200,6 +200,7 @@ export default function Body() {
               : [],
             category: categoryMap[item.categoryId] || "",
             categoryId: item.categoryId,
+            availability: item.availability,
             avgRating: item.avgRating ?? 0,
             reviewCount: item.reviewCount ?? 0,
             rentalUnits: item.rentalUnits ?? 0,
@@ -216,7 +217,7 @@ export default function Body() {
     };
     fetchMostRented();
   }, [categoryMap]);
-
+console.log(mostRentedItems)
   useEffect(() => {
     if (!user?.id) return;
     fetchWishlist();
@@ -297,6 +298,7 @@ export default function Body() {
               : [],
             category: categoryMap[item.categoryId] || "",
             categoryId: item.categoryId,
+            availability: item.availability,
             avgRating: item.avgRating ?? 0,
             reviewCount: item.reviewCount ?? 0,
             rentalUnits: item.rentalUnits ?? 0,

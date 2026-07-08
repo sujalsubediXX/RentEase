@@ -107,16 +107,17 @@ const mapItemToProduct = (item: any, categoryId: string): Product => {
     id: item._id,
     name: item.name || item.title || 'Unnamed Product',
     description: item.description || 'No description available',
-    price:item.price,
-       images: imageUrls,
+    price: item.price,
+    images: imageUrls,
     category: item.category || 'Products',
     categoryId: item.categoryId || categoryId,
+    availability: item.availability,
 
     avgRating: item.avgRating ?? 4.0,
     reviewCount: item.reviewCount ?? 0,
     stock: item.stock ?? item.quantity ?? 5,
     location: item.location || 'Kathmandu',
-    createdAt: item.createdAt 
+    createdAt: item.createdAt
   };
 };
 
@@ -191,7 +192,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
       </div>
     </div>
 
- 
+
     <div>
       <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Min Rating</label>
       <div className="flex gap-2">
@@ -243,7 +244,7 @@ const CategoryPage: React.FC = () => {
   const itemsPerPage = 8;
 
 
-      const token = authService.getAccessToken();
+  const token = authService.getAccessToken();
 
 
 
@@ -251,8 +252,8 @@ const CategoryPage: React.FC = () => {
   const fetchWishlist = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/wishlist/wishitem`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const data = res.data;
 
@@ -367,14 +368,14 @@ const CategoryPage: React.FC = () => {
 
   const addToCart = async (product: Product) => {
     try {
-    if (!isAuthenticated || !user?.id) {
-      toast.error("Please login first");
-      return;
-    }
-      if(user?.kycStatus !== "verified"){
+      if (!isAuthenticated || !user?.id) {
+        toast.error("Please login first");
+        return;
+      }
+      if (user?.kycStatus !== "verified") {
         toast.error("Please complete KYC verification to add items to cart.");
         return;
-      } 
+      }
 
       const payload = {
         itemId: product.id,
@@ -406,10 +407,10 @@ const CategoryPage: React.FC = () => {
 
   const toggleWishlist = async (productId: string) => {
 
-   if (!isAuthenticated ) {
-    toast.error("Please login first");
-    return;
-   }
+    if (!isAuthenticated) {
+      toast.error("Please login first");
+      return;
+    }
     // Prevent double-clicks while request is in flight
     if (wishlistLoading.has(productId)) return;
 
@@ -474,8 +475,8 @@ const CategoryPage: React.FC = () => {
       const q = searchTerm.toLowerCase();
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) 
-    
+        p.description.toLowerCase().includes(q)
+
       );
     }
 
@@ -483,7 +484,7 @@ const CategoryPage: React.FC = () => {
       p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
-    
+
 
     if (minRating > 0) {
       filtered = filtered.filter(p => p.avgRating >= minRating);
@@ -512,7 +513,7 @@ const CategoryPage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, priceRange,  minRating, sortBy]);
+  }, [searchTerm, priceRange, minRating, sortBy]);
 
 
   const clearAllFilters = () => {
@@ -524,18 +525,18 @@ const CategoryPage: React.FC = () => {
   };
 
   const activeFiltersCount =
-    (searchTerm ? 1 : 0) +  (minRating > 0 ? 1 : 0);
+    (searchTerm ? 1 : 0) + (minRating > 0 ? 1 : 0);
 
   // Handler for "Rent Now" from product cards
   const handleRentNow = (product: Product) => {
-        if (!isAuthenticated || !user?.id) {
+    if (!isAuthenticated || !user?.id) {
       toast.error("Please login first");
       return;
     }
-      if(user?.kycStatus !== "verified"){
-        toast.error("Please complete KYC verification to rent items.");
-        return;
-      } 
+    if (user?.kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to rent items.");
+      return;
+    }
     navigate("/checkout", {
       state: {
         type: "single",
@@ -565,7 +566,7 @@ const CategoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white text-stone-800 mt-12">
-   
+
       {/* Quick View Modal */}
       {quickViewProduct && (
         <div
@@ -674,7 +675,7 @@ const CategoryPage: React.FC = () => {
                 setSearchTerm={setSearchTerm}
                 priceRange={priceRange}
                 setPriceRange={setPriceRange}
-                     
+
                 minRating={minRating}
                 setMinRating={setMinRating}
                 activeFiltersCount={activeFiltersCount}

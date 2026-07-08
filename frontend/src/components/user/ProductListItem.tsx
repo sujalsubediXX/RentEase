@@ -3,20 +3,7 @@ import React from 'react';
 import { Heart, ShoppingBag, MapPin, Star } from 'lucide-react';
 import { ImageSlider } from '../../pages/user/ImageSlider';
 // types/product.ts
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  categoryId: string;
-  avgRating: number;
-  reviewCount: number;
-  stock: number;
-  location: string;
-}
-
+import type { Product } from '../../types/index';
 interface ProductListItemProps {
   product: Product;
   index: number;

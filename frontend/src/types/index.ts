@@ -119,6 +119,7 @@ export interface Product {
   price: number;
   images: string[];
   category: string;
+  availability: string;
   categoryId: string;
   avgRating: number;
   reviewCount: number;

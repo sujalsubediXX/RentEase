@@ -185,6 +185,12 @@ const ConfirmBookingPage: React.FC = () => {
             if (result.status === 'success') {
                 setEsewaPayload(result.payment_payload);
                 setGatewayUrl(result.gateway_url);
+                await axios.post(`${API_BASE_URL}/api/items/changeItemAvailabilityStatus/${ids}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
 
                 setTimeout(() => {
                     const form = document.getElementById('esewa-form') as HTMLFormElement;
