@@ -764,3 +764,94 @@ export const getItemAvailability = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
+
+
+
+export const completeRental = async (req:Request, res:Response) => {
+  try {
+    const { id } = req.params;
+const ownerId = (req as any).user?.id;
+
+    const rental = await Rentals.findById(id).populate('itemId');
+
+    if (!rental) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rental not found',
+      });
+    }
+    
+    if (!ownerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+
+    // Ownership check — only the item's owner can mark it complete
+    const itemOwnerId = (rental.itemId as any)?.ownerId?.toString?.() || (rental.itemId as any)?.ownerId;
+    if (itemOwnerId !== ownerId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to complete this rental',
+      });
+    }
+
+    if (rental.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Rental is already marked as completed',
+      });
+    }
+
+    if (!['confirmed', 'ongoing'].includes(rental.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot complete a rental with status "${rental.status}"`,
+      });
+    }
+
+    rental.status = 'completed';
+    await rental.save();
+
+    // Check whether the item has any OTHER active bookings right now
+    // (confirmed/ongoing, and not yet past their return date).
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const overlappingActiveRental = await Rentals.findOne({
+      _id: { $ne: rental._id },
+      itemId: rental.itemId._id,
+      status: { $in: ['confirmed', 'ongoing'] },
+      returnDate: { $gte: today },
+    });
+
+    if (!overlappingActiveRental) {
+      await Item.findByIdAndUpdate(rental.itemId._id, {
+        availability: 'available',
+      });
+    }
+    // else: leave availability as "rented" — another active booking still owns it
+
+    const updatedRental = await Rentals.findById(rental._id).populate('itemId');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Rental marked as completed',
+      data: updatedRental,
+    });
+  } catch (error) {
+    console.error('Error completing rental:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to complete rental',
+      error: errorMessage,
+    });
+  }
+};
+

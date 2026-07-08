@@ -1,67 +1,77 @@
 import type { Request,Response } from 'express';
 import  crypto from 'crypto';
-
+import Rentals from '../models/Rentals.model.ts';
 
 const ESEWA_CONFIG = {
   PRODUCT_CODE: 'EPAYTEST',
   SECRET_KEY: '8gBm/:&EnhH.1/q', // Official eSewa test secret key
   GATEWAY_URL: 'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
-  SUCCESS_URL: `${process.env.API_BASE_URL}/payment-success`, // Your frontend redirect routes
-  FAILURE_URL: `${process.env.API_BASE_URL}/payment-failure`
+  SUCCESS_URL: `${process.env.CLIENT_URL}/payment-success`, // Your frontend redirect routes
+  FAILURE_URL: `${process.env.CLIENT_URL}/payment-failure`
 };
 
 
-export const initiatePayment= async (req:Request, res:Response) => {
- try {
-    const { amount, tax_amount, delivery_charge, security_deposit } = req.body;
-    
-    // Force clean integers to eliminate JavaScript floating-point precision traps
-    const amt = Math.round(parseFloat(amount || 0));
-    const tax = Math.round(parseFloat(tax_amount || 0));
-    const service = 0;
-    const delivery = Math.round(parseFloat(delivery_charge || 0));
-    const deposit = Math.round(parseFloat(security_deposit || 0));
-    
-    // Strictly calculate total as an integer
-    const total_amount = amt + tax + service + delivery + deposit;
-    
-    // Simplified transaction UUID format (purely lowercase alphanumeric and hyphen)
+
+console.log(ESEWA_CONFIG.SUCCESS_URL)
+console.log(ESEWA_CONFIG.FAILURE_URL)
+
+export const initiatePayment = async (req: Request, res: Response) => {
+  console.log(ESEWA_CONFIG.SUCCESS_URL,"from initiatePayment")
+console.log(ESEWA_CONFIG.FAILURE_URL)
+  try {
+    const { rentalIds, tax_amount = 0, product_service_charge = 0, product_delivery_charge = 0 } = req.body;
+
+    if (!rentalIds || !Array.isArray(rentalIds) || rentalIds.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'No rentals provided' });
+    }
+
+    // Look up rentals in DB and sum their real amounts — never trust client-sent price
+    const rentals = await Rentals.find({ _id: { $in: rentalIds } });
+    if (rentals.length !== rentalIds.length) {
+      return res.status(400).json({ status: 'error', message: 'One or more rentals not found' });
+    }
+
+    const amt = rentals.reduce((sum, r) => sum + r.totalPrice, 0); // adjust field name to your schema
+    const taxAmt = Math.round(parseFloat(tax_amount || 0));
+    const serviceCharge = Math.round(parseFloat(product_service_charge || 0));
+    const deliveryCharge = Math.round(parseFloat(product_delivery_charge || 0));
+
+    const total_amount = amt + taxAmt + serviceCharge + deliveryCharge;
+
+    if (total_amount <= 0) {
+      return res.status(400).json({ status: 'error', message: 'Invalid computed amount' });
+    }
+
     const transaction_uuid = `rent-${Date.now()}`;
 
-    // Reconstruct precise signature string matching eSewa v2 requirements
     const signatureMessage = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${ESEWA_CONFIG.PRODUCT_CODE}`;
-
-    // Create the cryptographic HMAC-SHA256 Hash signature
     const signature = crypto
       .createHmac('sha256', ESEWA_CONFIG.SECRET_KEY)
       .update(signatureMessage)
       .digest('base64');
 
-    // Return the response payload
     return res.status(200).json({
       status: 'success',
       payment_payload: {
         amount: amt,
-        tax_amount: tax,
-        product_service_charge: service,
-        product_delivery_charge: delivery + deposit, 
-        total_amount: total_amount,
-        transaction_uuid: transaction_uuid,
+        tax_amount: taxAmt,
+        product_service_charge: serviceCharge,
+        product_delivery_charge: deliveryCharge,
+        total_amount,
+        transaction_uuid,
         product_code: ESEWA_CONFIG.PRODUCT_CODE,
         success_url: ESEWA_CONFIG.SUCCESS_URL,
         failure_url: ESEWA_CONFIG.FAILURE_URL,
         signed_field_names: 'total_amount,transaction_uuid,product_code',
-        signature: signature
+        signature,
       },
-      gateway_url: ESEWA_CONFIG.GATEWAY_URL
+      gateway_url: ESEWA_CONFIG.GATEWAY_URL,
     });
-
   } catch (error) {
     console.error('eSewa Initiation Error:', error);
     return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
   }
 };
-
 /**
  * Endpoint 2: Complete Hook Verification Callback Server Verification
  */

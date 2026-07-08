@@ -6,7 +6,7 @@ import "./index.css";
 import ForgotPasswordPage from "./pages/user/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/user/ResetPasswordPage";
 import { AuthProvider } from "./contexts/AuthContext"; // ADD THIS
-
+import {AdminLogin} from "./pages/admin/AdminLogin"
 import HowItWorks from "./pages/user/HowItWorks";
 import Body from "./pages/user/Body";
 import CategoriesPage from "./pages/user/Categories";
@@ -132,6 +132,7 @@ const router = createBrowserRouter([
   },
 
   { path: "/login", element: <Login /> },
+  { path: "/re-admin", element: <AdminLogin /> },
   { path: "/kycverification", element:
      (
             <ProtectedRoute allowedRoles={["owner", "renter"]} >

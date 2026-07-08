@@ -33,6 +33,7 @@ class AuthService {
         {
           email: credentials.email,
           password: credentials.password,
+          allowedRole: credentials.allowedRole
         },
         {
           headers: {
@@ -55,7 +56,7 @@ class AuthService {
         role: data.user.role,
         profileImage:data.user.profileImage,
         address: data.user.address,
-        isKycVerified: data.user.kycStatus === "approved",
+        kycStatus: data.user.kycStatus,
         createdAt: new Date(),
       };
 
@@ -100,6 +101,7 @@ class AuthService {
       return await this.login({
         email: userData.email,
         password: userData.password,
+        allowedRole: ["renter", "owner"]
       });
     } catch (error: any) {
       throw new Error(

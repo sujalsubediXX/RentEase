@@ -8,7 +8,7 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import API_BASE_URL from '../../config/api';
-import {authService} from '../../services/auth.services';
+import { authService } from '../../services/auth.services';
 import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +75,13 @@ const findNextAvailableDate = (start: Date, ranges: BlockedRange[]): Date => {
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
+const validatePhone = (value: string): string => {
+  if (!value) return 'Phone number is required';
+  if (value.length !== 10) return 'Phone number must be exactly 10 digits';
+  if (!/^(98|97)/.test(value)) return 'Phone number must start with 98 or 97';
+  return '';
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const SectionHeader = ({
@@ -119,10 +126,12 @@ const CheckoutPage: React.FC = () => {
 
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
-       const token = authService.getAccessToken();
+  const token = authService.getAccessToken();
+
   useEffect(() => {
     if (checkoutType !== 'single' || !singleProduct?.id) return;
 
@@ -131,8 +140,8 @@ const CheckoutPage: React.FC = () => {
         setAvailLoading(true);
         const res = await axios.get(
           `${API_BASE_URL}/api/rentals/availability/${singleProduct.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          headers: { Authorization: `Bearer ${token}` },
+        }
         );
         const ranges: BlockedRange[] = (res.data?.data?.fullyBookedRanges || []).map(
           (r: any) => ({ start: new Date(r.start), end: new Date(r.end) })
@@ -161,7 +170,7 @@ const CheckoutPage: React.FC = () => {
     [startDate, endDate]
   );
 
-  const subtotal = useMemo(() => {
+  const totalAmount = useMemo(() => {
     if (checkoutType === 'single') {
       return singleProduct ? singleProduct.price * singleRentalDays : 0;
     }
@@ -171,18 +180,9 @@ const CheckoutPage: React.FC = () => {
     );
   }, [checkoutType, singleProduct, singleRentalDays, cartItems]);
 
-  const securityDeposit = useMemo(() => {
-    if (checkoutType === 'single') {
-      return singleProduct ? Math.round(singleProduct.price * 1.5) : 0;
-    }
-    return cartItems.reduce(
-      (acc, item) => acc + Math.round(item.itemId.price * 1.5),
-      0
-    );
-  }, [checkoutType, singleProduct, cartItems]);
 
-  const deliveryFee = 150;
-  const totalAmount = subtotal + securityDeposit + deliveryFee;
+
+
 
   // ── Date change handlers (single flow) ───────────────────────────────────
 
@@ -226,8 +226,6 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    // Belt-and-suspenders: block submit if the chosen range somehow
-    // overlaps a blocked range (e.g. stale data, fast clicking).
     if (checkoutType === 'single' && startDate && endDate) {
       const s = new Date(startDate);
       const eDate = new Date(endDate);
@@ -238,104 +236,87 @@ const CheckoutPage: React.FC = () => {
       }
     }
 
+    const phoneValidationError = validatePhone(phoneNumber);
+    if (phoneValidationError) {
+      setPhoneError(phoneValidationError);
+      toast.error(phoneValidationError);
+      return;
+    }
+
     const orderData = {
       type: checkoutType,
       items: checkoutType === 'single'
         ? [
-            {
-              id: singleProduct!.id,
-              startDate: startDate,
-              endDate: endDate,
-              rentalDays: singleRentalDays,
-              quantity: 1
-            }
-          ]
+          {
+            id: singleProduct!.id,
+            startDate: startDate,
+            endDate: endDate,
+            rentalDays: singleRentalDays,
+            quantity: 1
+          }
+        ]
         : cartItems.map((ci) => ({
-            id: ci.itemId._id,
-            name: ci.itemId.title,
-            price: ci.itemId.price,
-            startDate: ci.startDate,
-            endDate: ci.endDate,
-            rentalDays: ci.rentalDays,
-            quantity: ci.quantity
-          })),
+          id: ci.itemId._id,
+          name: ci.itemId.title,
+          price: ci.itemId.price,
+          startDate: ci.startDate,
+          endDate: ci.endDate,
+          rentalDays: ci.rentalDays,
+          quantity: ci.quantity
+        })),
       customer: {
         fullName,
         phoneNumber,
         deliveryAddress
       },
       paymentMethod,
-      subtotal,
-      securityDeposit,
-      deliveryFee,
       totalAmount,
     };
 
-    if (paymentMethod === 'digital') {
-      if (checkoutType === 'single') {
-        const productData = {
+  if (paymentMethod === 'digital') {
+  const enrichedItems = checkoutType === 'single'
+    ? [
+        {
           id: singleProduct!.id,
           name: singleProduct!.name,
           price: singleProduct!.price,
           images: singleProduct!.images || [],
-          brand: singleProduct!.brand || 'RentEase',
-          address: singleProduct!.address || 'Kathmandu'
-        };
+          location: singleProduct!.address || 'Kathmandu',
+          startDate,
+          endDate,
+          rentalDays: singleRentalDays,
+          quantity: 1,
+        },
+      ]
+    : cartItems.map((ci) => ({
+        id: ci.itemId._id,
+        name: ci.itemId.title,
+        price: ci.itemId.price,
+        images: [], // CartItem doesn't carry images today — see note below
+        startDate: ci.startDate,
+        endDate: ci.endDate,
+        rentalDays: ci.rentalDays,
+        quantity: ci.quantity,
+      }));
 
-        navigate('/confirm-booking', {
-          state: {
-            product: productData,
-            items: orderData.items,
-            startDate,
-            endDate,
-            fullName,
-            phoneNumber,
-            deliveryAddress,
-            rentalDays: singleRentalDays,
-            totalAmount,
-            subtotal,
-            securityDeposit,
-            deliveryFee,
-            customer: { fullName, phoneNumber, deliveryAddress },
-            paymentMethod,
-            type: checkoutType
-          }
-        });
-      } else {
-        const productsData = cartItems.map((ci) => ({
-          id: ci.itemId._id,
-          name: ci.itemId.title,
-          rentalPrice: ci.itemId.price,
-          rentalDays: ci.rentalDays,
-          quantity: ci.quantity,
-          startDate: ci.startDate,
-          endDate: ci.endDate,
-        }));
-
-        navigate('/confirm-booking', {
-          state: {
-            products: productsData,
-            items: orderData.items,
-            fullName,
-            phoneNumber,
-            deliveryAddress,
-            totalAmount,
-            subtotal,
-            securityDeposit,
-            deliveryFee,
-            customer: { fullName, phoneNumber, deliveryAddress },
-            paymentMethod,
-            type: checkoutType
-          }
-        });
-      }
-      return;
-    }
-
+  navigate('/confirm-booking', {
+    state: {
+      items: enrichedItems,
+      fullName,
+      phoneNumber,
+      deliveryAddress,
+      totalAmount,
+      customer: { fullName, phoneNumber, deliveryAddress },
+      paymentMethod,
+      type: checkoutType,
+    },
+  });
+  return;
+}
     // COD flow - call backend directly
     try {
       setIsSubmitting(true);
-      const token = authService.getAccessToken();
+
 
       const response = await axios.post(
         `${API_BASE_URL}/api/rentals/create`,
@@ -348,9 +329,12 @@ const CheckoutPage: React.FC = () => {
         }
       );
 
+
       if (response.data.success) {
         toast.success('Order placed successfully! Check your rentals.');
-        navigate('/');
+
+
+        navigate('/profile');
       }
     } catch (error: any) {
       console.error('Error placing order:', error);
@@ -462,6 +446,7 @@ const CheckoutPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
                   <div>
                     <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
                       Phone Number
@@ -471,12 +456,25 @@ const CheckoutPage: React.FC = () => {
                       <input
                         type="tel"
                         required
+                        inputMode="numeric"
+                        maxLength={10}
                         placeholder="98XXXXXXXX"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setPhoneNumber(digitsOnly);
+                          setPhoneError(digitsOnly.length === 10 ? validatePhone(digitsOnly) : '');
+                        }}
+                        onBlur={() => setPhoneError(validatePhone(phoneNumber))}
+                        className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-sm text-stone-700 focus:outline-none focus:ring-1 transition-all ${phoneError
+                          ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30'
+                          : 'border-stone-200 focus:border-amber-500 focus:ring-amber-500/30'
+                          }`}
                       />
                     </div>
+                    {phoneError && (
+                      <p className="mt-1 text-xs text-red-500">{phoneError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
@@ -513,11 +511,10 @@ const CheckoutPage: React.FC = () => {
               <SectionHeader icon={<CreditCard size={16} />} label="Payment Options" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label
-                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                    paymentMethod === 'cod'
-                      ? 'border-stone-900 bg-stone-50/50'
-                      : 'border-stone-200 hover:border-stone-300'
-                  }`}
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod'
+                    ? 'border-stone-900 bg-stone-50/50'
+                    : 'border-stone-200 hover:border-stone-300'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -534,11 +531,10 @@ const CheckoutPage: React.FC = () => {
                 </label>
 
                 <label
-                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                    paymentMethod === 'digital'
-                      ? 'border-stone-900 bg-stone-50/50'
-                      : 'border-stone-200 hover:border-stone-300'
-                  }`}
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'digital'
+                    ? 'border-stone-900 bg-stone-50/50'
+                    : 'border-stone-200 hover:border-stone-300'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -564,8 +560,8 @@ const CheckoutPage: React.FC = () => {
               {isSubmitting
                 ? 'Processing…'
                 : paymentMethod === 'digital'
-                ? `Pay with eSewa — Rs. ${totalAmount.toLocaleString()}`
-                : `Confirm COD Order — Rs. ${totalAmount.toLocaleString()}`}
+                  ? `Pay with eSewa — Rs. ${totalAmount.toLocaleString()}`
+                  : `Confirm COD Order — Rs. ${totalAmount.toLocaleString()}`}
             </button>
           </form>
 
@@ -626,18 +622,7 @@ const CheckoutPage: React.FC = () => {
                     </div>
                   ))}
 
-                <div className="flex justify-between text-stone-500 pt-1">
-                  <span>Refundable Security Deposit</span>
-                  <span className="font-medium text-stone-800">
-                    Rs. {securityDeposit.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between text-stone-500">
-                  <span>Delivery Charge</span>
-                  <span className="font-medium text-stone-800">
-                    Rs. {deliveryFee.toLocaleString()}
-                  </span>
-                </div>
+
               </div>
 
               <div className="flex justify-between items-baseline pt-4 mb-5">
@@ -667,8 +652,8 @@ const CheckoutPage: React.FC = () => {
                 {isSubmitting
                   ? 'Processing…'
                   : paymentMethod === 'digital'
-                  ? 'Review & Pay with eSewa'
-                  : 'Confirm COD Order'}
+                    ? 'Review & Pay with eSewa'
+                    : 'Confirm COD Order'}
               </button>
             </div>
           </div>

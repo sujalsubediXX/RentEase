@@ -1,26 +1,21 @@
 import React, { useState } from 'react';
-import { Input } from '../auth/Input';
-import { validateLoginForm } from '../utils/validation';
-import { useAuth } from '../hooks/useAuth';
-import { Link, Navigate } from 'react-router-dom';
+import { Input } from '../../auth/Input';
+import { validateLoginForm } from '../../utils/validation';
+import { useAuth } from '../../hooks/useAuth';
+import {Navigate } from 'react-router-dom';
 
-export const Login: React.FC = () => {
+export const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<{
     email?: string;
     password?: string;
   }>({});
-   const { login,  isLoading, error, isAuthenticated ,user} = useAuth();
-if(isAuthenticated ){
-  if(user?.role=="owner"){
-    return <Navigate to="/owner/dashboard" replace />;
-  }else{
-    return <Navigate to="/" replace />;
+   const { login,  isLoading, error, isAuthenticated } = useAuth();
 
+  if (isAuthenticated) {
+    return <Navigate to="/admin/dashboard" replace />;
   }
-}
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +24,7 @@ if(isAuthenticated ){
     setValidationErrors(errors);
     
     if (isValid) {
-      await login({ email, password ,  allowedRole: ["renter", "owner"]});
+      await login({ email, password ,  allowedRole: ["admin"]});
     }
   };
 
@@ -86,9 +81,7 @@ if(isAuthenticated ){
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
            
-            <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-  Forgot password?
-</Link>
+  
           </div>
 
           {error && (
@@ -120,15 +113,7 @@ if(isAuthenticated ){
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register"
-          
-            className="text-blue-600 hover:text-blue-700 font-semibold"
-          >
-            Sign up
-          </Link>
-        </p>
+       
       </div>
     </div>
     </div>

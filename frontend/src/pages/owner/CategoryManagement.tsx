@@ -166,28 +166,6 @@ const CategoryManagement = () => {
     }
   };
 
-  // const deleteCategory = async (
-  //   id: string
-  // ) => {
-  //   if (
-  //     !window.confirm(
-  //       "Delete this category?"
-  //     )
-  //   )
-  //     return;
-
-  //   try {
-  //     await axios.delete(
-  //       `${API_BASE_URL}/api/category/deletecategory/${id}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     }
-  //     );
-
-  //     fetchCategories();
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
 
   const editCategory = (
     category: Category

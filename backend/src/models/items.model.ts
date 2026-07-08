@@ -44,7 +44,7 @@ const itemSchema = new mongoose.Schema(
 
     availability: {
       type: String,
-      enum: ["available", "unavailable", "rented"],
+      enum: ["available", "unavailable"],
       default: "available"
     },
 

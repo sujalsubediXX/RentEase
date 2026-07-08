@@ -2,9 +2,10 @@ import mongoose from "mongoose";
 import type { Request, Response } from "express";
 import ItemImage from "../models/itemsImage.model.ts";
 import Item from "../models/items.model.ts";
-import Rentals from "../models/Rentals.model.ts";
 
-import { getFeaturedItems, getRecommendedForUser,getMostRentedItems } from "../utils/recommendation.ts";
+import { getFeaturedItems, getRecommendedForUser, getMostRentedItems } from "../utils/recommendation.ts";
+import fs from "fs/promises";
+import path from "path";
 
 
 export const createItem = async (req: Request, res: Response) => {
@@ -236,7 +237,7 @@ export const recommendedItemsHandler = async (req: Request, res: Response) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 8, 24);
     const userId = (req as any).user?.id;
-    
+
     if (!userId) {
       const items = await getFeaturedItems(limit);
       return res.json({ success: true, personalized: false, data: items });
@@ -262,31 +263,60 @@ export const fetchMostRentedItems = async (req: Request, res: Response) => {
   }
 };
 
-export const changeItemAvailabilityStatus = async (
+
+
+
+export const updateAvailability = async (
   req: Request,
   res: Response
 ) => {
   try {
-    const { rentalId } = req.params;
 
-    const rental = await Rentals.findById(rentalId);
+    const { availability } = req.body;
+    console.log(availability)
 
-    if (!rental) {
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      {
+        availability
+      },
+      {
+        returnDocument: "after"
+      }
+    );
+
+
+    if (!item) {
       return res.status(404).json({
-        success: false,
-        message: "Rental not found"
+        message: "Item not found"
       });
     }
 
-    const item = await Item.findByIdAndUpdate(
-      rental.itemId,
-      {
-        $set: {
-          availability: "rented"
-        }
-      },
-      { returnDocument: 'after' }
-    );
+
+    res.status(200).json({
+      success: true,
+      item
+    });
+
+
+  } catch (error: any) {
+
+    res.status(500).json({
+      message: error.message
+    });
+
+  }
+}
+
+
+
+
+export const deleteItem = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+   
+    const item = await Item.findById(id);
 
     if (!item) {
       return res.status(404).json({
@@ -295,18 +325,41 @@ export const changeItemAvailabilityStatus = async (
       });
     }
 
-    res.json({
+    // Ownership check — only the owner (or an admin, if you add that role) can delete
+    const requesterId = (req as any).user?.id;
+    if (!requesterId || item.ownerId.toString() !== requesterId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this item"
+      });
+    }
+
+    // Find associated images so we can remove the files from disk too
+    const images = await ItemImage.find({ itemId: item._id });
+
+    await Promise.all(
+      images.map(async (img) => {
+        try {
+          // imageUrl is stored like "/uploads/items/filename.jpg"
+          const filePath = path.join(process.cwd(), img.imageUrl);
+          await fs.unlink(filePath);
+        } catch (err) {
+          // Don't fail the whole delete just because a file was already missing
+          console.warn(`Could not remove file for image ${img._id}:`, err);
+        }
+      })
+    );
+
+    await ItemImage.deleteMany({ itemId: item._id });
+    await Item.findByIdAndDelete(id);
+
+    return res.status(200).json({
       success: true,
-      message: "Item availability updated",
-      item
+      message: "Item deleted successfully"
     });
-
-  } catch (err) {
-    console.error("Error:", err);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update item availability"
-    });
+  } catch (error: unknown) {
+    console.error("deleteItem error:", error);
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return res.status(500).json({ success: false, message });
   }
 };

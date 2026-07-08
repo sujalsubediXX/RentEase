@@ -19,6 +19,7 @@ interface Booking {
         price: number;
         location?: string;
         ownerId?: string | { _id: string; fullName: string; email: string };
+        availability?: "available" | "rented" | "unavailable";
     };
     userId: string;
     startDate: string;
@@ -48,16 +49,16 @@ const statusColor: Record<string, string> = {
 };
 
 // Reject Modal Component
-const RejectModal = ({ 
-    isOpen, 
-    onClose, 
-    onConfirm, 
+const RejectModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
     bookingId,
-    updating 
-}: { 
-    isOpen: boolean; 
-    onClose: () => void; 
-    onConfirm: (bookingId: string, reason: string) => void; 
+    updating
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (bookingId: string, reason: string) => void;
     bookingId: string;
     updating: boolean;
 }) => {
@@ -70,7 +71,7 @@ const RejectModal = ({
             <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
                 <h3 className="text-lg font-semibold text-stone-900 mb-2">Reject Booking</h3>
                 <p className="text-sm text-stone-500 mb-4">Please provide a reason for rejecting this booking.</p>
-                
+
                 <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
@@ -78,7 +79,7 @@ const RejectModal = ({
                     className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                     rows={4}
                 />
-                
+
                 <div className="flex gap-3 mt-4">
                     <button
                         onClick={onClose}
@@ -107,26 +108,41 @@ const BookingsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updating, setUpdating] = useState<string | null>(null);
-    const [rejectModal, setRejectModal] = useState<{ isOpen: boolean; bookingId: string | null }>({
+    const [rejectModal, setRejectModal] = useState<{
+        isOpen: boolean;
+        bookingId: string | null
+    }>({
         isOpen: false,
         bookingId: null
     });
 
-    // Helper to build API URL with /api prefix
-    const getApiUrl = (endpoint: string) => {
-        // If API_BASE_URL already ends with /api, don't add it again
-        if (API_BASE_URL.endsWith('/api')) {
-            return `${API_BASE_URL}${endpoint}`;
+    console.log(bookings)
+
+    // Returns true if the return date is today or earlier (i.e. the rental period is over)
+    const isPastReturnDate = (returnDate: string) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const ret = new Date(returnDate);
+        ret.setHours(0, 0, 0, 0);
+        return ret <= today;
+    };
+
+    // Derives the status that should be SHOWN to the owner. If a booking is still
+    // "confirmed" or "ongoing" in the DB but its return date has passed, we display
+    // it as "completed" so the owner sees it correctly even before the backend
+    // (or a cron job) has updated the record.
+    const getDisplayStatus = (b: Booking): BookingStatus => {
+        if ((b.status === "confirmed" || b.status === "ongoing") && isPastReturnDate(b.returnDate)) {
+            return "completed";
         }
-        // Otherwise add /api
-        return `${API_BASE_URL}/api${endpoint}`;
+        return b.status;
     };
 
     const fetchAllBookings = async () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             if (!isAuthenticated || !user) {
                 setError('Please login to view bookings');
                 setLoading(false);
@@ -134,15 +150,14 @@ const BookingsPage = () => {
             }
 
             const token = authService.getAccessToken();
-            
+
             if (!token) {
                 setError('Authentication token not found. Please login again.');
                 setLoading(false);
                 return;
             }
 
-            const response = await axios.get(
-                getApiUrl('/rentals/owner?status=all'),
+            const response = await axios.get(`${API_BASE_URL}/api/rentals/owner?status=all`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -159,7 +174,7 @@ const BookingsPage = () => {
             }
         } catch (err: any) {
             console.error("Error fetching bookings:", err);
-            
+
             if (err.response?.status === 401) {
                 setError("Session expired. Please login again.");
                 toast.error("Session expired. Please login again.");
@@ -176,16 +191,15 @@ const BookingsPage = () => {
         try {
             setUpdating(bookingId);
             const token = authService.getAccessToken();
-            
+
             if (!token) {
                 toast.error('Please login first');
                 return;
             }
 
             if (newStatus === 'rejected') {
-                await axios.put(
-                    getApiUrl(`/rentals/${bookingId}/cancel`),
-                    { 
+                await axios.put( `${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
+                    {
                         reason: reason || 'No reason provided',
                         action: 'reject'
                     },
@@ -198,9 +212,8 @@ const BookingsPage = () => {
                 );
                 toast.success('Booking rejected successfully');
             } else if (newStatus === 'cancelled') {
-                await axios.put(
-                    getApiUrl(`/rentals/${bookingId}/cancel`),
-                    { 
+                await axios.put( `${API_BASE_URL}/api//rentals/${bookingId}/cancel`,
+                    {
                         reason: reason || 'Cancelled by user or owner',
                         action: 'cancel'
                     },
@@ -213,8 +226,7 @@ const BookingsPage = () => {
                 );
                 toast.success('Booking cancelled successfully');
             } else if (newStatus === 'confirmed') {
-                await axios.put(
-                    getApiUrl('/rentals/approve'),
+                await axios.put( `${API_BASE_URL}/api/rentals/approve`,
                     { rentalIds: [bookingId] },
                     {
                         headers: {
@@ -224,8 +236,19 @@ const BookingsPage = () => {
                     }
                 );
                 toast.success('Booking approved successfully');
+            } else if (newStatus === 'completed') {
+                await axios.put(`${API_BASE_URL}/api/rentals/${bookingId}/complete`,
+                    {},
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                toast.success('Booking marked as completed');
             }
-            
+
             await fetchAllBookings();
         } catch (err: any) {
             console.error("Error updating booking:", err);
@@ -244,9 +267,9 @@ const BookingsPage = () => {
         fetchAllBookings();
     }, [isAuthenticated]);
 
-    const filteredBookings = tab === "all" 
-        ? bookings 
-        : bookings.filter(b => b.status === tab);
+    const filteredBookings = tab === "all"
+        ? bookings
+        : bookings.filter(b => getDisplayStatus(b) === tab);
 
     const getInitials = (name: string) => {
         return name
@@ -267,7 +290,7 @@ const BookingsPage = () => {
 
     const getDuration = (startDate: string, endDate: string) => {
         const days = Math.ceil(
-            (new Date(endDate).getTime() - new Date(startDate).getTime()) / 
+            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
             (1000 * 60 * 60 * 24)
         );
         return Math.max(1, days);
@@ -299,7 +322,7 @@ const BookingsPage = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-8">
                         <div className="text-center">
                             <p className="text-red-600">{error}</p>
-                            <button 
+                            <button
                                 onClick={fetchAllBookings}
                                 className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                             >
@@ -315,7 +338,7 @@ const BookingsPage = () => {
     return (
         <div className="flex-1 overflow-y-auto bg-stone-50">
             <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
-            
+
             <RejectModal
                 isOpen={rejectModal.isOpen}
                 onClose={() => setRejectModal({ isOpen: false, bookingId: null })}
@@ -328,18 +351,17 @@ const BookingsPage = () => {
                 {/* Tabs */}
                 <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
                     {(["all", "pending", "confirmed", "ongoing", "completed", "cancelled", "rejected"] as const).map(t => {
-                        const count = t === "all" 
-                            ? bookings.length 
-                            : bookings.filter(b => b.status === t).length;
+                        const count = t === "all"
+                            ? bookings.length
+                            : bookings.filter(b => getDisplayStatus(b) === t).length;
                         return (
-                            <button 
-                                key={t} 
+                            <button
+                                key={t}
                                 onClick={() => setTab(t)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors whitespace-nowrap ${
-                                    tab === t 
-                                        ? "bg-amber-600 text-white shadow-sm" 
+                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors whitespace-nowrap ${tab === t
+                                        ? "bg-amber-600 text-white shadow-sm"
                                         : "text-stone-600 hover:bg-stone-50"
-                                }`}
+                                    }`}
                             >
                                 {t}
                                 <span className="ml-1.5 text-xs opacity-70">({count})</span>
@@ -350,143 +372,195 @@ const BookingsPage = () => {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
                     <div className="divide-y divide-stone-100">
-                        {filteredBookings.map((b) => (
-                            <div 
-                                key={b._id} 
-                                className={`p-5 hover:bg-stone-50 transition-colors cursor-pointer ${
-                                    selected === b._id ? "bg-amber-50" : ""
-                                }`}
-                                onClick={() => setSelected(selected === b._id ? null : b._id)}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <Avatar 
-                                        initials={getInitials(b.customerDetails.fullName)} 
-                                        size="md" 
-                                        color="bg-stone-600" 
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-stone-800">
-                                                {b.customerDetails.fullName}
-                                            </p>
-                                            <span className="text-stone-300">·</span>
-                                            <p className="text-xs text-stone-400 font-mono">
-                                                {b._id.slice(-6).toUpperCase()}
-                                            </p>
-                                        </div>
-                                        <p className="text-sm text-stone-500 truncate mt-0.5">
-                                            {b.itemId?.title || "Unknown Item"}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-1 text-xs text-stone-400 sm:hidden">
-                                            <span>Rs {b.totalPrice.toLocaleString()}</span>
-                                            <span>·</span>
-                                            <span>{formatDate(b.startDate)} → {formatDate(b.returnDate)}</span>
-                                        </div>
-                                    </div>
-                                    <div className="text-right hidden sm:block">
-                                        <p className="text-sm font-bold text-stone-900">
-                                            Rs {b.totalPrice.toLocaleString()}
-                                        </p>
-                                        <p className="text-xs text-stone-400">
-                                            {formatDate(b.startDate)} → {formatDate(b.returnDate)}
-                                        </p>
-                                    </div>
-                                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[b.status]}`}>
-                                        {b.status}
-                                    </span>
-                                </div>
+                        {filteredBookings.map((b) => {
+                            const displayStatus = getDisplayStatus(b);
+                            const needsCompletion =
+                                (b.status === "confirmed" || b.status === "ongoing") &&
+                                isPastReturnDate(b.returnDate);
 
-                                {selected === b._id && (
-                                    <div className="mt-4 pt-4 border-t border-stone-100">
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center mb-4">
-                                            {[
-                                                ["Pickup", formatDate(b.startDate)],
-                                                ["Return", formatDate(b.returnDate)],
-                                                ["Duration", `${getDuration(b.startDate, b.returnDate)} days`],
-                                                ["Quantity", `${b.quantity} item(s)`],
-                                                ["Payment", b.paymentMethod.toUpperCase()],
-                                                ["Deposit", `Rs ${b.securityDeposit.toLocaleString()}`],
-                                            ].map(([label, value]) => (
-                                                <div key={label} className="bg-stone-50 rounded-xl p-3">
-                                                    <p className="text-xs text-stone-400 mb-1">{label}</p>
-                                                    <p className="text-sm font-semibold text-stone-700">{value}</p>
+                            return (
+                                <div
+                                    key={b._id}
+                                    className={`p-5 hover:bg-stone-50 transition-colors cursor-pointer ${selected === b._id ? "bg-amber-50" : ""
+                                        }`}
+                                    onClick={() => setSelected(selected === b._id ? null : b._id)}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <Avatar
+                                            initials={getInitials(b.customerDetails.fullName)}
+                                            size="md"
+                                            color="bg-stone-600"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-semibold text-stone-800">
+                                                    {b.customerDetails.fullName}
+                                                </p>
+                                                <span className="text-stone-300">·</span>
+                                                <p className="text-xs text-stone-400 font-mono">
+                                                    {b._id.slice(-6).toUpperCase()}
+                                                </p>
+                                            </div>
+                                            <p className="text-sm text-stone-500 truncate mt-0.5">
+                                                {b.itemId?.title || "Unknown Item"}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-1 text-xs text-stone-400 sm:hidden">
+                                                <span>Rs {b.totalPrice.toLocaleString()}</span>
+                                                <span>·</span>
+                                                <span>{formatDate(b.startDate)} → {formatDate(b.returnDate)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right hidden sm:block">
+                                            <p className="text-sm font-bold text-stone-900">
+                                                Rs {b.totalPrice.toLocaleString()}
+                                            </p>
+                                            <p className="text-xs text-stone-400">
+                                                {formatDate(b.startDate)} → {formatDate(b.returnDate)}
+                                            </p>
+                                        </div>
+                                        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[displayStatus]}`}>
+                                            {displayStatus}
+                                        </span>
+                                    </div>
+
+                                    {selected === b._id && (
+                                        <div className="mt-4 pt-4 border-t border-stone-100">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center mb-4">
+                                                {[
+                                                    ["Pickup", formatDate(b.startDate)],
+                                                    ["Return", formatDate(b.returnDate)],
+                                                    ["Duration", `${getDuration(b.startDate, b.returnDate)} days`],
+                                                    ["Quantity", `${b.quantity} item(s)`],
+                                                    ["Payment", b.paymentMethod.toUpperCase()],
+                                                    ["Deposit", `Rs ${b.securityDeposit.toLocaleString()}`],
+                                                ].map(([label, value]) => (
+                                                    <div key={label} className="bg-stone-50 rounded-xl p-3">
+                                                        <p className="text-xs text-stone-400 mb-1">{label}</p>
+                                                        <p className="text-sm font-semibold text-stone-700">{value}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {b.customerDetails.deliveryAddress && (
+                                                <div className="bg-stone-50 rounded-xl p-3 mb-4">
+                                                    <p className="text-xs text-stone-500 font-medium mb-1">Delivery Address</p>
+                                                    <p className="text-sm text-stone-700">{b.customerDetails.deliveryAddress}</p>
+                                                    <p className="text-xs text-stone-400 mt-1">📞 {b.customerDetails.phoneNumber}</p>
                                                 </div>
-                                            ))}
-                                        </div>
-                                        
-                                        {b.customerDetails.deliveryAddress && (
-                                            <div className="bg-stone-50 rounded-xl p-3 mb-4">
-                                                <p className="text-xs text-stone-500 font-medium mb-1">Delivery Address</p>
-                                                <p className="text-sm text-stone-700">{b.customerDetails.deliveryAddress}</p>
-                                                <p className="text-xs text-stone-400 mt-1">📞 {b.customerDetails.phoneNumber}</p>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {b.rejectionReason && (
-                                            <div className="bg-red-50 rounded-xl p-3 mb-4 border border-red-100">
-                                                <p className="text-xs text-red-500 font-medium mb-1">Rejection Reason</p>
-                                                <p className="text-sm text-red-700">{b.rejectionReason}</p>
-                                            </div>
-                                        )}
+                                            {b.rejectionReason && (
+                                                <div className="bg-red-50 rounded-xl p-3 mb-4 border border-red-100">
+                                                    <p className="text-xs text-red-500 font-medium mb-1">Rejection Reason</p>
+                                                    <p className="text-sm text-red-700">{b.rejectionReason}</p>
+                                                </div>
+                                            )}
 
-                                        {(b.status === "pending" || b.status === "confirmed") && (
-                                            <div className="flex gap-2">
-                                                {b.status === "pending" && (
-                                                    <>
-                                                        <button 
+                                            {needsCompletion && (
+                                                <div className="bg-blue-50 rounded-xl p-3 mb-4 border border-blue-100 flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-xs text-blue-600 font-medium mb-1">Rental Period Ended</p>
+                                                        <p className="text-sm text-blue-700">The return date has passed — mark this booking complete.</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updateBookingStatus(b._id, "completed");
+                                                        }}
+                                                        disabled={updating === b._id}
+                                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                    >
+                                                        {updating === b._id ? (
+                                                            <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                                        ) : (
+                                                            "Mark Completed"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {b.itemId?.availability === "rented" && !needsCompletion && (
+                                                <div className="bg-amber-50 rounded-xl p-3 mb-4 border border-amber-100 flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-xs text-amber-600 font-medium mb-1">Item Status</p>
+                                                        <p className="text-sm text-amber-700">Once this rental period is done, mark it completed to free up the item.</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updateBookingStatus(b._id, "completed");
+                                                        }}
+                                                        disabled={updating === b._id}
+                                                        className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                    >
+                                                        {updating === b._id ? (
+                                                            <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                                        ) : (
+                                                            "Mark Completed"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {(b.status === "pending" || b.status === "confirmed") && (
+                                                <div className="flex gap-2">
+                                                    {b.status === "pending" && (
+                                                        <>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    updateBookingStatus(b._id, "confirmed");
+                                                                }}
+                                                                disabled={updating === b._id}
+                                                                className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                                                            >
+                                                                {updating === b._id ? (
+                                                                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                                                ) : (
+                                                                    <>
+                                                                        <Check size={16} /> Approve
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setRejectModal({ isOpen: true, bookingId: b._id });
+                                                                }}
+                                                                disabled={updating === b._id}
+                                                                className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                                                            >
+                                                                <X size={16} /> Decline
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {b.status === "confirmed" && !needsCompletion && (
+                                                        <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                updateBookingStatus(b._id, "confirmed");
-                                                            }}
-                                                            disabled={updating === b._id}
-                                                            className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                                                        >
-                                                            {updating === b._id ? (
-                                                                <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
-                                                            ) : (
-                                                                <>
-                                                                    <Check size={16} /> Approve
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                        <button 
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setRejectModal({ isOpen: true, bookingId: b._id });
+                                                                if (confirm("Are you sure you want to cancel this confirmed booking?")) {
+                                                                    updateBookingStatus(b._id, "cancelled");
+                                                                }
                                                             }}
                                                             disabled={updating === b._id}
                                                             className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
                                                         >
-                                                            <X size={16} /> Decline
+                                                            {updating === b._id ? (
+                                                                <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></span>
+                                                            ) : (
+                                                                <>
+                                                                    <X size={16} /> Cancel Booking
+                                                                </>
+                                                            )}
                                                         </button>
-                                                    </>
-                                                )}
-                                                {b.status === "confirmed" && (
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (confirm("Are you sure you want to cancel this confirmed booking?")) {
-                                                                updateBookingStatus(b._id, "cancelled");
-                                                            }
-                                                        }}
-                                                        disabled={updating === b._id}
-                                                        className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                                                    >
-                                                        {updating === b._id ? (
-                                                            <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></span>
-                                                        ) : (
-                                                            <>
-                                                                <X size={16} /> Cancel Booking
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                     {filteredBookings.length === 0 && (
                         <div className="text-center py-16 text-stone-400">

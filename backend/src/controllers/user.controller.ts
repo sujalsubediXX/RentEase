@@ -199,7 +199,8 @@ export const getUserListings = async (req: Request, res: Response) => {
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password,  allowedRole } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -222,6 +223,8 @@ export const loginUser = async (req: Request, res: Response) => {
       });
     }
 
+   
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -229,6 +232,12 @@ export const loginUser = async (req: Request, res: Response) => {
         message: "Invalid email or password",
       });
     }
+    
+  if (!allowedRole.includes(user.role)) {
+    return res.status(403).json({
+      message: "You are not allowed to login from this portal"
+    });
+  }
 
     const JWT_SECRET = process.env.JWT_SECRET;
 

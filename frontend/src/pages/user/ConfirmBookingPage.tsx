@@ -65,7 +65,7 @@ const ConfirmBookingPage: React.FC = () => {
     const [esewaPayload, setEsewaPayload] = useState<EsewaPayload | null>(null);
     const [gatewayUrl, setGatewayUrl] = useState<string>('');
     const [creatingRental, setCreatingRental] = useState<boolean>(false);
-    const [rentalIds, setRentalIds] = useState<string[]>([]);
+
 
     // Fallback protection guard routing patterns
     useEffect(() => {
@@ -89,9 +89,7 @@ const ConfirmBookingPage: React.FC = () => {
 
     // ── Trust the totals CheckoutPage already computed across ALL items ──
     // (Recomputing here from a single item was the bug that dropped cart items from the invoice.)
-    const subtotal = checkoutData.subtotal;
-    const securityDeposit = checkoutData.securityDeposit;
-    const deliveryCharge = checkoutData.deliveryFee;
+   
     const grandTotal = checkoutData.totalAmount;
 
     // ── Create rental before payment ──
@@ -119,10 +117,7 @@ const ConfirmBookingPage: React.FC = () => {
                     deliveryAddress,
                 },
                 paymentMethod: 'digital',
-                subtotal,
-                securityDeposit,
-                deliveryFee: deliveryCharge,
-                totalAmount: grandTotal,
+                  totalAmount: grandTotal,
                 type: checkoutData.type || 'single',
             };
 
@@ -139,7 +134,7 @@ const ConfirmBookingPage: React.FC = () => {
 
             if (response.data.success) {
                 const ids = response.data.data.rentalIds;
-                setRentalIds(ids);
+               
                 await initiatePayment(ids);
             } else {
                 toast.error('Failed to create rental. Please try again.');
@@ -166,10 +161,9 @@ const ConfirmBookingPage: React.FC = () => {
             const response = await axios.post(
                 `${API_BASE_URL}/api/payment/initiate`,
                 {
-                    amount: subtotal,
+           
                     tax_amount: 0,
-                    delivery_charge: deliveryCharge,
-                    security_deposit: securityDeposit,
+         
                     rentalIds: ids,
                 },
                 {
@@ -185,12 +179,7 @@ const ConfirmBookingPage: React.FC = () => {
             if (result.status === 'success') {
                 setEsewaPayload(result.payment_payload);
                 setGatewayUrl(result.gateway_url);
-                await axios.post(`${API_BASE_URL}/api/items/changeItemAvailabilityStatus/${ids}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                })
+              
 
                 setTimeout(() => {
                     const form = document.getElementById('esewa-form') as HTMLFormElement;
@@ -296,16 +285,9 @@ const ConfirmBookingPage: React.FC = () => {
                     <div className="space-y-2.5 text-xs pb-3 border-b border-stone-100">
                         <div className="flex justify-between text-stone-500">
                             <span>Rental Fee{isMultiItem ? ' (all items)' : ''}</span>
-                            <span className="font-medium text-stone-800">Rs. {subtotal.toLocaleString()}</span>
+         
                         </div>
-                        <div className="flex justify-between text-stone-500">
-                            <span>Refundable Security Deposit</span>
-                            <span className="font-medium text-stone-800">Rs. {securityDeposit.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between text-stone-500">
-                            <span>Delivery Charge</span>
-                            <span className="font-medium text-stone-800">Rs. {deliveryCharge.toLocaleString()}</span>
-                        </div>
+                                          
                     </div>
                     <div className="flex justify-between items-baseline pt-3">
                         <span className="text-xs font-bold text-stone-800">Total Amount</span>

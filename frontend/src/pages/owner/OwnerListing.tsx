@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus,  MapPin, Edit3, Trash2, MoreVertical} from "lucide-react";
+import { Plus, MapPin, Edit3, Trash2, MoreVertical, Search } from "lucide-react";
 import { TopBar } from "../../components/owner/TopBar";
+import { ConfirmDeleteModal } from "../../components/owner/ConfirmDeleteModal";
 import API_BASE_URL from "../../config/api";
 import { ImageSlider } from "../user/ImageSlider";
-import {useAuth} from "../../hooks/useAuth.ts";
-
+import { useAuth } from "../../hooks/useAuth.ts";
+import axios from "axios";
+import { authService } from "../../services/auth.services.ts";
+import { toast } from "sonner";
 
 export interface Product {
     id: string;
@@ -16,33 +19,45 @@ export interface Product {
     category: string;
     categoryId: string;
     location: string;
+    availability: string;
 }
-
 
 interface ListingCardProps {
     listing: Product;
     onEdit: (listing: Product) => void;
-    onDelete: (id: string) => void;
+    onDeleteClick: (id: string) => void;
+    onAvailabilityChange: (id: string, status: string) => void;
+    menuOpenId: string | null;
+    setMenuOpenId: (id: string | null) => void;
 }
-
-
-
 
 const ListingCard: React.FC<ListingCardProps> = ({
     listing,
     onEdit,
-    onDelete,
+    onDeleteClick,
+    onAvailabilityChange,
+    menuOpenId,
+    setMenuOpenId
 }) => {
-    const [menuOpen, setMenuOpen] = useState(false);
+    const menuOpen = menuOpenId === listing.id;
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!menuOpen) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setMenuOpenId(null);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuOpen, setMenuOpenId]);
 
     return (
-        <div className="bg-white rounded-2xl border  border-stone-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
             <div className="h-48 overflow-hidden">
-                {/* <img
-                    src={listing.images?.[0] || "https://picsum.photos/300/300"}
-                    alt={listing.name}
-                    className="w-full h-full object-cover"
-                /> */}
                 <ImageSlider images={listing.images} />
             </div>
 
@@ -59,9 +74,9 @@ const ListingCard: React.FC<ListingCardProps> = ({
                         </div>
                     </div>
 
-                    <div className="relative">
+                    <div className="relative" ref={menuRef}>
                         <button
-                            onClick={() => setMenuOpen((v) => !v)}
+                            onClick={() => setMenuOpenId(menuOpen ? null : listing.id)}
                             className="p-1 rounded-lg hover:bg-stone-100"
                         >
                             <MoreVertical size={16} />
@@ -72,7 +87,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
                                 <button
                                     onClick={() => {
                                         onEdit(listing);
-                                        setMenuOpen(false);
+                                        setMenuOpenId(null);
                                     }}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-stone-50"
                                 >
@@ -82,8 +97,8 @@ const ListingCard: React.FC<ListingCardProps> = ({
 
                                 <button
                                     onClick={() => {
-                                        onDelete(listing.id);
-                                        setMenuOpen(false);
+                                        onDeleteClick(listing.id);
+                                        setMenuOpenId(null);
                                     }}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                                 >
@@ -104,20 +119,67 @@ const ListingCard: React.FC<ListingCardProps> = ({
                         Rs. {listing.price}
                     </span>
 
-                    <span className="text-xs bg-stone-100 px-2 py-1 rounded-full">
-                        {listing.category}
-                    </span>
+                    <button
+                        onClick={() =>
+                            onAvailabilityChange(
+                                listing.id,
+                                listing.availability === "available"
+                                    ? "unavailable"
+                                    : "available"
+                            )
+                        }
+                        className={`text-xs px-3 py-1 rounded-full font-medium ${listing.availability === "available"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
+                    >
+                        {listing.availability === "available"
+                            ? "Available"
+                            : "Unavailable"}
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
+
 export default function OwnerListing() {
     const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+    const [listingToDelete, setListingToDelete] = useState<string | null>(null);
     const { user } = useAuth();
-    const handleDelete = (id: string) => {
+    const token = authService.getAccessToken();
+
+    const handleDeleteClick = (id: string) => {
+        setListingToDelete(id);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!listingToDelete) return;
+
+        const id = listingToDelete;
+        // Optimistic removal with rollback on failure
+        const previousProducts = products;
         setProducts((prev) => prev.filter((item) => item.id !== id));
+        setListingToDelete(null);
+
+        try {
+            const res = await axios.delete(`${API_BASE_URL}/api/items/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (res.status === 200) {
+                toast.success("Listing deleted");
+            }
+        } catch (error) {
+            console.error(error);
+            setProducts(previousProducts);
+            toast.error("Couldn't delete listing. Please try again.");
+        }
     };
 
     const handleAddNew = () => navigate("/owner/listings/new");
@@ -128,16 +190,13 @@ export default function OwnerListing() {
         });
     };
 
-    const mapItemToProduct = ( item: any): Product => {
+    const mapItemToProduct = (item: any): Product => {
         const buildImageUrl = (img: string): string => {
             if (!img) return "";
-
             if (img.startsWith("http")) return img;
-
             if (img.startsWith("/")) {
                 return `${API_BASE_URL}${img}`;
             }
-
             return `${API_BASE_URL}/uploads/items/${img}`;
         };
 
@@ -148,22 +207,48 @@ export default function OwnerListing() {
 
         return {
             id: item._id,
-            name: item.title || "Unnamed Product",
-            description: item.description || "No description available",
+            name: item.title,
+            description: item.description,
             price: item.price || 0,
             images: imageUrls,
             category: item.category || "Products",
             categoryId: item.categoryId || "",
-            location: item.location || "Kathmandu",
+            location: item.location,
+            availability: item.availability
         };
     };
+
+    const handleAvailabilityChange = async (id: string, status: string) => {
+        try {
+            const res = await axios.put(
+                `${API_BASE_URL}/api/items/update-availability/${id}`,
+                { availability: status },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                }
+            );
+            if (res.status == 200) {
+                fetchProducts();
+                toast.success("Item status changed");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Couldn't update availability");
+        }
+    };
+
     useEffect(() => {
-        fetchProducts();
-    }, [])
+        if (user?.id) {
+            fetchProducts();
+        }
+    }, [user?.id]);
+
     const fetchProducts = async () => {
         try {
             const url = `${API_BASE_URL}/api/items/getitemsbyownerId/${user?.id}`;
-
             const res = await fetch(url);
 
             if (!res.ok) {
@@ -175,12 +260,12 @@ export default function OwnerListing() {
             const rawItems: any[] | null = Array.isArray(responseData)
                 ? responseData
                 : Array.isArray(responseData?.items)
-                ? responseData.items
-                : Array.isArray(responseData?.data)
-                ? responseData.data
-                : Array.isArray(responseData?.products)
-                ? responseData.products
-                : null;
+                    ? responseData.items
+                    : Array.isArray(responseData?.data)
+                        ? responseData.data
+                        : Array.isArray(responseData?.products)
+                            ? responseData.products
+                            : null;
 
             if (!rawItems) {
                 console.error(
@@ -197,8 +282,20 @@ export default function OwnerListing() {
             setProducts(newItems);
         } catch (err) {
             console.error("Error fetching products:", err);
+            toast.error("Couldn't load your listings");
         }
     };
+
+    const filteredProducts = products.filter((p) => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        return (
+            p.name.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q) ||
+            p.location.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q)
+        );
+    });
 
     return (
         <>
@@ -206,25 +303,47 @@ export default function OwnerListing() {
                 <TopBar title="My Listings" />
                 <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 gap-6">
 
-                    {/* Listings Grid */}
                     <div className="">
-                        <div className="flex items-center justify-end mb-4">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                            <div className="relative flex-1 max-w-sm">
+                                <Search
+                                    size={16}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+                                />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search your listings..."
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                />
+                            </div>
+
                             <button onClick={handleAddNew}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold shadow-sm shadow-amber-200 transition-colors">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold shadow-sm shadow-amber-200 transition-colors shrink-0">
                                 <Plus size={18} />
                                 <span>New Listing</span>
                             </button>
                         </div>
+
+                        {searchQuery && filteredProducts.length === 0 && (
+                            <p className="text-sm text-stone-400 mb-4">
+                                No listings match "{searchQuery}".
+                            </p>
+                        )}
+
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
-                            {products.map(listing => (
+                            {filteredProducts.map(listing => (
                                 <ListingCard
                                     key={listing.id}
                                     listing={listing}
                                     onEdit={handleEdit}
-                                    onDelete={handleDelete}
+                                    onDeleteClick={handleDeleteClick}
+                                    onAvailabilityChange={handleAvailabilityChange}
+                                    menuOpenId={menuOpenId}
+                                    setMenuOpenId={setMenuOpenId}
                                 />
                             ))}
-                            {/* Add New Card */}
                             <button onClick={handleAddNew}
                                 className="bg-white rounded-2xl border-2 border-dashed border-stone-200 hover:border-amber-400 h-full min-h-52 flex flex-col items-center justify-center gap-3 text-stone-400 hover:text-amber-500 transition-all group">
                                 <div className="w-12 h-12 rounded-2xl bg-stone-100 group-hover:bg-amber-50 flex items-center justify-center transition-colors">
@@ -237,6 +356,14 @@ export default function OwnerListing() {
 
                 </main>
             </div>
+
+            <ConfirmDeleteModal
+                isOpen={!!listingToDelete}
+                title="Delete Item"
+                message="This will permanently remove the listing and its images. This action cannot be undone."
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setListingToDelete(null)}
+            />
         </>
     );
 }

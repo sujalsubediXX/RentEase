@@ -9,7 +9,8 @@ import {
   getItemAvailability,
   getByRentalStatus,
   getOwnerRentals,
-  approveRental
+  approveRental,
+  completeRental
 } from "../controllers/rental.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 
@@ -40,4 +41,7 @@ router.put("/:id/cancel", authMiddleware, cancelRental);
 
 
 router.get("/availability/:itemId", authMiddleware, getItemAvailability);
+
+// routes/rental.routes.js
+router.put('/:id/complete', authMiddleware, completeRental);
 export default router;
