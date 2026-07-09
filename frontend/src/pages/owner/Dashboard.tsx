@@ -44,29 +44,24 @@ interface CustomTooltipProps {
 
 interface Review {
   _id: string;
-  renterId: {
+  userID: {
     _id: string;
-    fullName: string;
+    fullName?: string;
+    profileImage?: string;
   };
-  itemId: {
+  itemID: {
     _id: string;
-    title: string;
+    title?: string;
   };
   rating: number;
-  comment: string;
+  message: string;
   createdAt: string;
 }
 
 interface ReviewSummary {
-  averageRating: number;
+  avgRating: number;
   totalReviews: number;
-  ratingDistribution: {
-    1: number;
-    2: number;
-    3: number;
-    4: number;
-    5: number;
-  };
+  distribution: { rating: number; count: number }[];
 }
 
 interface DashboardStats {
@@ -156,7 +151,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         <p>
           Earnings:{" "}
           <span className="text-amber-400 font-bold">
-            रू{payload[0]?.value?.toLocaleString()}
+            Rs {payload[0]?.value?.toLocaleString()}
           </span>
         </p>
         <p>
@@ -214,7 +209,7 @@ export default function Dashboard() {
         return;
       }
 
-      // 1. Fetch owner's items
+      // 1. Fetch owner's bookings (used for booking count / earnings / chart)
       const itemsResponse = await axios.get(
         getApiUrl("/rentals/owner?status=all"),
         {
@@ -225,28 +220,58 @@ export default function Dashboard() {
         },
       );
 
-      // 2. Fetch owner's reviews
-      let reviews = [];
-      let summary = { averageRating: 0, totalReviews: 0 };
+      // 1b. Fetch owner's actual items for real listing counts
+      // (mirrors the fetch used on the "My Listings" page)
+      let totalListings = 0;
+      let activeListings = 0;
 
       try {
-        // Try to fetch reviews
-        const reviewsResponse = await axios.get(getApiUrl("/reviews/owner"), {
+        const listingsRes = await fetch(
+          `${API_BASE_URL}/api/items/getitemsbyownerId/${user.id}`
+        );
+        if (listingsRes.ok) {
+          const listingsData = await listingsRes.json();
+          const rawItems: any[] = Array.isArray(listingsData)
+            ? listingsData
+            : listingsData.items ||
+              listingsData.data ||
+              listingsData.products ||
+              [];
+          totalListings = rawItems.length;
+          activeListings = rawItems.filter(
+            (item: any) => item.availability === "available"
+          ).length;
+        } else {
+          console.log(
+            "Failed to fetch listings for dashboard:",
+            listingsRes.status
+          );
+        }
+      } catch (listingsErr: any) {
+        console.log("Listings endpoint not available:", listingsErr.message);
+      }
+
+      // 2. Fetch owner's reviews (same endpoints as the Reviews page)
+      let reviews: Review[] = [];
+      let avgRating = 0;
+      let totalReviews = 0;
+
+      try {
+        const reviewsResponse = await axios.get(getApiUrl("/rating/owner"), {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-        reviews = reviewsResponse.data.data || [];
+        reviews = reviewsResponse.data.reviews || [];
       } catch (reviewErr: any) {
         console.log("Reviews endpoint not available:", reviewErr.message);
         // Continue with empty reviews
       }
 
       try {
-        // Try to fetch summary
         const summaryResponse = await axios.get(
-          getApiUrl("/reviews/owner/summary"),
+          getApiUrl("/rating/owner/summary"),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -254,33 +279,24 @@ export default function Dashboard() {
             },
           },
         );
-        summary = summaryResponse.data.data || {
-          averageRating: 0,
-          totalReviews: 0,
-        };
+        avgRating = summaryResponse.data.avgRating || 0;
+        totalReviews = summaryResponse.data.totalReviews || 0;
       } catch (summaryErr: any) {
         console.log("Summary endpoint not available:", summaryErr.message);
         // Calculate summary from reviews if available
         if (reviews.length > 0) {
           const totalRating = reviews.reduce(
-            (sum: number, r: any) => sum + r.rating,
+            (sum: number, r: Review) => sum + r.rating,
             0,
           );
-          summary.averageRating = totalRating / reviews.length;
-          summary.totalReviews = reviews.length;
+          avgRating = totalRating / reviews.length;
+          totalReviews = reviews.length;
         }
       }
 
-      // Process data
-      const items = itemsResponse.data.data || [];
+      // Process bookings data
       const bookings = itemsResponse.data.data || [];
 
-      // Calculate stats
-      const totalListings = items.length;
-      const activeListings = items.filter(
-        (item: any) =>
-          item.availability === "available" || item.isActive === true,
-      ).length;
       const totalBookings = bookings.length;
 
       const totalEarnings = bookings
@@ -291,9 +307,6 @@ export default function Dashboard() {
             b.status === "ongoing",
         )
         .reduce((sum: number, b: any) => sum + (b.totalPrice || 0), 0);
-
-      const avgRating = summary.averageRating || 0;
-      const totalReviews = summary.totalReviews || 0;
 
       // Generate monthly data
       const monthlyData = generateMonthlyData(bookings);
@@ -310,7 +323,7 @@ export default function Dashboard() {
         totalReviews,
         monthlyData,
         recentReviews,
-        recentListings: [], 
+        recentListings: [],
       });
     } catch (err: any) {
       console.error("Error fetching dashboard data:", err);
@@ -369,7 +382,7 @@ export default function Dashboard() {
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return `रू${amount.toLocaleString()}`;
+    return `Rs ${amount.toLocaleString()}`;
   };
 
   // Format date
@@ -442,7 +455,6 @@ export default function Dashboard() {
             icon={Package}
             label="Total Listings"
             value={stats.totalListings}
-            trend={12}
             accent="#f59e0b"
             sub={`${stats.activeListings} active · ${stats.totalListings - stats.activeListings} inactive`}
           />
@@ -450,7 +462,6 @@ export default function Dashboard() {
             icon={CalendarCheck}
             label="Total Bookings"
             value={stats.totalBookings}
-            trend={8}
             accent="#3b82f6"
             sub="All time bookings"
           />
@@ -458,7 +469,6 @@ export default function Dashboard() {
             icon={Wallet}
             label="Total Earnings"
             value={formatCurrency(stats.totalEarnings)}
-            trend={21}
             accent="#10b981"
             sub="Net earnings from confirmed bookings"
           />
@@ -466,7 +476,6 @@ export default function Dashboard() {
             icon={Star}
             label="Avg. Rating"
             value={stats.avgRating > 0 ? stats.avgRating.toFixed(1) : "N/A"}
-            trend={0.2}
             accent="#f43f5e"
             sub={`Based on ${stats.totalReviews} review${stats.totalReviews !== 1 ? "s" : ""}`}
           />
@@ -504,7 +513,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-          {/* ✅ Add min-height and ensure container has proper dimensions */}
           <div className="h-52 w-full" style={{ minHeight: "200px" }}>
             <ResponsiveContainer width="100%" height="100%">
               {stats.monthlyData.length > 0 ? (
@@ -563,7 +571,7 @@ export default function Dashboard() {
                       tick={{ fontSize: 11, fill: "#a8a29e" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v) => `रू${(v / 1000).toFixed(0)}k`}
+                      tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`}
                     />
                     <YAxis
                       yAxisId="right"
@@ -608,7 +616,7 @@ export default function Dashboard() {
                       tick={{ fontSize: 11, fill: "#a8a29e" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v) => `रू${(v / 1000).toFixed(0)}k`}
+                      tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar
@@ -643,14 +651,14 @@ export default function Dashboard() {
                 <div key={review._id} className="bg-stone-50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg bg-stone-300 text-stone-700 text-xs font-bold flex items-center justify-center">
-                      {review.renterId?.fullName?.[0] || "U"}
+                      {review.userID?.fullName?.[0] || "U"}
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-stone-800">
-                        {review.renterId?.fullName || "Anonymous"}
+                        {review.userID?.fullName || "Anonymous"}
                       </p>
                       <p className="text-xs text-stone-400">
-                        {review.itemId?.title || "Unknown Item"}
+                        {review.itemID?.title || "Unknown Item"}
                       </p>
                     </div>
                     <div className="ml-auto flex">
@@ -658,7 +666,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <p className="text-xs text-stone-600 leading-relaxed line-clamp-3">
-                    {review.comment || "No comment provided"}
+                    {review.message || "No comment provided"}
                   </p>
                   <p className="text-xs text-stone-300 mt-2">
                     {formatDate(review.createdAt)}

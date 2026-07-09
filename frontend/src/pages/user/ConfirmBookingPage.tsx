@@ -26,7 +26,8 @@ interface CheckoutData {
     items: CheckoutItem[];
     fullName: string;
     phoneNumber: string;
-    deliveryAddress: string;
+    email: string;
+    userlocation: string;
     totalAmount: number;
     subtotal: number;
     securityDeposit: number;
@@ -34,7 +35,8 @@ interface CheckoutData {
     customer?: {
         fullName: string;
         phoneNumber: string;
-        deliveryAddress: string;
+        email: string;
+        userlocation: string;
     };
     paymentMethod?: string;
     type?: 'single' | 'cart';
@@ -85,11 +87,12 @@ const ConfirmBookingPage: React.FC = () => {
     // ── Contact / delivery info ──
     const fullName = checkoutData.customer?.fullName || checkoutData.fullName || user?.fullName || '';
     const phoneNumber = checkoutData.customer?.phoneNumber || checkoutData.phoneNumber || user?.phoneNumber || '';
-    const deliveryAddress = checkoutData.customer?.deliveryAddress || checkoutData.deliveryAddress || user?.address || '';
+    const deliveryAddress = checkoutData.customer?.userlocation || checkoutData.userlocation || user?.address || '';
+    const email = checkoutData.customer?.email || checkoutData.email || user?.email || '';
 
     // ── Trust the totals CheckoutPage already computed across ALL items ──
     // (Recomputing here from a single item was the bug that dropped cart items from the invoice.)
-   
+
     const grandTotal = checkoutData.totalAmount;
 
     // ── Create rental before payment ──
@@ -97,7 +100,7 @@ const ConfirmBookingPage: React.FC = () => {
         try {
             setCreatingRental(true);
 
-                const token = authService.getAccessToken();
+            const token = authService.getAccessToken();
             if (!token) {
                 toast.error('Please login again');
                 return;
@@ -114,10 +117,11 @@ const ConfirmBookingPage: React.FC = () => {
                 customer: {
                     fullName,
                     phoneNumber,
-                    deliveryAddress,
+                    email,
+                    deliveryAddress
                 },
                 paymentMethod: 'digital',
-                  totalAmount: grandTotal,
+                totalAmount: grandTotal,
                 type: checkoutData.type || 'single',
             };
 
@@ -134,7 +138,7 @@ const ConfirmBookingPage: React.FC = () => {
 
             if (response.data.success) {
                 const ids = response.data.data.rentalIds;
-               
+
                 await initiatePayment(ids);
             } else {
                 toast.error('Failed to create rental. Please try again.');
@@ -161,9 +165,9 @@ const ConfirmBookingPage: React.FC = () => {
             const response = await axios.post(
                 `${API_BASE_URL}/api/payment/esewa/initiate-payment`,
                 {
-           
+
                     tax_amount: 0,
-         
+
                     rentalIds: ids,
                 },
                 {
@@ -179,7 +183,7 @@ const ConfirmBookingPage: React.FC = () => {
             if (result.status === 'success') {
                 setEsewaPayload(result.payment_payload);
                 setGatewayUrl(result.gateway_url);
-              
+
 
                 setTimeout(() => {
                     const form = document.getElementById('esewa-form') as HTMLFormElement;
@@ -240,7 +244,7 @@ const ConfirmBookingPage: React.FC = () => {
                                     </div>
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  
+
                                     <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">{item.name}</h3>
                                     <p className="text-xs font-bold text-stone-900 mt-1">
                                         Rs. {item.price} / day
@@ -262,7 +266,7 @@ const ConfirmBookingPage: React.FC = () => {
                         {/* Delivery & customer info */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
                             <div className="space-y-1 bg-stone-50 p-3 rounded-xl border border-stone-100">
-                                <span className="text-stone-400 font-medium block">DELIVERY ADDRESS</span>
+                                <span className="text-stone-400 font-medium block">Your ADDRESS</span>
                                 <div className="flex items-center gap-1.5 font-semibold text-stone-700 mt-1">
                                     <MapPin size={13} className="text-amber-500" />
                                     <span className="truncate">
@@ -274,6 +278,7 @@ const ConfirmBookingPage: React.FC = () => {
                                 <span className="text-stone-400 font-medium block">CUSTOMER</span>
                                 <p className="font-semibold text-stone-700 mt-1">{fullName}</p>
                                 <p className="text-stone-500">{phoneNumber}</p>
+                                <p className="text-stone-500">{email}</p>
                             </div>
                         </div>
                     </div>
@@ -285,9 +290,9 @@ const ConfirmBookingPage: React.FC = () => {
                     <div className="space-y-2.5 text-xs pb-3 border-b border-stone-100">
                         <div className="flex justify-between text-stone-500">
                             <span>Rental Fee{isMultiItem ? ' (all items)' : ''}</span>
-         
+
                         </div>
-                                          
+
                     </div>
                     <div className="flex justify-between items-baseline pt-3">
                         <span className="text-xs font-bold text-stone-800">Total Amount</span>

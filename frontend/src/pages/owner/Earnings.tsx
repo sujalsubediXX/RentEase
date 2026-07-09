@@ -237,7 +237,7 @@ export const Earnings = () => {
     const maxVal = Math.max(...stats.monthlyData.map(b => b.val), 1);
 
     const formatCurrency = (amount: number) => {
-        return `रू ${amount.toLocaleString()}`;
+        return `Rs ${amount.toLocaleString()}`;
     };
 
     const getMonthName = () => {
@@ -334,7 +334,7 @@ export const Earnings = () => {
                                 return (
                                     <div key={b.month} className="flex-1 flex flex-col items-center gap-2">
                                         <span className="text-xs text-stone-400">
-                                            {b.val > 0 ? `रू${(b.val / 1000).toFixed(0)}k` : ''}
+                                            {b.val > 0 ? `Rs${(b.val / 1000).toFixed(0)}k` : ''}
                                         </span>
                                         <div 
                                             className={`w-full rounded-t-lg transition-opacity hover:opacity-100 ${

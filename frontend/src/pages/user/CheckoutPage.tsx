@@ -10,6 +10,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import API_BASE_URL from '../../config/api';
 import { authService } from '../../services/auth.services';
 import { toast } from "sonner";
+import { useAuth } from '../../hooks/useAuth';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Product {
@@ -29,6 +30,7 @@ interface CartItem {
     _id: string;
     title: string;
     price: number;
+    images: string[];
   };
   quantity: number;
   rentalDays: number;
@@ -104,6 +106,8 @@ const SectionHeader = ({
 const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  console.log(user)
 
   const checkoutType: 'single' | 'cart' = location.state?.type ?? 'single';
   const rawItems: any[] = location.state?.items ?? [];
@@ -127,7 +131,18 @@ const CheckoutPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneError, setPhoneError] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [email, setEmail] = useState('');
+  const [userlocation, setLocation] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    setFullName(user.fullName || '');
+    setEmail(user.email || '');
+    setPhoneNumber(user.phoneNumber || '');
+
+    setLocation(user.address || '');
+  }, [user]);
+
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const token = authService.getAccessToken();
@@ -267,52 +282,53 @@ const CheckoutPage: React.FC = () => {
       customer: {
         fullName,
         phoneNumber,
-        deliveryAddress
+        email,
+        deliveryAddress:userlocation
       },
       paymentMethod,
       totalAmount,
     };
 
-  if (paymentMethod === 'digital') {
-  const enrichedItems = checkoutType === 'single'
-    ? [
-        {
-          id: singleProduct!.id,
-          name: singleProduct!.name,
-          price: singleProduct!.price,
-          images: singleProduct!.images || [],
-          location: singleProduct!.address || 'Kathmandu',
-          startDate,
-          endDate,
-          rentalDays: singleRentalDays,
-          quantity: 1,
-        },
-      ]
-    : cartItems.map((ci) => ({
-        id: ci.itemId._id,
-        name: ci.itemId.title,
-        price: ci.itemId.price,
-        images: [], // CartItem doesn't carry images today — see note below
-        startDate: ci.startDate,
-        endDate: ci.endDate,
-        rentalDays: ci.rentalDays,
-        quantity: ci.quantity,
-      }));
+    if (paymentMethod === 'digital') {
+      const enrichedItems = checkoutType === 'single'
+        ? [
+          {
+            id: singleProduct!.id,
+            name: singleProduct!.name,
+            price: singleProduct!.price,
+            images: singleProduct!.images || [],
+            location: singleProduct!.address || 'Kathmandu',
+            startDate,
+            endDate,
+            rentalDays: singleRentalDays,
+            quantity: 1,
+          },
+        ]
+        : cartItems.map((ci) => ({
+          id: ci.itemId._id,
+          name: ci.itemId.title,
+          price: ci.itemId.price,
+          images:  (ci.itemId.images || []).map((img) => `${API_BASE_URL}${img}`),
+          startDate: ci.startDate,
+          endDate: ci.endDate,
+          rentalDays: ci.rentalDays,
+          quantity: ci.quantity,
+        }));
 
-  navigate('/confirm-booking', {
-    state: {
-      items: enrichedItems,
-      fullName,
-      phoneNumber,
-      deliveryAddress,
-      totalAmount,
-      customer: { fullName, phoneNumber, deliveryAddress },
-      paymentMethod,
-      type: checkoutType,
-    },
-  });
-  return;
-}
+      navigate('/confirm-booking', {
+        state: {
+          items: enrichedItems,
+          fullName,
+          phoneNumber,
+          email,
+          totalAmount,
+          customer: { fullName, phoneNumber, email },
+          paymentMethod,
+          type: checkoutType,
+        },
+      });
+      return;
+    }
     // COD flow - call backend directly
     try {
       setIsSubmitting(true);
@@ -426,7 +442,7 @@ const CheckoutPage: React.FC = () => {
             )}
 
             <div className="bg-white border border-stone-200 rounded-2xl p-5 md:p-6 shadow-sm">
-              <SectionHeader icon={<User size={16} />} label="Delivery Details" />
+              <SectionHeader icon={<User size={16} />} label="Your Details" />
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
@@ -440,6 +456,22 @@ const CheckoutPage: React.FC = () => {
                       placeholder="Your full name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="Your Email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all"
                     />
                   </div>
@@ -478,32 +510,22 @@ const CheckoutPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
-                      City
+                      Location
                     </label>
                     <div className="relative">
                       <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                       <input
                         type="text"
-                        placeholder="Kathmandu"
+                        placeholder="Location"
+                        value={userlocation}
+                        onChange={(e) => setLocation(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">
-                    Delivery Address
-                  </label>
-                  <textarea
-                    required
-                    rows={3}
-                    placeholder="Street name, building, house number..."
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-amber-500 transition-all resize-none"
-                  />
-                </div>
+
               </div>
             </div>
 
@@ -525,8 +547,8 @@ const CheckoutPage: React.FC = () => {
                     className="accent-stone-900"
                   />
                   <div>
-                    <p className="text-sm font-semibold text-stone-800">Cash on Delivery</p>
-                    <p className="text-[11px] text-stone-400">Pay when item arrives</p>
+                    <p className="text-sm font-semibold text-stone-800">Pay at pickup</p>
+                    <p className="text-[11px] text-stone-400">Pay when you pickup item</p>
                   </div>
                 </label>
 
@@ -561,7 +583,7 @@ const CheckoutPage: React.FC = () => {
                 ? 'Processing…'
                 : paymentMethod === 'digital'
                   ? `Pay with eSewa — Rs. ${totalAmount.toLocaleString()}`
-                  : `Confirm COD Order — Rs. ${totalAmount.toLocaleString()}`}
+                  : `Confirm Pay at pickup Order — Rs. ${totalAmount.toLocaleString()}`}
             </button>
           </form>
 
@@ -653,7 +675,7 @@ const CheckoutPage: React.FC = () => {
                   ? 'Processing…'
                   : paymentMethod === 'digital'
                     ? 'Review & Pay with eSewa'
-                    : 'Confirm COD Order'}
+                    : 'Confirm Pay at pickup Order'}
               </button>
             </div>
           </div>

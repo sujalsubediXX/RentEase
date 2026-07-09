@@ -336,7 +336,7 @@ const BookingsPage = () => {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto bg-stone-50">
+        <div className="flex-1 overflow-y-auto  h-screen bg-stone-50">
             <TopBar title="Bookings" subtitle="Manage rental requests and reservations" />
 
             <RejectModal
@@ -347,7 +347,7 @@ const BookingsPage = () => {
                 updating={updating === rejectModal.bookingId}
             />
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
                 {/* Tabs */}
                 <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
                     {(["all", "pending", "confirmed", "ongoing", "completed", "cancelled", "rejected"] as const).map(t => {

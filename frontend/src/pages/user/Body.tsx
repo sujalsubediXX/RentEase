@@ -58,11 +58,10 @@ const testimonials: Testimonial[] = [
 ];
 
 
-const popularTags: string[] = ["Camera", "Tent", "Drill", "Projector", "Bike", "Kayak"];
 
 const trustPoints = [
   { icon: ShieldCheck, label: "Verified owners", detail: "KYC-checked before they list" },
-  { icon: MapPin, label: "Kathmandu Valley only", detail: "Pickup nearby, not nationwide guesswork" },
+  { icon: MapPin, label: "Limited Valley only", detail: "Pickup nearby, not nationwide guesswork" },
   { icon: Clock3, label: "Book by the day", detail: "Rent for one day or several weeks" },
 ];
 
@@ -217,7 +216,7 @@ export default function Body() {
     };
     fetchMostRented();
   }, [categoryMap]);
-console.log(mostRentedItems)
+
   useEffect(() => {
     if (!user?.id) return;
     fetchWishlist();
@@ -601,18 +600,8 @@ console.log(mostRentedItems)
               Search
             </button>
           </div>
-          <div className="flex gap-2 mt-4 flex-wrap justify-center items-center">
-            <span className="text-[12px] text-gray-400">Popular:</span>
-            {popularTags.map((t) => (
-              <a key={t} href="#" className="text-[12px] text-gray-500 no-underline px-3 py-1 border border-gray-200 rounded-full hover:text-amber-600 hover:border-amber-300 transition-all duration-200">
-                {t}
-              </a>
-            ))}
-          </div>
-
-          {/* Trust strip — a receipt-style dashed divider tying back to the
-              rental-tag visual language, carrying real reassurance copy
-              instead of decorative filler. */}
+        
+         
           <div className="mt-12 pt-8 border-t border-dashed border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
             {trustPoints.map(({ icon: Icon, label, detail }) => (
               <div key={label} className="flex items-start gap-3">
