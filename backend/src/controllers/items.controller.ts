@@ -59,47 +59,21 @@ export const createItem = async (req: Request, res: Response) => {
 
 export const getItems = async (req: Request, res: Response) => {
   try {
-
-    // 1. Find items under category
     const items = await Item.find()
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const itemIds = items.map((item) => item._id);
-
-    // 2. Fetch images for all items
-    const images = await ItemImage.find({ itemId: { $in: itemIds } })
-      .sort({ displayOrder: 1 })
-      .lean();
-
-    // 3. Map images to items
-    const itemsWithImages = items.map((item) => {
-      const itemImages = images.filter(
-        (img) => img.itemId.toString() === item._id.toString()
-      );
-
-      const primaryImage =
-        itemImages.find((img) => img.isPrimary)?.imageUrl ||
-        itemImages[0]?.imageUrl ||
-        null;
-
-      return {
-        ...item,
-        images: itemImages.map((img) => img.imageUrl),
-        primaryImage
-      };
-    });
+      .populate('ownerId', 'fullName email phoneNumber')  
+      .populate('categoryId', 'name')                     
+      .populate('images')                                 
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
-      count: itemsWithImages.length,
-      data: itemsWithImages
+      data: items
     });
-  } catch (error) {
-    console.error("getItems error:", error);
+  } catch (error: any) {
+    console.error("Error fetching items:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error"
+      message: error.message || "Failed to fetch items"
     });
   }
 };

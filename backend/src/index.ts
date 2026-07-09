@@ -5,6 +5,7 @@ dotenv.config();
 import { connectDB } from "./config/dbconnection.ts"
 const app = express();
 
+import adminRoutes from "./routes/admin.route.ts";
 import userrouter from "./routes/user.route.ts"
 import categoryrouter from "./routes/categories.route.ts"
 import itemrouter from "./routes/items.route.ts"
@@ -39,6 +40,8 @@ app.use("/api/cart", cartroute)
 app.use("/api/wishlist", wishlistroute)
 app.use("/api/rentals", rentalrouter);
 app.use("/api/kyc", kycRoutes);
+app.use("/api/admin", adminRoutes);
+
 
 
 app.listen(PORT, () => {
