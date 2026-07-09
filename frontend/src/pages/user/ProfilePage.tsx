@@ -5,14 +5,19 @@ import { authService } from "../../services/auth.services";
 import API_BASE_URL from "../../config/api";
 import axios from "axios";
 import { ReviewModal } from "../../components/user/ReviewModal";
+
 function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [rentals, setRentals] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-   const [reviewingBooking, setReviewingBooking] = useState<any>(null); 
+  const [reviewingBooking, setReviewingBooking] = useState<any>(null);
+  const [pendingRental, setPendingRental] = useState<number>(0);
+  const [hasReviewedRental, setHasReviewedRental] = useState<number>(0);
+
   const token = authService.getAccessToken();
+
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     fetchWishlist();
@@ -26,24 +31,15 @@ function ProfilePage() {
       setWishlist(res.data?.items || []);
     } catch (err) {
       console.error(err);
-
-    };
-  }
-
-
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        // Fetch all data in parallel
-        const [rentalsData] = await Promise.all([
-          authService.getUserRentals()
-
-        ]);
-
+        const [rentalsData] = await Promise.all([authService.getUserRentals()]);
         setRentals(rentalsData);
-
       } catch (error) {
         console.error("Error fetching user data:", error);
       } finally {
@@ -56,6 +52,17 @@ function ProfilePage() {
     }
   }, [user]);
 
+  // Moved above the early return, and fixed dependency array
+  useEffect(() => {
+    if (!rentals) return;
+
+    const pendingCount = rentals.filter((rental) => rental.status === "pending").length;
+    const reviewedCount = rentals.filter((rental) => rental.hasReview === true).length;
+
+    setPendingRental(pendingCount);
+    setHasReviewedRental(reviewedCount);
+  }, [rentals]);
+
   if (loading || !user) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-10 mt-12 flex justify-center items-center min-h-100">
@@ -67,14 +74,13 @@ function ProfilePage() {
     );
   }
 
-  const activeRentals = rentals.filter(r => r.status === "active").length;
-  const completedRentals = rentals.filter(r => r.status === "completed").length;
+  const completedRentals = rentals.filter((r) => r.status === "completed").length;
 
   const stats = [
-    { label: "Active Rentals", value: activeRentals.toString(), icon: "📦" },
+    { label: "Pending Rentals", value: pendingRental, icon: "📦" },
     { label: "Completed", value: completedRentals.toString(), icon: "✅" },
     { label: "Wishlist", value: wishlist.length.toString(), icon: "❤️" },
-    { label: "Listings", value: 2, icon: "🏠" },
+    { label: "Rating", value: hasReviewedRental, icon: "🏠" },
   ];
 
   return (
@@ -136,9 +142,9 @@ function ProfilePage() {
         <div className="divide-y divide-stone-100">
           {rentals.length > 0 ? (
             rentals.map((rental, i) => (
-              
+
               <div key={rental._id || i} className="flex items-center gap-4 px-6 py-4 hover:bg-stone-50 transition-colors">
-           
+
                 <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-2xl shrink-0">
                   {rental.image || "📦"}
                 </div>
@@ -152,33 +158,32 @@ function ProfilePage() {
                       : "No dates available"}
                   </p>
                 </div>
-             <div className="text-right flex flex-col items-end gap-1.5">
-  <p className="font-semibold text-stone-900 text-sm">
-    Rs. {(rental.totalPrice).toLocaleString()}
-  </p>
+                <div className="text-right flex flex-col items-end gap-1.5">
+                  <p className="font-semibold text-stone-900 text-sm">
+                    Rs. {(rental.totalPrice).toLocaleString()}
+                  </p>
 
-  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-    rental.status === "active"
-      ? "bg-green-100 text-green-700"
-      : rental.status === "completed"
-        ? "bg-stone-100 text-stone-500"
-        : "bg-yellow-100 text-yellow-700"
-  }`}>
-    {rental.status === "active" ? "● Active" : rental.status === "completed" ? "✓ Done" : rental.status || "Pending"}
-  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${rental.status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : rental.status === "completed"
+                        ? ""
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}>
+                    {rental.status === "active" ? "● Active" : rental.status === "completed" ? "" : rental.status || "Pending"}
+                  </span>
 
-  {rental.status === "completed" && !rental.hasReview && (
-    <button
-      onClick={() => setReviewingBooking(rental)}
-      className="rounded-full border border-amber-700/30 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 transition"
-    >
-      Rate & Review
-    </button>
-  )}
-  {rental.status === "completed" && rental.hasReview && (
-    <span className="text-xs text-stone-500 italic">Reviewed ✓</span>
-  )}
-</div>
+                  {rental.status === "completed" && !rental.hasReview && (
+                    <button
+                      onClick={() => setReviewingBooking(rental)}
+                      className="rounded-full border border-amber-700/30 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 transition"
+                    >
+                      Rate & Review
+                    </button>
+                  )}
+                  {rental.status === "completed" && rental.hasReview && (
+                    <span className="text-xs text-stone-500 italic">Reviewed ✓</span>
+                  )}
+                </div>
               </div>
             ))
           ) : (
@@ -189,7 +194,7 @@ function ProfilePage() {
           )}
         </div>
       </div>
- {reviewingBooking && (
+      {reviewingBooking && (
         <ReviewModal
           booking={reviewingBooking}
           onClose={() => setReviewingBooking(null)}

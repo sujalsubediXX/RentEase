@@ -28,6 +28,12 @@ function UserDropdown() {
     if (user?.kycStatus == "pending" || user?.kycStatus =="rejected"){
         items.push({label:"Verify KYC",icon:"😎", page:"kycverification"})
     }
+    if (user?.role == "owner" ){
+        items.push({label:"Dashboard",icon:"🚪", page:"owner/dashboard"})
+    }
+    if (user?.role == "admin" ){
+        items.push({label:"Dashboard",icon:"🚪", page:"admin/dashboard"})
+    }
 
     return (
         <div ref={ref} className="relative">

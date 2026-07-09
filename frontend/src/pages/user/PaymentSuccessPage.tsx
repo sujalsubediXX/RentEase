@@ -98,7 +98,7 @@ const PaymentSuccessPage: React.FC = () => {
             </div>
 
             <Link
-              to="/"
+              to="/profile"
               className="w-full py-3 bg-stone-900 text-amber-400 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-stone-950 transition-all shadow-md flex items-center justify-center gap-1.5"
             >
               Return to Catalog Home <ArrowRight size={14} />

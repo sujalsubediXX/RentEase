@@ -85,8 +85,7 @@ export const verifyPayment=(req:Request, res:Response) => {
     const decodedString = Buffer.from(data, 'base64').toString('utf-8');
     const responseData = JSON.parse(decodedString);
     
-    // 🔍 DEBUG LOG 1: Look at exactly what eSewa sent back
-    console.log("🔍 Decoded eSewa Response Data:", responseData);
+    
 
     const { status, signature, transaction_uuid, total_amount, product_code, signed_field_names } = responseData;
 
@@ -101,15 +100,13 @@ export const verifyPayment=(req:Request, res:Response) => {
     const signatureMessage = fields.map((field: string | number) => `${field}=${responseData[field]}`).join(',');
 
     // 🔍 DEBUG LOG 2: Compare the constructed signature strings
-    console.log("🔍 Local Signature Message built:", signatureMessage);
+
 
     const localSignature = crypto
       .createHmac('sha256', ESEWA_CONFIG.SECRET_KEY)
       .update(signatureMessage)
       .digest('base64');
 
-    console.log("🔍 eSewa Signature: ", signature);
-    console.log("🔍 Local Signature: ", localSignature);
 
     if (localSignature === signature) {
       return res.status(200).json({ status: 'verified', orderDetails: responseData });
