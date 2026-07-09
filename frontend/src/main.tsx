@@ -32,6 +32,7 @@ import { Settings } from "./pages/owner/Settings";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { DashboardPage } from "./pages/admin/DashboardPage";
 import { UsersPage } from "./pages/admin/UsersPage";
+import { ListingDetailPage } from "./pages/admin/ListingDetailPage";
 import { ListingsPage } from "./pages/admin/ListingsPage";
 import { BookingsPage } from "./pages/admin/BookingsPage";
 import { RevenuePage } from "./pages/admin/RevenuePage";
@@ -175,6 +176,7 @@ const router = createBrowserRouter([
       { path: "/admin/users", element: <UsersPage  /> },
       { path: "/admin/owners", element: <OwnersPage  /> },
       { path: "/admin/listings", element: <ListingsPage /> },
+      { path: "/admin/listings/:id", element: <ListingDetailPage /> },
       { path: "/admin/bookings", element: <BookingsPage /> },
       { path: "/admin/revenue", element: <RevenuePage /> },
       { path: "/admin/reviews", element: <ReviewsPage /> },
