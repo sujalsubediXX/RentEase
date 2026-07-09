@@ -40,7 +40,7 @@ router.put("/:id/status", authMiddleware, async (req, res) => {
     
     switch(action) {
       case 'approve':
-        updateData = { isApproved: true, isActive: true };
+        updateData = { isApproved: true, isActive: true ,availability:"available"};
         break;
       case 'remove':
         updateData = { isActive: false, availability: 'unavailable' };
@@ -55,7 +55,7 @@ router.put("/:id/status", authMiddleware, async (req, res) => {
         });
     }
 
-    const item = await Item.findByIdAndUpdate(id, updateData, { new: true });
+    const item = await Item.findByIdAndUpdate(id, updateData, { returnDocument: "after" });
 
     if (!item) {
       return res.status(404).json({

@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { 
-  ArrowLeft, 
-  Package, 
-  User, 
-  Tag, 
+import {
+  ArrowLeft,
+  Package,
+  User,
+  Tag,
   Loader2,
-  Eye,
-  CheckCircle,
-  Ban
+
+
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -49,7 +48,7 @@ const generatePlaceholderSVG = (width: number, height: number, text: string = 'N
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
       <rect width="${width}" height="${height}" fill="#1c1917"/>
       <rect x="0" y="0" width="${width}" height="${height}" fill="#292524" rx="8"/>
-      <text x="${width/2}" y="${height/2}" font-family="Arial" font-size="${Math.min(width, height) / 8}" fill="#78716c" text-anchor="middle" dominant-baseline="central">
+      <text x="${width / 2}" y="${height / 2}" font-family="Arial" font-size="${Math.min(width, height) / 8}" fill="#78716c" text-anchor="middle" dominant-baseline="central">
         ${text}
       </text>
     </svg>
@@ -59,24 +58,8 @@ const generatePlaceholderSVG = (width: number, height: number, text: string = 'N
 const PLACEHOLDER_IMAGE = generatePlaceholderSVG(400, 300, 'No Image');
 const PLACEHOLDER_THUMB = generatePlaceholderSVG(80, 80, 'No Image');
 
-const getApiUrl = (endpoint: string) => {
-  if (API_BASE_URL.endsWith('/api')) {
-    return `${API_BASE_URL}${endpoint}`;
-  }
-  return `${API_BASE_URL}/api${endpoint}`;
-};
 
-const statusBadge = (status: string) => {
-  const map: Record<string, string> = {
-    available: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-    active: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-    rented: "bg-sky-500/15 text-sky-400 border border-sky-500/30",
-    unavailable: "bg-red-500/15 text-red-400 border border-red-500/30",
-    inactive: "bg-stone-600/40 text-stone-400 border border-stone-600/50",
-    pending: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
-  };
-  return map[status] ?? "bg-stone-700 text-stone-300";
-};
+
 
 const conditionBadge = (condition: string) => {
   const map: Record<string, string> = {
@@ -94,10 +77,11 @@ export const ListingDetailPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
+  
   const handleImageError = (imageUrl: string) => {
     setImageErrors(prev => {
       const newSet = new Set(prev);
@@ -105,18 +89,23 @@ export const ListingDetailPage: React.FC = () => {
       return newSet;
     });
   };
-
-  const getDisplayImage = (imageUrl: string) => {
-    if (imageErrors.has(imageUrl) || !imageUrl) {
-      return PLACEHOLDER_IMAGE;
-    }
-    return imageUrl;
-  };
-
+const resolveImageUrl = (path: string) => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
+  return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+ const getDisplayImage = (imageUrl: string) => {
+  if (imageErrors.has(imageUrl) || !imageUrl) {
+    return PLACEHOLDER_IMAGE;
+  }
+  return resolveImageUrl(imageUrl);
+};
   const fetchListingDetails = async () => {
     try {
       setLoading(true);
-      
+
       if (!isAuthenticated || !user) {
         toast.error('Please login to view listing');
         navigate('/admin/listings');
@@ -124,7 +113,7 @@ export const ListingDetailPage: React.FC = () => {
       }
 
       const token = authService.getAccessToken();
-      
+
       if (!token) {
         toast.error('Authentication token not found');
         navigate('/admin/listings');
@@ -132,15 +121,14 @@ export const ListingDetailPage: React.FC = () => {
       }
 
       // Fetch the specific item
-      const itemResponse = await axios.get(
-        getApiUrl(`/items/getitems`),
+      const itemResponse = await axios.get(`${API_BASE_URL}/api/items/getitems`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }
-      );
+      )
 
       const items = itemResponse.data.data || itemResponse.data || [];
       const foundItem = items.find((item: any) => item._id === id);
@@ -152,8 +140,7 @@ export const ListingDetailPage: React.FC = () => {
       }
 
       // Fetch bookings for this item
-      const bookingsResponse = await axios.get(
-        getApiUrl('/rentals/filterStatus?status=all'),
+      const bookingsResponse = await axios.get(`${API_BASE_URL}/api/rentals/filterStatus?status=all`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -163,7 +150,7 @@ export const ListingDetailPage: React.FC = () => {
       );
 
       const bookings = bookingsResponse.data.data || [];
-      
+
       // Count bookings for this item
       const itemBookings = bookings.filter((b: any) => {
         let itemId = null;
@@ -214,50 +201,13 @@ export const ListingDetailPage: React.FC = () => {
     }
   };
 
-  const updateListingStatus = async (action: 'approve' | 'remove' | 'flag') => {
-    if (!listing) return;
-    
-    try {
-      setUpdating(true);
-      const token = authService.getAccessToken();
-      
-      if (!token) {
-        toast.error('Please login first');
-        return;
-      }
 
-      await axios.put(
-        getApiUrl(`/items/${listing._id}/status`),
-        { action },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      toast.success(`Listing ${action === 'approve' ? 'approved' : action === 'remove' ? 'removed' : 'flagged'} successfully`);
-      await fetchListingDetails();
-    } catch (err: any) {
-      console.error("Error updating listing:", err);
-      toast.error(err.response?.data?.message || 'Failed to update listing');
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   useEffect(() => {
     fetchListingDetails();
   }, [id, isAuthenticated]);
 
-  const getStatus = (item: any): string => {
-    if (item.isApproved === false) return 'pending';
-    if (item.availability === 'available') return 'active';
-    if (item.availability === 'rented') return 'rented';
-    if (item.isActive === false) return 'inactive';
-    return 'unavailable';
-  };
+  
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -298,12 +248,12 @@ export const ListingDetailPage: React.FC = () => {
     );
   }
 
-  const status = getStatus(listing);
+
 
   return (
     <div className="p-6 space-y-6">
       {/* Back Button */}
-      <button 
+      <button
         onClick={() => navigate('/admin/listings')}
         className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors"
       >
@@ -317,9 +267,9 @@ export const ListingDetailPage: React.FC = () => {
           <div className="bg-stone-900 rounded-2xl border border-stone-800 p-4">
             <div className="aspect-video bg-stone-800 rounded-xl overflow-hidden flex items-center justify-center">
               {selectedImage ? (
-                <img 
-                  src={getDisplayImage(selectedImage)} 
-                  alt={listing.title} 
+                <img
+                  src={getDisplayImage(selectedImage)}
+                  alt={listing.title}
                   className="w-full h-full object-cover"
                   onError={() => handleImageError(selectedImage)}
                 />
@@ -333,18 +283,17 @@ export const ListingDetailPage: React.FC = () => {
             {listing.images && listing.images.length > 1 && (
               <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
                 {listing.images.map((img, index) => {
-                  const displayImg = imageErrors.has(img) ? PLACEHOLDER_THUMB : img;
+             const displayImg = imageErrors.has(img) ? PLACEHOLDER_THUMB : resolveImageUrl(img);
                   return (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(img)}
-                      className={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
-                        selectedImage === img 
-                          ? 'border-amber-500' 
+                      className={`w-20 h-20 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${selectedImage === img
+                          ? 'border-amber-500'
                           : 'border-transparent hover:border-stone-600'
-                      }`}
+                        }`}
                     >
-                      <img 
+                      <img
                         src={displayImg}
                         alt={`${listing.title} ${index + 1}`}
                         className="w-full h-full object-cover"
@@ -372,9 +321,7 @@ export const ListingDetailPage: React.FC = () => {
           <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5">
             <div className="flex items-start justify-between mb-3">
               <h1 className="text-xl font-bold text-white">{listing.title}</h1>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(status)}`}>
-                {status}
-              </span>
+             
             </div>
             <div className="flex items-center gap-2 text-sm text-stone-400">
               <Tag size={14} />
@@ -445,42 +392,7 @@ export const ListingDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5">
-            <h4 className="text-xs text-stone-500 uppercase tracking-wider mb-3">Actions</h4>
-            <div className="flex flex-col gap-2">
-              {status === "pending" && (
-                <button 
-                  onClick={() => updateListingStatus('approve')}
-                  disabled={updating}
-                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {updating ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />} 
-                  Approve Listing
-                </button>
-              )}
-              {(status === "active" || status === "rented") && (
-                <button 
-                  onClick={() => updateListingStatus('flag')}
-                  disabled={updating}
-                  className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {updating ? <Loader2 size={16} className="animate-spin" /> : <Ban size={16} />} 
-                  Flag Listing
-                </button>
-              )}
-              {(status === "inactive" || status === "unavailable") && (
-                <button 
-                  onClick={() => updateListingStatus('approve')}
-                  disabled={updating}
-                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {updating ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />} 
-                  Reactivate Listing
-                </button>
-              )}
-            </div>
-          </div>
+  
         </div>
       </div>
     </div>
