@@ -30,8 +30,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       ref={cardRef}
       className="group relative bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 hover:-translate-y-1 transition-all duration-300"
     >
-      {/* punched tag hole — same signature detail used on category cards and
-          testimonials elsewhere, so a listing reads as a "rental tag" */}
+      <>
+      {console.log(product)}
+      </>
       <span
         aria-hidden="true"
         className="absolute top-3 left-3 z-20 w-2.5 h-2.5 rounded-full border-2 border-white/80 group-hover:border-amber-300 transition-colors pointer-events-none"
@@ -46,13 +47,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {product.availability}
         </span>
 
-        {product.stock === 0 && (
-          <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
-            <span className="text-stone-600 text-sm font-semibold bg-white/90 px-3 py-1 rounded-full border border-stone-200">
-              Out of Stock
-            </span>
-          </div>
-        )}
+  
         <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
           <button
             onClick={() => onToggleWishlist(product.id)}
@@ -75,7 +70,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.location}</span>
+          <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider flex justify-center items-center ">
+                   <MapPin size={16} className=" pr-1" />{"  "}
+            {product.location}</span>
           <div className="flex items-center gap-1">
             <Star size={11} className="text-amber-400 fill-amber-400" />
             <span className="text-xs text-stone-700 font-medium">{product.avgRating}</span>
@@ -86,8 +83,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <h3 className="font-semibold text-stone-800 mb-1 line-clamp-1 text-sm">{product.name}</h3>
 
         <div className="flex items-center gap-1 mb-3">
-          <MapPin size={11} className="text-stone-400 shrink-0" />
-          <span className="text-[11px] text-stone-400">{product.location}</span>
+ 
+          <span className="text-[11px] ">{product.category}</span>
         </div>
 
         <div className="flex items-end justify-between mb-3">
@@ -98,15 +95,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
 
           </div>
-          <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full
-            ${product.stock > 3
-              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-              : product.stock > 0
-                ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                : 'bg-red-50 text-red-500 border border-red-200'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${product.stock > 3 ? 'bg-emerald-500' : product.stock > 0 ? 'bg-amber-500' : 'bg-red-400'}`} />
-            {product.stock > 3 ? 'Available' : product.stock > 0 ? `${product.stock} left` : 'Unavailable'}
-          </span>
+
         </div>
 
         <div className="flex gap-2">

@@ -14,7 +14,9 @@ const RATING_ITEM_FIELD = "itemID"; // matches your schema field name
 
 // Only these statuses represent real demand — a pending/cancelled/rejected
 // rental never actually happened and shouldn't boost an item's ranking.
-const QUALIFYING_RENTAL_STATUSES = ["confirmed", "ongoing", "completed"];
+// `as const` keeps this as a tuple of string literals (not string[]) so it's
+// assignable to Mongoose's typed $in on the `status` enum field.
+const QUALIFYING_RENTAL_STATUSES = ["confirmed", "ongoing", "completed"] as const;
 
 // Scoring weights — tune based on what matters most for your platform.
 const WEIGHTS = {
@@ -187,54 +189,150 @@ export async function getFeaturedItems(limit = 8) {
   return results;
 }
 
+// ── Content-based filtering (cosine similarity) ──────────────────────────
+
+const CONDITION_ORDER: Record<string, number> = {
+  old: 0,
+  used: 0.33,
+  "like new": 0.66,
+  new: 1,
+};
+
+interface VectorContext {
+  categoryIndex: Map<string, number>;
+  numCategories: number;
+  minPrice: number;
+  maxPrice: number;
+}
+
+function buildItemVector(item: any, ctx: VectorContext): number[] {
+  // Layout: [ ...one-hot categories, normalizedPrice, conditionScore ]
+  const vec = new Array(ctx.numCategories + 2).fill(0);
+
+  const catIdx = ctx.categoryIndex.get(String(item.categoryId));
+  if (catIdx !== undefined) vec[catIdx] = 1;
+
+  const priceRange = ctx.maxPrice - ctx.minPrice || 1;
+  vec[ctx.numCategories] = (item.price - ctx.minPrice) / priceRange;
+
+  vec[ctx.numCategories + 1] = CONDITION_ORDER[item.condition] ?? 0.33;
+
+  return vec;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0,
+    normA = 0,
+    normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    const ai = a[i] ?? 0;
+    const bi = b[i] ?? 0;
+    dot += ai * bi;
+    normA += ai * ai;
+    normB += bi * bi;
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 /**
- * Strategy 2 — Content-based recommendation.
+ * Strategy 2 — Content-based recommendation via cosine similarity.
+ * Builds a user profile vector from their rental/wishlist history
+ * (category one-hot + normalized price + condition), then ranks
+ * candidate items by similarity to that profile.
  */
 export async function getRecommendedForUser(userId: string, limit = 8) {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 
   const [rentals, wishlistDoc] = await Promise.all([
-    Rentals.find({ userId: userObjectId }).select("itemId").lean(),
+    Rentals.find({
+      userId: userObjectId,
+      status: { $in: QUALIFYING_RENTAL_STATUSES },
+    })
+      .select("itemId")
+      .lean(),
     Wishlist.findOne({ userId: userObjectId }).select("items").lean(),
   ]);
 
-  const seenItemIds: mongoose.Types.ObjectId[] = [
-    ...rentals.map((r: any) => r.itemId),
-    ...((wishlistDoc as any)?.items ?? []),
-  ];
+  const rentedItemIds = rentals.map((r: any) => r.itemId);
+  const wishlistedItemIds: mongoose.Types.ObjectId[] =
+    (wishlistDoc as any)?.items ?? [];
+  const seenItemIds = [...rentedItemIds, ...wishlistedItemIds];
 
   if (seenItemIds.length === 0) {
     return getFeaturedItems(limit);
   }
 
   const seenItems = await Item.find({ _id: { $in: seenItemIds } })
-    .select("categoryId")
+    .select("categoryId price condition")
     .lean();
 
-  const categoryCounts = new Map<string, number>();
-  for (const item of seenItems) {
-    const key = String((item as any).categoryId);
-    categoryCounts.set(key, (categoryCounts.get(key) ?? 0) + 1);
-  }
-
-  const topCategoryIds = [...categoryCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([id]) => new mongoose.Types.ObjectId(id));
-
-  if (topCategoryIds.length === 0) {
+  if (seenItems.length === 0) {
     return getFeaturedItems(limit);
   }
 
-  const pipeline = [
-    ...buildScoringPipeline({
-      categoryId: { $in: topCategoryIds },
-      _id: { $nin: seenItemIds },
-    }),
-    { $limit: limit },
-  ];
+  const candidates = await Item.aggregate(
+    buildScoringPipeline({ _id: { $nin: seenItemIds } })
+  );
 
-  const results = await Item.aggregate(pipeline);
+  if (candidates.length === 0) {
+    return getFeaturedItems(limit);
+  }
+
+  // Shared category index across seen + candidate items
+  const allCategoryIds = new Set<string>();
+  seenItems.forEach((i: any) => allCategoryIds.add(String(i.categoryId)));
+  candidates.forEach((i: any) => allCategoryIds.add(String(i.categoryId)));
+  const categoryIndex = new Map<string, number>();
+  [...allCategoryIds].forEach((id, idx) => categoryIndex.set(id, idx));
+
+  const allPrices: number[] = [
+    ...seenItems.map((i: any) => i.price),
+    ...candidates.map((i: any) => i.price),
+  ];
+  const minPrice = allPrices.length ? Math.min(...allPrices) : 0;
+  const maxPrice = allPrices.length ? Math.max(...allPrices) : 0;
+
+  const ctx: VectorContext = {
+    categoryIndex,
+    numCategories: categoryIndex.size,
+    minPrice,
+    maxPrice,
+  };
+
+  // Weighted average of seen items → user profile vector
+  const vecLength = ctx.numCategories + 2;
+  const userVector: number[] = new Array(vecLength).fill(0);
+  const rentedIdSet = new Set(rentedItemIds.map(String));
+  let totalWeight = 0;
+
+  for (const item of seenItems) {
+    const weight = rentedIdSet.has(String(item._id)) ? 2 : 1;
+    const v = buildItemVector(item, ctx);
+    for (let i = 0; i < vecLength; i++) {
+      userVector[i] = (userVector[i] ?? 0) + (v[i] ?? 0) * weight;
+    }
+    totalWeight += weight;
+  }
+  for (let i = 0; i < vecLength; i++) {
+    userVector[i] = (userVector[i] ?? 0) / (totalWeight || 1);
+  }
+
+  // Normalize trendScore across the candidate pool so it blends fairly
+  const trendScores: number[] = candidates.map((i: any) => i.trendScore ?? 0);
+  const minTrend = trendScores.length ? Math.min(...trendScores) : 0;
+  const maxTrend = trendScores.length ? Math.max(...trendScores) : 0;
+  const trendRange = maxTrend - minTrend || 1;
+
+  const scored = candidates.map((item: any) => {
+    const similarity = cosineSimilarity(userVector, buildItemVector(item, ctx));
+    const normalizedTrend = ((item.trendScore ?? 0) - minTrend) / trendRange;
+    const blendedScore = similarity * 0.75 + normalizedTrend * 0.25;
+    return { ...item, contentSimilarity: similarity, blendedScore };
+  });
+
+  scored.sort((a, b) => b.blendedScore - a.blendedScore);
+  const results = scored.slice(0, limit);
 
   if (results.length < limit) {
     const excludeIds = [...seenItemIds, ...results.map((r: any) => r._id)];

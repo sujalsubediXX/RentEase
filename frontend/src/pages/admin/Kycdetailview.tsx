@@ -35,27 +35,6 @@ interface KYCDetail {
   reviewedAt?: string;
 }
 
-const STATUS_CONFIG: Record<KycStatus, { label: string; badge: string }> = {
-  pending: {
-    label: "Pending",
-    badge: "bg-stone-100 text-stone-600",
-  },
-
-  "under review": {
-    label: "Under Review",
-    badge: "bg-yellow-50 text-yellow-500",
-  },
-
-  verified: {
-    label: "Approved",
-    badge: "bg-green-50 text-green-500",
-  },
-
-  rejected: {
-    label: "Rejected",
-    badge: "bg-red-50 text-red-600",
-  },
-};
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -170,7 +149,8 @@ export default function KYCDetailView() {
         return;
       }
 
-      setKyc(data.data);
+    setKyc(data.data);
+console.log("KYC status value:", JSON.stringify(data.data.status));
 
       setShowRejectForm(false);
     } catch {
@@ -213,9 +193,7 @@ export default function KYCDetailView() {
             <h1 className="text-2xl font-bold text-white">{kyc.personalInfo.fullName}</h1>
             <p className="text-sm text-stone-400 mt-1">{kyc.user?.email} · Submitted {formatDate(kyc.submittedAt)}</p>
           </div>
-          <span className={`inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-full ${STATUS_CONFIG[kyc.status].badge}`}>
-            {STATUS_CONFIG[kyc.status].label}
-          </span>
+      
 
         </div>
 

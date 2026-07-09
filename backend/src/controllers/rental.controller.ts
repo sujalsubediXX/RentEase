@@ -139,10 +139,7 @@ for (const item of items) {
           item.rentalDays *
           item.quantity,
 
-        status:
-          paymentMethod === "cod"
-            ? "confirmed"
-            : "pending",
+        status:"pending",
 
         customerDetails: {
           fullName: customer.fullName,

@@ -1,4 +1,25 @@
 import mongoose from "mongoose";
+import { Types } from "mongoose";
+
+export interface IItem {
+  _id: Types.ObjectId;
+  title: string;
+  description: string;
+  location: string;
+  price: number;
+  categoryId: Types.ObjectId;
+  ownerId: Types.ObjectId;
+  condition: "new" | "like new" | "used";
+  availability: "available" | "unavailable";
+  securityDeposit: number;
+  quantity: number;
+  isApproved: boolean;
+  isActive: boolean;
+  avgRating: number;
+  reviewCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const itemSchema = new mongoose.Schema(
   {

@@ -107,7 +107,6 @@ const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  console.log(user)
 
   const checkoutType: 'single' | 'cart' = location.state?.type ?? 'single';
   const rawItems: any[] = location.state?.items ?? [];

@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import type { Request, Response } from "express";
 import ItemImage from "../models/itemsImage.model.ts";
-import Item from "../models/items.model.ts";
+import Item  from "../models/items.model.ts";
+import type { IItem } from "../models/items.model.ts";
 
 import { getFeaturedItems, getRecommendedForUser, getMostRentedItems } from "../utils/recommendation.ts";
 import fs from "fs/promises";
@@ -100,6 +101,117 @@ export const getItems = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Server error"
+    });
+  }
+};
+
+import { Types } from "mongoose";
+
+
+interface GetItemsQuery {
+  page?: string;
+  limit?: string;
+  category?: string;
+  status?: "active" | "inactive" | "flagged";
+  search?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+export const getItemsforAdmin = async (req:Request, res:Response) => {
+
+
+  try {
+    // Cast + coerce every query param to a plain string up front —
+    // this is what fixes the ParsedQs errors at the source
+    const {
+      page = "1",
+      limit = "12",
+      category,
+      status,
+      search,
+      minPrice,
+      maxPrice,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as GetItemsQuery;
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 12, 1), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    const query: Record<string, any> = {};
+
+    if (category) query.categoryId = new Types.ObjectId(category);
+
+    if (status === "active") {
+      query.isApproved = true;
+      query.isActive = true;
+    }
+    if (status === "inactive") query.isActive = false;
+    if (status === "flagged") query.isApproved = false; // adjust if you add a real isFlagged field
+
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    if (search) {
+      query.title = { $regex: search.trim(), $options: "i" };
+    }
+
+    const sortDirection = sortOrder === "asc" ? 1 : -1;
+    const sortOptions: Record<string, 1 | -1> = { [sortBy]: sortDirection };
+
+    const [totalCount, items] = await Promise.all([
+      Item.countDocuments(query),
+      Item.find(query)
+        .populate("ownerId", "name")
+        .populate("categoryId", "name")
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limitNum)
+        .lean<IItem[]>(), // <-- typed lean() fixes every "does not exist on {}" error
+    ]);
+
+    const itemIds = items.map((item) => item._id);
+
+    const images = await ItemImage.find({ itemId: { $in: itemIds } })
+      .sort({ displayOrder: 1 })
+      .lean();
+
+    const itemsWithImages = items.map((item) => {
+      const itemImages = images.filter(
+        (img) => img.itemId.toString() === item._id.toString()
+      );
+
+      const primaryImage =
+        itemImages.find((img) => img.isPrimary)?.imageUrl ||
+        itemImages[0]?.imageUrl ||
+        null;
+
+      return {
+        ...item,
+        images: itemImages.map((img) => img.imageUrl),
+        primaryImage,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: itemsWithImages.length,
+      total: totalCount,
+      page: pageNum,
+      totalPages: Math.max(Math.ceil(totalCount / limitNum), 1),
+      data: itemsWithImages,
+    });
+  } catch (error) {
+    console.error("getItems error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
 };
@@ -250,6 +362,9 @@ export const recommendedItemsHandler = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: "Failed to load recommendations" });
   }
 }
+
+
+
 
 
 export const fetchMostRentedItems = async (req: Request, res: Response) => {

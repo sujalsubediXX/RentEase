@@ -116,7 +116,6 @@ const BookingsPage = () => {
         bookingId: null
     });
 
-    console.log(bookings)
 
     // Returns true if the return date is today or earlier (i.e. the rental period is over)
     const isPastReturnDate = (returnDate: string) => {

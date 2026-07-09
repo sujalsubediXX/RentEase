@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from '../config/api';
 import axios from "axios";
+import { authService } from "../services/auth.services";
 
 type Step = 1 | 2 | 3 | 4;
 type Errors = Record<string, string>;
@@ -585,8 +586,8 @@ export default function KYCVerificationForm() {
   const [consent, setConsent] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-const token = localStorage.getItem("token");
-  if (user?.kycStatus === "verified" || user?.kycStatus === "under review") {
+  const token = authService.getAccessToken();
+  if (user?.kycStatus === "verified" || user?.kycStatus === "under_review") {
     navigate("/profile");
   }
 
@@ -660,7 +661,7 @@ const token = localStorage.getItem("token");
       if (docInfo.backFile) formData.append("backImage", docInfo.backFile);
       if (selfie.selfieFile) formData.append("selfieImage", selfie.selfieFile);
       console.log(user?.id)
-      const res = await axios.post(`${API_BASE_URL}/api/kyc/submit/`, formData  , {
+      const res = await axios.post(`${API_BASE_URL}/api/kyc/submit/`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -669,10 +670,10 @@ const token = localStorage.getItem("token");
         setSubmitError(data.message || "Something went wrong while submitting your KYC. Please try again.");
         return;
       }
-   setTimeout(()=>{
-                  navigate("/profile")
-                },4000)
-        
+      setTimeout(() => {
+        navigate("/profile")
+      }, 4000)
+
       setSubmitted(true);
     } catch (err) {
       setSubmitError("Network error. Please check your connection and try again.");
@@ -718,12 +719,12 @@ const token = localStorage.getItem("token");
         <div className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
           <div className="p-6 sm:p-8">
             {submitted ? (
-         
-               <SuccessScreen />
-   
-             
-     
-             
+
+              <SuccessScreen />
+
+
+
+
             ) : (
               <>
                 {step === 1 && (

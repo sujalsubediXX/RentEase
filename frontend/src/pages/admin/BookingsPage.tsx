@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import API_BASE_URL from "../../config/api";
 import { authService } from "../../services/auth.services";
@@ -48,6 +49,16 @@ const statusBadge = (status: string) => {
   };
   return map[status] ?? "bg-stone-700 text-stone-300";
 };
+
+// Escapes a value for safe inclusion in a CSV cell (handles commas, quotes, newlines)
+const escapeCsvCell = (value: string | number): string => {
+  const str = String(value ?? "");
+  if (/[",\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
 export const BookingsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [booking, setBooking] = useState<Booking[]>([]);
@@ -71,6 +82,39 @@ export const BookingsPage: React.FC = () => {
     };
     fetchBookings();
   }, [statusFilter,token]);
+
+  const handleExportCsv = () => {
+    if (filtered.length === 0) return;
+
+    const headers = ["Item", "Renter", "Owner", "Location", "Amount", "Status", "Date"];
+    const rows = filtered.map(b => [
+      b.itemId?.title ?? "",
+      b.customerDetails?.fullName ?? "",
+      b.itemId?.ownerId?.fullName ?? "",
+      b.itemId?.location ?? "",
+      b.totalPrice ?? 0,
+      b.status,
+      new Date(b.createdAt).toLocaleDateString(),
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(escapeCsvCell).join(","))
+      .join("\n");
+
+    // Prepend a BOM so Excel opens UTF-8 content (e.g. accented names) correctly
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    const dateStamp = new Date().toISOString().split("T")[0];
+    link.href = url;
+    link.download = `bookings-${dateStamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -78,6 +122,13 @@ export const BookingsPage: React.FC = () => {
           <h1 className="text-lg font-bold text-white">Bookings</h1>
           <p className="text-xs text-stone-500 mt-0.5">{filtered.length} records</p>
         </div>
+        <button
+          onClick={handleExportCsv}
+          disabled={filtered.length === 0}
+          className="flex items-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-stone-700 disabled:cursor-not-allowed disabled:text-stone-500 text-white rounded-xl text-sm font-medium transition-colors"
+        >
+          <Download size={14} /> Export CSV
+        </button>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -96,7 +147,7 @@ export const BookingsPage: React.FC = () => {
         <table className="w-full text-sm text-white">
           <thead>
             <tr className="border-b border-stone-800">
-              {["S.no", "Item", "Renter", "Owner", "Amount", "Status", "Date", ""].map(h => (
+              {["S.no", "Item", "Renter", "Owner", "Location", "Amount", "Status", "Date"].map(h => (
                 <th key={h} className="text-left text-xs text-stone-500 font-medium px-5 py-3">{h}</th>
               ))}
             </tr>
@@ -118,8 +169,9 @@ export const BookingsPage: React.FC = () => {
                 <td className="px-5 py-3.5">
                   {b.itemId?.ownerId?.fullName}
                 </td>
+
                 <td className="px-5 py-3.5">
-                  {b?.itemId?.location} 
+                  {b?.itemId?.location}
                 </td>
 
                 <td className="px-5 py-3.5 font-semibold">

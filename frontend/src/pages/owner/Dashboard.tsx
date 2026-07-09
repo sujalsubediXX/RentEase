@@ -58,11 +58,6 @@ interface Review {
   createdAt: string;
 }
 
-interface ReviewSummary {
-  avgRating: number;
-  totalReviews: number;
-  distribution: { rating: number; count: number }[];
-}
 
 interface DashboardStats {
   totalListings: number;

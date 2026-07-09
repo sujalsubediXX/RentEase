@@ -1,4 +1,4 @@
-import { Menu, Search, Bell, ChevronDown } from 'lucide-react';
+import { Menu, Bell, ChevronDown } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
 
 export const Topbar = ({ page }: { page?: string }) => {
@@ -12,13 +12,13 @@ export const Topbar = ({ page }: { page?: string }) => {
             <div className="text-sm font-semibold text-white capitalize">{page}</div>
 
             <div className="flex-1 max-w-sm ml-4">
-                <div className="flex items-center gap-2 bg-stone-800 rounded-xl px-3 py-2 text-sm text-stone-500">
+                {/* <div className="flex items-center gap-2 bg-stone-800 rounded-xl px-3 py-2 text-sm text-stone-500">
                     <Search size={14} />
                     <input
                         className="bg-transparent outline-none text-stone-300 placeholder-stone-600 w-full text-sm"
                         placeholder="Search users, listings…"
                     />
-                </div>
+                </div> */}
             </div>
 
             <div className="ml-auto flex items-center gap-2">
