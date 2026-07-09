@@ -7,7 +7,7 @@ import axios from 'axios';
 import { ProductCard } from '../../components/user/ProductCard';
 import { ProductListItem } from '../../components/user/ProductListItem';
 import { useAuth } from "../../hooks/useAuth";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { authService } from '../../services/auth.services';
 import type { Product } from '../../types/index';
 
@@ -223,7 +223,6 @@ const CategoryPage: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [categoryInfo, setCategoryInfo] = useState<CategoryInfo | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -338,7 +337,6 @@ const CategoryPage: React.FC = () => {
         setProducts(prev => [...prev, ...newItems]);
       }
 
-      setTotalPages(pages);
       setHasMore(pageNum < pages);
     } catch (err: any) {
       console.error('Error fetching products:', err);

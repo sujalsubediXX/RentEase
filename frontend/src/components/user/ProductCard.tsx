@@ -30,9 +30,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       ref={cardRef}
       className="group relative bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 hover:shadow-lg hover:shadow-stone-200/60 hover:-translate-y-1 transition-all duration-300"
     >
-      <>
-      {console.log(product)}
-      </>
+  
       <span
         aria-hidden="true"
         className="absolute top-3 left-3 z-20 w-2.5 h-2.5 rounded-full border-2 border-white/80 group-hover:border-amber-300 transition-colors pointer-events-none"

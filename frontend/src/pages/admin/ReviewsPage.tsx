@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { authService } from "../../services/auth.services";
 import { ImageSlider } from "../user/ImageSlider";
 
-const STATIC_BASE_URL = "http://localhost:3000";
+
 
 export const ReviewsPage: React.FC = () => {
   const [reviews, setReviews] = useState<any[]>([])
@@ -37,7 +37,7 @@ export const ReviewsPage: React.FC = () => {
             <div className="w-28 h-28 shrink-0 rounded-xl overflow-hidden bg-stone-800">
               <ImageSlider
                 images={
-                  r.itemID?.images?.map((img: { imageUrl: string }) => `${STATIC_BASE_URL}${img.imageUrl}`) ?? []
+                  r.itemID?.images?.map((img: { imageUrl: string }) => `${API_BASE_URL}${img.imageUrl}`) ?? []
                 }
               />
             </div>

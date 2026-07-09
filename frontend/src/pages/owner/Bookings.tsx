@@ -1,14 +1,14 @@
-import { Check, X, Calendar } from "lucide-react";
+import { Check, X, Calendar, PackageCheck, PackageOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { Avatar } from "../../components/owner/Avatar";
 import { TopBar } from "../../components/owner/TopBar";
 import API_BASE_URL from "../../config/api";
 import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";
 
-type BookingStatus = "pending" | "confirmed" | "ongoing" | "completed" | "cancelled" | "rejected";
+type BookingStatus = "pending" | "approved" | "ongoing" | "completed" | "cancelled" | "rejected";
 
 interface Booking {
     _id: string;
@@ -41,7 +41,7 @@ interface Booking {
 
 const statusColor: Record<string, string> = {
     pending: "bg-amber-100 text-amber-700",
-    confirmed: "bg-emerald-100 text-emerald-700",
+    approved: "bg-emerald-100 text-emerald-700",
     ongoing: "bg-blue-100 text-blue-700",
     completed: "bg-slate-100 text-slate-600",
     cancelled: "bg-red-100 text-red-600",
@@ -115,27 +115,6 @@ const BookingsPage = () => {
         isOpen: false,
         bookingId: null
     });
-
-
-    // Returns true if the return date is today or earlier (i.e. the rental period is over)
-    const isPastReturnDate = (returnDate: string) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const ret = new Date(returnDate);
-        ret.setHours(0, 0, 0, 0);
-        return ret <= today;
-    };
-
-    // Derives the status that should be SHOWN to the owner. If a booking is still
-    // "confirmed" or "ongoing" in the DB but its return date has passed, we display
-    // it as "completed" so the owner sees it correctly even before the backend
-    // (or a cron job) has updated the record.
-    const getDisplayStatus = (b: Booking): BookingStatus => {
-        if ((b.status === "confirmed" || b.status === "ongoing") && isPastReturnDate(b.returnDate)) {
-            return "completed";
-        }
-        return b.status;
-    };
 
     const fetchAllBookings = async () => {
         try {
@@ -211,7 +190,7 @@ const BookingsPage = () => {
                 );
                 toast.success('Booking rejected successfully');
             } else if (newStatus === 'cancelled') {
-                await axios.put( `${API_BASE_URL}/api//rentals/${bookingId}/cancel`,
+                await axios.put( `${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
                     {
                         reason: reason || 'Cancelled by user or owner',
                         action: 'cancel'
@@ -224,8 +203,8 @@ const BookingsPage = () => {
                     }
                 );
                 toast.success('Booking cancelled successfully');
-            } else if (newStatus === 'confirmed') {
-                await axios.put( `${API_BASE_URL}/api/rentals/approve`,
+            } else if (newStatus === 'approved') {
+                await axios.put( `${API_BASE_URL}/api/rentals/ownerapprove`,
                     { rentalIds: [bookingId] },
                     {
                         headers: {
@@ -235,6 +214,19 @@ const BookingsPage = () => {
                     }
                 );
                 toast.success('Booking approved successfully');
+            } else if (newStatus === 'ongoing') {
+                // NOTE: confirm this route matches your backend. This marks the item
+                // as picked up / handed over to the renter, moving approved -> ongoing.
+                await axios.put(`${API_BASE_URL}/api/rentals/${bookingId}/start`,
+                    {},
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                toast.success('Booking marked as ongoing');
             } else if (newStatus === 'completed') {
                 await axios.put(`${API_BASE_URL}/api/rentals/${bookingId}/complete`,
                     {},
@@ -268,7 +260,7 @@ const BookingsPage = () => {
 
     const filteredBookings = tab === "all"
         ? bookings
-        : bookings.filter(b => getDisplayStatus(b) === tab);
+        : bookings.filter(b => b.status === tab);
 
     const getInitials = (name: string) => {
         return name
@@ -349,10 +341,10 @@ const BookingsPage = () => {
             <div className="p-6 space-y-4 overflow-y-auto">
                 {/* Tabs */}
                 <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
-                    {(["all", "pending", "confirmed", "ongoing", "completed", "cancelled", "rejected"] as const).map(t => {
+                    {(["all", "pending", "approved", "ongoing", "completed", "cancelled", "rejected"] as const).map(t => {
                         const count = t === "all"
                             ? bookings.length
-                            : bookings.filter(b => getDisplayStatus(b) === t).length;
+                            : bookings.filter(b => b.status === t).length;
                         return (
                             <button
                                 key={t}
@@ -372,11 +364,6 @@ const BookingsPage = () => {
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
                     <div className="divide-y divide-stone-100">
                         {filteredBookings.map((b) => {
-                            const displayStatus = getDisplayStatus(b);
-                            const needsCompletion =
-                                (b.status === "confirmed" || b.status === "ongoing") &&
-                                isPastReturnDate(b.returnDate);
-
                             return (
                                 <div
                                     key={b._id}
@@ -417,8 +404,8 @@ const BookingsPage = () => {
                                                 {formatDate(b.startDate)} → {formatDate(b.returnDate)}
                                             </p>
                                         </div>
-                                        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[displayStatus]}`}>
-                                            {displayStatus}
+                                        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor[b.status]}`}>
+                                            {b.status}
                                         </span>
                                     </div>
 
@@ -431,7 +418,7 @@ const BookingsPage = () => {
                                                     ["Duration", `${getDuration(b.startDate, b.returnDate)} days`],
                                                     ["Quantity", `${b.quantity} item(s)`],
                                                     ["Payment", b.paymentMethod.toUpperCase()],
-                                                    ["Deposit", `Rs ${b.securityDeposit.toLocaleString()}`],
+
                                                 ].map(([label, value]) => (
                                                     <div key={label} className="bg-stone-50 rounded-xl p-3">
                                                         <p className="text-xs text-stone-400 mb-1">{label}</p>
@@ -455,11 +442,38 @@ const BookingsPage = () => {
                                                 </div>
                                             )}
 
-                                            {needsCompletion && (
+                                            {/* Approved: owner hands the item over to the renter */}
+                                            {b.status === "approved" && (
+                                                <div className="bg-emerald-50 rounded-xl p-3 mb-4 border border-emerald-100 flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-xs text-emerald-600 font-medium mb-1">Ready for Pickup</p>
+                                                        <p className="text-sm text-emerald-700">Once the renter collects the item, mark it as picked up to start the rental.</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updateBookingStatus(b._id, "ongoing");
+                                                        }}
+                                                        disabled={updating === b._id}
+                                                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                    >
+                                                        {updating === b._id ? (
+                                                            <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                                        ) : (
+                                                            <>
+                                                                <PackageOpen size={16} /> Mark Picked Up
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Ongoing: owner marks it complete once the rental period is over */}
+                                            {b.status === "ongoing" && (
                                                 <div className="bg-blue-50 rounded-xl p-3 mb-4 border border-blue-100 flex items-center justify-between gap-3">
                                                     <div>
-                                                        <p className="text-xs text-blue-600 font-medium mb-1">Rental Period Ended</p>
-                                                        <p className="text-sm text-blue-700">The return date has passed — mark this booking complete.</p>
+                                                        <p className="text-xs text-blue-600 font-medium mb-1">Rental In Progress</p>
+                                                        <p className="text-sm text-blue-700">Once the renter returns the item, mark this booking as completed.</p>
                                                     </div>
                                                     <button
                                                         onClick={(e) => {
@@ -472,87 +486,46 @@ const BookingsPage = () => {
                                                         {updating === b._id ? (
                                                             <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
                                                         ) : (
-                                                            "Mark Completed"
+                                                            <>
+                                                                <PackageCheck size={16} /> Mark Complete
+                                                            </>
                                                         )}
                                                     </button>
                                                 </div>
                                             )}
 
-                                            {b.itemId?.availability === "rented" && !needsCompletion && (
-                                                <div className="bg-amber-50 rounded-xl p-3 mb-4 border border-amber-100 flex items-center justify-between gap-3">
-                                                    <div>
-                                                        <p className="text-xs text-amber-600 font-medium mb-1">Item Status</p>
-                                                        <p className="text-sm text-amber-700">Once this rental period is done, mark it completed to free up the item.</p>
-                                                    </div>
+                                            {/* Only "pending" bookings get owner actions here — Approve or Reject
+                                                (with a required reason via RejectModal). Only the renter can
+                                                cancel a booking once it's approved; the owner has no cancel
+                                                action past this stage. */}
+                                            {b.status === "pending" && (
+                                                <div className="flex gap-2">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            updateBookingStatus(b._id, "completed");
+                                                            updateBookingStatus(b._id, "approved");
                                                         }}
                                                         disabled={updating === b._id}
-                                                        className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                        className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
                                                     >
                                                         {updating === b._id ? (
                                                             <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
                                                         ) : (
-                                                            "Mark Completed"
+                                                            <>
+                                                                <Check size={16} /> Approve
+                                                            </>
                                                         )}
                                                     </button>
-                                                </div>
-                                            )}
-
-                                            {(b.status === "pending" || b.status === "confirmed") && (
-                                                <div className="flex gap-2">
-                                                    {b.status === "pending" && (
-                                                        <>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    updateBookingStatus(b._id, "confirmed");
-                                                                }}
-                                                                disabled={updating === b._id}
-                                                                className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                                                            >
-                                                                {updating === b._id ? (
-                                                                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
-                                                                ) : (
-                                                                    <>
-                                                                        <Check size={16} /> Approve
-                                                                    </>
-                                                                )}
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setRejectModal({ isOpen: true, bookingId: b._id });
-                                                                }}
-                                                                disabled={updating === b._id}
-                                                                className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                                                            >
-                                                                <X size={16} /> Decline
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    {b.status === "confirmed" && !needsCompletion && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (confirm("Are you sure you want to cancel this confirmed booking?")) {
-                                                                    updateBookingStatus(b._id, "cancelled");
-                                                                }
-                                                            }}
-                                                            disabled={updating === b._id}
-                                                            className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                                                        >
-                                                            {updating === b._id ? (
-                                                                <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></span>
-                                                            ) : (
-                                                                <>
-                                                                    <X size={16} /> Cancel Booking
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setRejectModal({ isOpen: true, bookingId: b._id });
+                                                        }}
+                                                        disabled={updating === b._id}
+                                                        className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                                                    >
+                                                        <X size={16} /> Decline
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>

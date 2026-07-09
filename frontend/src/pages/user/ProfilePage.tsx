@@ -4,7 +4,51 @@ import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/auth.services";
 import API_BASE_URL from "../../config/api";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { ReviewModal } from "../../components/user/ReviewModal";
+
+// Cancel Confirmation Modal
+const CancelModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  cancelling,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  cancelling: boolean;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <h3 className="text-lg font-semibold text-stone-900 mb-2">Cancel Booking</h3>
+        <p className="text-sm text-stone-500 mb-6">
+          Are you sure you want to cancel this booking? This action cannot be undone.
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={cancelling}
+            className="flex-1 px-4 py-2 border border-stone-200 text-stone-600 rounded-xl hover:bg-stone-50 transition-colors disabled:opacity-50"
+          >
+            Keep Booking
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {cancelling ? "Cancelling..." : "Yes, Cancel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
@@ -15,6 +59,11 @@ function ProfilePage() {
   const [reviewingBooking, setReviewingBooking] = useState<any>(null);
   const [pendingRental, setPendingRental] = useState<number>(0);
   const [hasReviewedRental, setHasReviewedRental] = useState<number>(0);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; rentalId: string | null }>({
+    isOpen: false,
+    rentalId: null,
+  });
 
   const token = authService.getAccessToken();
 
@@ -62,6 +111,41 @@ function ProfilePage() {
     setPendingRental(pendingCount);
     setHasReviewedRental(reviewedCount);
   }, [rentals]);
+
+  const handleCancelRental = async () => {
+    const rentalId = cancelModal.rentalId;
+    if (!rentalId) return;
+
+    try {
+      setCancellingId(rentalId);
+
+      await axios.put(
+        `${API_BASE_URL}/api/rentals/${rentalId}/cancel`,
+        {
+          reason: "Cancelled by renter",
+          action: "cancel",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setRentals((prev) =>
+        prev.map((r) => (r._id === rentalId ? { ...r, status: "cancelled" } : r))
+      );
+
+      toast.success("Booking cancelled successfully");
+    } catch (err: any) {
+      console.error("Error cancelling rental:", err);
+      toast.error(err.response?.data?.message || "Failed to cancel booking. Please try again.");
+    } finally {
+      setCancellingId(null);
+      setCancelModal({ isOpen: false, rentalId: null });
+    }
+  };
 
   if (loading || !user) {
     return (
@@ -172,6 +256,16 @@ function ProfilePage() {
                     {rental.status === "active" ? "● Active" : rental.status === "completed" ? "" : rental.status || "Pending"}
                   </span>
 
+                  {(rental.status === "pending" || rental.status === "approved") && (
+                    <button
+                      onClick={() => setCancelModal({ isOpen: true, rentalId: rental._id })}
+                      disabled={cancellingId === rental._id}
+                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                    >
+                      {cancellingId === rental._id ? "Cancelling..." : "Cancel Booking"}
+                    </button>
+                  )}
+
                   {rental.status === "completed" && !rental.hasReview && (
                     <button
                       onClick={() => setReviewingBooking(rental)}
@@ -207,6 +301,13 @@ function ProfilePage() {
           }}
         />
       )}
+
+      <CancelModal
+        isOpen={cancelModal.isOpen}
+        onClose={() => setCancelModal({ isOpen: false, rentalId: null })}
+        onConfirm={handleCancelRental}
+        cancelling={cancellingId === cancelModal.rentalId}
+      />
     </div>
   );
 }

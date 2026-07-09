@@ -20,7 +20,7 @@ import {
   Bar,
 } from "recharts";
 import axios from "axios";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { TopBar } from "../../components/owner/TopBar";
 import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";

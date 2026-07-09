@@ -8,7 +8,7 @@ import { ImageSlider } from "../user/ImageSlider";
 import { useAuth } from "../../hooks/useAuth.ts";
 import axios from "axios";
 import { authService } from "../../services/auth.services.ts";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 export interface Product {
     id: string;
@@ -299,7 +299,7 @@ export default function OwnerListing() {
 
     return (
         <>
-            <div className="flex-col overflow-y-auto s h-screenpace-y-6 w-full">
+            <div className="flex-col overflow-y-auto h-screen space-y-6 w-full">
                 <TopBar title="My Listings" />
                 <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 gap-6">
 

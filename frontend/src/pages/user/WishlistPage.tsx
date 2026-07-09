@@ -2,9 +2,10 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../../config/api";
-import { ProductCard, type Product } from "../../components/user/ProductCard";
+import { ProductCard } from "../../components/user/ProductCard";
+import type { Product } from '../../types/index';
 import { useAuth } from "../../hooks/useAuth";
-import {toast} from "sonner";
+import {toast} from "react-toastify";
 import { authService } from "../../services/auth.services";
 interface ItemImage {
   _id: string;
@@ -30,12 +31,12 @@ const mapWishlistItemToProduct = (item: WishlistItem): Product => ({
   id: item._id,
   name: item.title,
   description: item.description,
-  rentalPrice: item.price,
+  price: item.price,
   images: item.images.map(img => `${API_BASE_URL}${img.imageUrl}`),
   category: "",
   categoryId: "",
-  brand: "",
-  rating: 0,
+availability:"",
+  avgRating: 0,
   reviewCount: 0,
   stock: item.availability === "available" ? item.quantity : 0,
   location: "Kathmandu",

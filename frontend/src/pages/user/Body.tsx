@@ -5,7 +5,7 @@ import API_BASE_URL from "../../config/api.ts";
 const AMBER = "#d4922a";
 const AMBER_LIGHT = "#e8ac50";
 import { useNavigate } from "react-router-dom"
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { ProductCard } from "../../components/user/ProductCard.tsx";
 import { X, ShieldCheck, Clock3, MapPin } from "lucide-react";
 import { ImageSlider } from "./ImageSlider.tsx";

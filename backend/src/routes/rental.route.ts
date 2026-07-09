@@ -10,7 +10,8 @@ import {
   getByRentalStatus,
   getOwnerRentals,
   approveRental,
-  completeRental
+  completeRental,
+  startRental
 } from "../controllers/rental.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
 
@@ -22,17 +23,19 @@ const router = Router();
 router.get("/checkout-summary", authMiddleware, getCheckoutSummary);
 router.get("/filterStatus", authMiddleware, getByRentalStatus);
 router.get("/owner", authMiddleware, getOwnerRentals);
-router.put("/approve", authMiddleware, approveRental);
+
+router.put("/ownerapprove", authMiddleware, approveRental);
 
 // Create rental/order
 router.post("/create", authMiddleware, createRental);
 
 // Confirm rental (after successful payment)
-router.put("/confirm", authMiddleware, confirmRental);
+router.put("/approve", authMiddleware, confirmRental);
 
 // Get user's rentals
 router.get("/my-rentals", authMiddleware, getUserRentals);
 
+router.put("/:id/start", authMiddleware, startRental);
 // Get rental by ID
 router.get("/:id", authMiddleware, getRentalById);
 

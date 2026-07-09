@@ -3,7 +3,7 @@ import { DollarSign, Package, Users, CalendarCheck, TrendingUp, TrendingDown, Al
 import axios from "axios";
 import { Link } from "react-router-dom";
 
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";
 import API_BASE_URL from "../../config/api";
@@ -69,7 +69,7 @@ const statusBadge = (status: string) => {
 };
 
 const formatCurrency = (amount: number) => {
-  return `रू${amount.toLocaleString()}`;
+  return `Rs ${amount.toLocaleString()}`;
 };
 
 const MiniSparkline: React.FC<{ up: boolean }> = ({ up }) => (
@@ -98,11 +98,97 @@ const RevenueBar: React.FC<{ label: string; value: number; max: number }> = ({ l
 export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [totalEarned, setTotalrevenue] = useState(0);
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchRevenueData();
   }, [isAuthenticated]);
+
+    const fetchRevenueData = async () => {
+      try {
+        setLoading(true);
+        
+        if (!isAuthenticated || !user) {
+          toast.error('Please login to view revenue');
+          setLoading(false);
+          return;
+        }
+  
+        const token = authService.getAccessToken();
+        
+        if (!token) {
+          toast.error('Authentication token not found');
+          setLoading(false);
+          return;
+        }
+  
+        let payments = [];
+        let rentals = [];
+  
+        // Try to fetch payments first
+        try {
+          const paymentsResponse = await axios.get(
+            getApiUrl('/payment/getpayments'),
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          payments = paymentsResponse.data.data || paymentsResponse.data || [];
+          console.log('Payments found:', payments.length);
+        } catch (paymentErr) {
+          console.log('No payments endpoint or no payments found, using rentals instead');
+        }
+  
+        // If no payments, fetch rentals for revenue data
+        if (payments.length === 0) {
+          const rentalsResponse = await axios.get(
+            getApiUrl('/rentals/filterStatus?status=all'),
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          rentals = rentalsResponse.data.data || rentalsResponse.data || [];
+          console.log('Rentals found:', rentals.length);
+          
+          // Use confirmed/completed rentals as revenue
+          const completedRentals = rentals.filter((r: any) => 
+            r.status === 'confirmed' || r.status === 'completed' || r.status === 'ongoing'
+          );
+          
+          // Convert rentals to payment-like objects
+          payments = completedRentals.map((r: any) => ({
+            amount: r.totalPrice || 0,
+            status: 'completed',
+            createdAt: r.createdAt,
+            _id: r._id
+          }));
+        }
+  
+        // Filter completed payments
+        const completedPayments = payments.filter((p: any) => p.status === 'completed');
+  
+        // Calculate total revenue
+        const totalRevenue = completedPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+        setTotalrevenue(totalRevenue)
+  
+       
+  
+      } catch (err: any) {
+        console.error("Error fetching revenue data:", err);
+        toast.error(err.response?.data?.message || 'Failed to load revenue data');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
 
   const fetchDashboardData = async () => {
     try {
@@ -204,8 +290,8 @@ export const DashboardPage: React.FC = () => {
         {[
           { 
             label: "Total Revenue", 
-            value: formatCurrency(stats.totalRevenue), 
-            change: stats.revenueChange, 
+            value: formatCurrency(totalEarned), 
+            change: 33.5, 
             icon: DollarSign, 
             color: "amber" 
           },

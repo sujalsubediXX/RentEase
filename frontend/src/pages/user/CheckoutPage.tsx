@@ -9,7 +9,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import API_BASE_URL from '../../config/api';
 import { authService } from '../../services/auth.services';
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { useAuth } from '../../hooks/useAuth';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,7 +142,7 @@ const CheckoutPage: React.FC = () => {
     setLocation(user.address || '');
   }, [user]);
 
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'digital'>('cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const token = authService.getAccessToken();
 
@@ -532,7 +532,7 @@ const CheckoutPage: React.FC = () => {
               <SectionHeader icon={<CreditCard size={16} />} label="Payment Options" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label
-                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod'
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cash'
                     ? 'border-stone-900 bg-stone-50/50'
                     : 'border-stone-200 hover:border-stone-300'
                     }`}
@@ -541,8 +541,8 @@ const CheckoutPage: React.FC = () => {
                     type="radio"
                     name="payment"
                     value="cod"
-                    checked={paymentMethod === 'cod'}
-                    onChange={() => setPaymentMethod('cod')}
+                    checked={paymentMethod === 'cash'}
+                    onChange={() => setPaymentMethod('cash')}
                     className="accent-stone-900"
                   />
                   <div>

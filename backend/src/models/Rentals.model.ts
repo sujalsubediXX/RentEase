@@ -25,7 +25,7 @@ const rentalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'ongoing', 'completed', 'cancelled', 'rejected'],
+    enum: ['pending', 'approved', 'ongoing', 'completed', 'cancelled', 'rejected'],
     default: 'pending'
   },
   rejectionReason: { 
@@ -39,7 +39,7 @@ const rentalSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cod', 'digital'],
+    enum: ['cash', 'digital'],
     required: true
   },
   paymentId: {

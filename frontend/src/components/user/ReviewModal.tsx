@@ -1,7 +1,7 @@
 import { Star } from "lucide-react";
 import  { useState } from "react";
 import axios from "axios";
-import  { toast } from "sonner";
+import  { toast } from "react-toastify";
 import API_BASE_URL from "../../config/api";
 import { authService } from "../../services/auth.services";
 

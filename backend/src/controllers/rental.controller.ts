@@ -83,6 +83,14 @@ for (const item of items) {
         });
       }
 
+      // Prevent an owner from renting their own item
+      if (itemData.ownerId.toString() === userId.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: `You cannot rent your own item "${itemData.title}"`,
+        });
+      }
+
       if (itemData.availability !== "available") {
         return res.status(400).json({
           success: false,
@@ -489,10 +497,10 @@ export const approveRental = async (req: Request, res: Response) => {
       });
     }
 
-    // Update rentals to confirmed
+    // Update rentals to approved
     await Rentals.updateMany(
       { _id: { $in: rentalIds } },
-      { status: 'confirmed' }
+      { status: 'approved' }
     );
 
     // Update items availability to rented
@@ -514,6 +522,65 @@ export const approveRental = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to approve rental"
+    });
+  }
+};
+
+// ─── Start Rental (Owner marks item as picked up, rental begins) ──────────
+export const startRental = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const ownerId = (req as any).user?.id;
+
+    if (!ownerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const rental = await Rentals.findById(id).populate('itemId');
+
+    if (!rental) {
+      return res.status(404).json({
+        success: false,
+        message: "Rental not found",
+      });
+    }
+
+    // Ownership check — only the item's owner can start the rental
+    const itemOwnerId = (rental.itemId as any)?.ownerId?.toString?.() || (rental.itemId as any)?.ownerId;
+    if (itemOwnerId !== ownerId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to start this rental",
+      });
+    }
+
+    if (rental.status !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot start a rental with status "${rental.status}". Only approved bookings can be marked as ongoing.`,
+      });
+    }
+
+    rental.status = 'ongoing' as any;
+    await rental.save();
+
+    const updatedRental = await Rentals.findById(rental._id).populate('itemId');
+
+    return res.status(200).json({
+      success: true,
+      message: "Rental marked as ongoing",
+      data: updatedRental,
+    });
+  } catch (error) {
+    console.error("Error starting rental:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to start rental",
+      error: errorMessage,
     });
   }
 };
@@ -676,7 +743,7 @@ export const cancelRental = async (req: Request, res: Response) => {
     }
 
     // Only allow if status is pending or confirmed
-    if (rental.status !== 'pending' && rental.status !== 'confirmed') {
+    if (rental.status !== 'pending' && rental.status !== 'approved') {
       return res.status(400).json({
         success: false,
         message: `Cannot cancel booking with status: ${rental.status}`
@@ -762,11 +829,6 @@ export const getItemAvailability = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
-
-
 export const completeRental = async (req:Request, res:Response) => {
   try {
     const { id } = req.params;
@@ -805,7 +867,7 @@ const ownerId = (req as any).user?.id;
       });
     }
 
-    if (!['confirmed', 'ongoing'].includes(rental.status)) {
+    if (!['approved', 'ongoing'].includes(rental.status)) {
       return res.status(400).json({
         success: false,
         message: `Cannot complete a rental with status "${rental.status}"`,
@@ -816,14 +878,14 @@ const ownerId = (req as any).user?.id;
     await rental.save();
 
     // Check whether the item has any OTHER active bookings right now
-    // (confirmed/ongoing, and not yet past their return date).
+    // (approved/ongoing, and not yet past their return date).
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const overlappingActiveRental = await Rentals.findOne({
       _id: { $ne: rental._id },
       itemId: rental.itemId._id,
-      status: { $in: ['confirmed', 'ongoing'] },
+      status: { $in: ['approved', 'ongoing'] },
       returnDate: { $gte: today },
     });
 
@@ -851,4 +913,3 @@ const ownerId = (req as any).user?.id;
     });
   }
 };
-

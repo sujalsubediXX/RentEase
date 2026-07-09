@@ -2,13 +2,13 @@ import { Outlet } from 'react-router-dom';
 import { SidebarProvider } from "../contexts/SidebarContext";
 import { Topbar } from '../components/admin/Topbar';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
-import { Toaster } from "sonner";
+import { ToastContainer } from "react-toastify";
 export const AdminLayout = () => {
   return (
     <>
 
       <SidebarProvider>
-        <Toaster position="top-right" richColors />
+        <ToastContainer />
 
         <div className="flex h-screen bg-stone-950 font-sans overflow-hidden">
           <AdminSidebar />

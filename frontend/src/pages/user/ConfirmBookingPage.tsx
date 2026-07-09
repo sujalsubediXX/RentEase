@@ -4,7 +4,7 @@ import { ShieldCheck, Calendar, MapPin, CheckCircle, ArrowRight, Loader2, Packag
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { authService } from '../../services/auth.services';
 // ─── Types ────────────────────────────────────────────────────────────────────
 

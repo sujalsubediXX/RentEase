@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from '../config/api';
@@ -532,6 +532,7 @@ function Step4({
 
 // ─── Success Screen ───────────────────────────────────────────────────────────
 function SuccessScreen() {
+
   return (
     <div className="text-center py-10 space-y-5">
       <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-4xl mx-auto animate-bounce">
@@ -590,6 +591,16 @@ export default function KYCVerificationForm() {
   if (user?.kycStatus === "verified" || user?.kycStatus === "under_review") {
     navigate("/profile");
   }
+
+  useEffect(() => {
+    if (!submitted) return;
+
+    const timer = setTimeout(() => {
+      navigate("/profile");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [submitted, navigate]);
 
   const [personal, setPersonal] = useState<PersonalInfo>({
     fullName: "", dob: "", gender: "", nationality: "",
@@ -670,11 +681,11 @@ export default function KYCVerificationForm() {
         setSubmitError(data.message || "Something went wrong while submitting your KYC. Please try again.");
         return;
       }
-      setTimeout(() => {
-        navigate("/profile")
-      }, 4000)
+      if (res.status === 200 && data.status === "success") {
+        setSubmitted(true);
+      }
 
-      setSubmitted(true);
+
     } catch (err) {
       setSubmitError("Network error. Please check your connection and try again.");
     } finally {

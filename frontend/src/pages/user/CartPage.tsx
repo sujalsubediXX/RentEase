@@ -23,7 +23,6 @@ interface CartItem {
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [blockedRangesMap, setBlockedRangesMap] = useState<
     Record<string, { start: Date; end: Date }[]>
   >({});
@@ -56,7 +55,6 @@ console.log(blockedRangesMap)
 
   const fetchCart = async () => {
     try {
-      setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/cart/getcart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -65,9 +63,7 @@ console.log(blockedRangesMap)
       fetchAllAvailability(items);
     } catch (err) {
       console.log(err);
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   useEffect(() => {
@@ -99,12 +95,12 @@ console.log(blockedRangesMap)
   };
 
 
-  const subtotal = useMemo(() => {
-    return cart.reduce(
-      (acc, item) => acc + item.itemId.price * item.rentalDays,
-      0
-    );
-  }, [cart]);
+const subtotal = useMemo(() => {
+  return cart.reduce((acc, item) => {
+    const days = calcDays(item.startDate, item.endDate);
+    return acc + item.itemId.price * days;
+  }, 0);
+}, [cart]);
 
   const serviceFee = subtotal * 0.05;
   const total = subtotal + serviceFee;
@@ -245,10 +241,8 @@ const parseLocalDate = (dateStr: string) => {
 
                       <div className="text-right">
                         <div className="font-bold">
-                          Rs.{" "}
-                          {(
-                            item.itemId.price * item.rentalDays
-                          ).toLocaleString()}
+                        
+                          Rs. {(item.itemId.price * calcDays(item.startDate, item.endDate)).toLocaleString()}
                         </div>
                         <p className="text-xs text-stone-400">
                           Rs. {item.itemId.price}/day
@@ -276,10 +270,7 @@ const parseLocalDate = (dateStr: string) => {
                       {item.itemId.title} × {item.rentalDays}
                     </span>
                     <span>
-                      Rs.{" "}
-                      {(
-                        item.itemId.price * item.rentalDays
-                      ).toLocaleString()}
+                    Rs. {(item.itemId.price * calcDays(item.startDate, item.endDate)).toLocaleString()}
                     </span>
                   </div>
                 ))}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {  Download, Eye, CheckCircle, Ban, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";
 import API_BASE_URL from "../../config/api";
