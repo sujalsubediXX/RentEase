@@ -16,6 +16,7 @@ import kycRoutes from "./routes/kycverification.route.ts";
 import ratingRouter from "./routes/rating.route.ts"
 import path from "path";
 import wishlistroute from "./routes/wishlist.route.ts"
+import complaintroute from "./routes/itemComplaint.routes.ts"
 const PORT: number = Number(process.env.PORT) ;
 
 
@@ -41,6 +42,7 @@ app.use("/api/wishlist", wishlistroute)
 app.use("/api/rentals", rentalrouter);
 app.use("/api/kyc", kycRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/complaints", complaintroute);
 
 
 

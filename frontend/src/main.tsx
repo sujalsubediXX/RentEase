@@ -52,6 +52,7 @@ import PaymentFailurePage from "./pages/user/PaymentFailurePage";
 import Unauthorized from "./pages/Unauthorized";
 import Kycviewpage from "./pages/admin/Kycreviewpage";
 import KYCDetailView from "./pages/admin/Kycdetailview";
+import ComplaintsPage from "./pages/admin/ComplaintsPage";
 
 const router = createBrowserRouter([
   {
@@ -182,6 +183,7 @@ const router = createBrowserRouter([
       { path: "/admin/reviews", element: <ReviewsPage /> },
       { path: "/admin/kycreview", element: <Kycviewpage /> },
       { path: "/admin/kyc/:id", element: <KYCDetailView /> },
+      { path: "/admin/complain", element: <ComplaintsPage /> },
       { path: "/admin/settings", element: <SettingsPage /> },
     ],
   },

@@ -7,6 +7,7 @@ import { TopBar } from "../../components/owner/TopBar";
 import API_BASE_URL from "../../config/api";
 import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";
+import ComplaintModal from "../../components/owner/ComplaintModal";
 
 type BookingStatus = "pending" | "approved" | "ongoing" | "completed" | "cancelled" | "rejected";
 
@@ -108,6 +109,10 @@ const BookingsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updating, setUpdating] = useState<string | null>(null);
+
+
+    const [complaintTarget, setComplaintTarget] = useState<Booking | null>(null);
+
     const [rejectModal, setRejectModal] = useState<{
         isOpen: boolean;
         bookingId: string | null
@@ -176,7 +181,7 @@ const BookingsPage = () => {
             }
 
             if (newStatus === 'rejected') {
-                await axios.put( `${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
+                await axios.put(`${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
                     {
                         reason: reason || 'No reason provided',
                         action: 'reject'
@@ -190,7 +195,7 @@ const BookingsPage = () => {
                 );
                 toast.success('Booking rejected successfully');
             } else if (newStatus === 'cancelled') {
-                await axios.put( `${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
+                await axios.put(`${API_BASE_URL}/api/rentals/${bookingId}/cancel`,
                     {
                         reason: reason || 'Cancelled by user or owner',
                         action: 'cancel'
@@ -204,7 +209,7 @@ const BookingsPage = () => {
                 );
                 toast.success('Booking cancelled successfully');
             } else if (newStatus === 'approved') {
-                await axios.put( `${API_BASE_URL}/api/rentals/ownerapprove`,
+                await axios.put(`${API_BASE_URL}/api/rentals/ownerapprove`,
                     { rentalIds: [bookingId] },
                     {
                         headers: {
@@ -338,6 +343,14 @@ const BookingsPage = () => {
                 updating={updating === rejectModal.bookingId}
             />
 
+            {complaintTarget && (
+                <ComplaintModal
+                    rentalId={complaintTarget._id}
+                    itemTitle={complaintTarget.itemId.title}
+                    onClose={() => setComplaintTarget(null)}
+                    onSuccess={() => toast.success("Complaint filed successfully")}
+                />
+            )}
             <div className="p-6 space-y-4 overflow-y-auto">
                 {/* Tabs */}
                 <div className="flex gap-1 bg-white border border-stone-200 p-1 rounded-xl w-fit overflow-x-auto">
@@ -350,8 +363,8 @@ const BookingsPage = () => {
                                 key={t}
                                 onClick={() => setTab(t)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors whitespace-nowrap ${tab === t
-                                        ? "bg-amber-600 text-white shadow-sm"
-                                        : "text-stone-600 hover:bg-stone-50"
+                                    ? "bg-amber-600 text-white shadow-sm"
+                                    : "text-stone-600 hover:bg-stone-50"
                                     }`}
                             >
                                 {t}
@@ -493,11 +506,19 @@ const BookingsPage = () => {
                                                     </button>
                                                 </div>
                                             )}
+                                            {b.status === "completed" && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setComplaintTarget(b);
+                                                    }}
+                                                    className="text-sm text-red-700 border border-red-300 rounded px-3 py-1.5 hover:bg-red-50"
+                                                >
+                                                    Report Item Condition
+                                                </button>
+                                            )}
 
-                                            {/* Only "pending" bookings get owner actions here — Approve or Reject
-                                                (with a required reason via RejectModal). Only the renter can
-                                                cancel a booking once it's approved; the owner has no cancel
-                                                action past this stage. */}
+
                                             {b.status === "pending" && (
                                                 <div className="flex gap-2">
                                                     <button

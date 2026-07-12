@@ -23,6 +23,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ size
   { href: "/admin/kycreview", label: "KYC Review", icon: ShieldCheck },
   { href: "/admin/revenue", label: "Revenue", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
+  { href: "/admin/complain", label: "Complains", icon: Star },
 
 ];
 
