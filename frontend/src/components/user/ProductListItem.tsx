@@ -34,7 +34,7 @@ export const ProductListItem: React.FC<ProductListItemProps> = ({
             <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">{product.category}</span>
             <div className="flex items-center gap-1">
               <Star size={11} className="text-amber-400 fill-amber-400" />
-              <span className="text-xs text-stone-700">{product.avgRating}</span>
+              <span className="text-xs text-stone-700">{product.avgRating.toFixed(1)}</span>
               <span className="text-xs text-stone-400">({product.reviewCount})</span>
             </div>
           </div>

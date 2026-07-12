@@ -73,7 +73,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.location}</span>
           <div className="flex items-center gap-1">
             <Star size={11} className="text-amber-400 fill-amber-400" />
-            <span className="text-xs text-stone-700 font-medium">{product.avgRating}</span>
+            <span className="text-xs text-stone-700 font-medium">{product.avgRating.toFixed(1)}</span>
             <span className="text-xs text-stone-400">({product.reviewCount})</span>
           </div>
         </div>
