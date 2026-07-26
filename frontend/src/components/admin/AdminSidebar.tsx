@@ -6,7 +6,6 @@ import {
   CalendarCheck,
   BarChart3,
   Star,
-  Settings,
   LogOut,
   ShieldCheck,
   UserCheck,
@@ -75,14 +74,14 @@ export const AdminSidebar = () => {
 
       {/* Bottom */}
       <div className="px-2 pb-4 space-y-0.5 border-t border-stone-800 pt-3">
-        <Link to="/admin/settings"
+        {/* <Link to="/admin/settings"
           onClick={() => setActiveNav("settings")}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
           ${activeNav === "settings" ? "bg-amber-500 text-white" : "text-stone-400 hover:bg-stone-800 hover:text-stone-200"}`}
         >
           <Settings size={18} className="shrink-0" />
           {isSidebarOpen && <span>Settings</span>}
-        </Link >
+        </Link > */}
         <button onClick={()=>logout()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-red-600 hover:text-stone-200 transition-all">
           <LogOut size={18} className="shrink-0" />
           {isSidebarOpen && <span>Log Out</span>}

@@ -61,7 +61,7 @@ const testimonials: Testimonial[] = [
 
 const trustPoints = [
   { icon: ShieldCheck, label: "Verified owners", detail: "KYC-checked before they list" },
-  { icon: MapPin, label: "Limited Valley only", detail: "Pickup nearby, not nationwide guesswork" },
+  { icon: MapPin, label: "No Delivery Options", detail: "Pick up from the owner's location" },
   { icon: Clock3, label: "Book by the day", detail: "Rent for one day or several weeks" },
 ];
 
@@ -162,8 +162,6 @@ function ProductRow({
 
 export default function Body() {
   const { user, isAuthenticated } = useAuth();
-  const [query, setQuery] = useState<string>("");
-
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [items, setItems] = useState<Product[]>([]);
   const [itemsLoading, setItemsLoading] = useState<boolean>(true);
@@ -453,23 +451,8 @@ export default function Body() {
     [items]
   );
 
-  const premiumPicks = useMemo(
-    () => [...items].sort((a, b) => b.price - a.price).slice(0, 8),
-    [items]
-  );
 
-  const weekendEssentials = useMemo(() => {
-    const keywords = ["camp", "tent", "party", "outdoor", "bike", "kayak"];
-    const matches = items.filter((i) =>
-      keywords.some((k) => i.category?.toLowerCase().includes(k) || i.name?.toLowerCase().includes(k))
-    );
-    return (matches.length > 0 ? matches : items).slice(0, 8);
-  }, [items]);
 
-  const seasonalPicks = useMemo(
-    () => [...items].reverse().slice(0, 8),
-    [items]
-  );
 
 
   return (
@@ -561,47 +544,7 @@ export default function Body() {
         </p>
 
         <div className="anim-3 w-full max-w-170">
-          <div className="flex items-center bg-white border border-amber-200 rounded-lg overflow-hidden shadow-sm focus-within:border-amber-400 focus-within:shadow-[0_0_0_3px_rgba(212,146,42,0.12)] transition-all">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="What do you want to rent?"
-              aria-label="Search for an item to rent"
-              className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-gray-800 text-[15px] placeholder-gray-400"
-            />
-            <div className="w-px h-6 bg-amber-100" />
-
-            <select
-              aria-label="Filter by category"
-              className="bg-transparent border-none outline-none px-5 py-4 text-gray-500 text-[14px] cursor-pointer whitespace-nowrap"
-              onChange={(e) => {
-                const value = e.target.value;
-
-                if (value === "all") {
-                  navigate("/");
-                } else {
-                  navigate(`/categories/${value.toLowerCase()}`);
-                }
-              }}
-            >
-              <option value="all">All Categories</option>
-
-              {category.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button
-              className="m-1.5 px-6 py-2.5 border-none rounded-md font-semibold text-[14px] cursor-pointer whitespace-nowrap transition-all duration-200 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
-              style={{ background: AMBER, color: "#1a1209" }}
-            >
-              Search
-            </button>
-          </div>
-        
-         
+              
           <div className="mt-12 pt-8 border-t border-dashed border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
             {trustPoints.map(({ icon: Icon, label, detail }) => (
               <div key={label} className="flex items-start gap-3">
@@ -721,7 +664,7 @@ export default function Body() {
       {/* POPULAR NEAR YOU */}
       <ProductRow
         eyebrow="Nearby"
-        title={<>Popular <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Near You</em></>}
+        title={<>Popular <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Items</em></>}
         products={popularNearYou}
         loading={itemsLoading}
         wishlist={wishlist}
@@ -762,47 +705,8 @@ export default function Body() {
         bg="white"
       />
 
-      {/* PREMIUM PICKS */}
-      <ProductRow
-        eyebrow="Top Shelf"
-        title={<>Premium <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Picks</em></>}
-        products={premiumPicks}
-        loading={itemsLoading}
-        wishlist={wishlist}
-        toggleWishlist={toggleWishlist}
-        onQuickView={setQuickViewProduct}
-        addToCart={addToCart}
-        handleRentNow={handleRentNow}
-        bg="gray"
-      />
-
-      {/* WEEKEND ESSENTIALS */}
-      <ProductRow
-        eyebrow="Plan Your Weekend"
-        title={<>Weekend <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Essentials</em></>}
-        products={weekendEssentials}
-        loading={itemsLoading}
-        wishlist={wishlist}
-        toggleWishlist={toggleWishlist}
-        onQuickView={setQuickViewProduct}
-        addToCart={addToCart}
-        handleRentNow={handleRentNow}
-        bg="white"
-      />
-
-      {/* SEASONAL PICKS */}
-      <ProductRow
-        eyebrow="Right Now"
-        title={<>Seasonal <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Picks</em></>}
-        products={seasonalPicks}
-        loading={itemsLoading}
-        wishlist={wishlist}
-        toggleWishlist={toggleWishlist}
-        onQuickView={setQuickViewProduct}
-        addToCart={addToCart}
-        handleRentNow={handleRentNow}
-        bg="gray"
-      />
+  
+     
 
 
       {/* TESTIMONIALS */}

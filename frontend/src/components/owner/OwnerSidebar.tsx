@@ -2,10 +2,7 @@ import React, { useState } from 'react'
 import {useSidebar} from "../../contexts/SidebarContext"
 import { useAuth } from '../../hooks/useAuth';
 import {
-    LayoutDashboard, Package, CalendarCheck, BarChart3, Star,
-    Settings,Home,
-    MessageSquare,
-    LogOut
+    LayoutDashboard, Package, CalendarCheck, BarChart3, Star,Home, LogOut
 } from "lucide-react"
 import {  Link } from 'react-router-dom';
 export const OwnerSidebar = () => {
@@ -70,12 +67,12 @@ export const OwnerSidebar = () => {
 
             {/* Bottom */}
             < div className="px-2 pb-4 space-y-0.5 border-t border-stone-800 pt-3" >
-                <Link to="/owner/settings" onClick={() => setActiveNav("/owner/settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium  transition-all    ${activeNav === "/owner/settings"
+                {/* <Link to="/owner/settings" onClick={() => setActiveNav("/owner/settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium  transition-all    ${activeNav === "/owner/settings"
                                     ? "bg-amber-500 text-white shadow-md shadow-amber-900/20"
                                     : "text-stone-400 hover:bg-stone-800 hover:text-stone-200"}`}>
                     <Settings size={18} className="shrink-0" />
                     {isSidebarOpen && <span>Settings</span>}
-                </Link>
+                </Link> */}
                 <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all" onClick={logout}>
                     <LogOut size={18} className="shrink-0" />
                     {isSidebarOpen && <span>Log Out</span>}
