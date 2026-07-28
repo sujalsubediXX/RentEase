@@ -6,6 +6,8 @@ import {
   getUserById,
   updateUser,
   deactivateUser,
+  getUserDetailsByAdmin,
+  toggleUserStatusByAdmin,
   getAllUsers,
   getMe,
   getUserRentals,    
@@ -16,6 +18,7 @@ import {
   resetPassword
 } from "../controllers/user.controller.ts";
 import { authMiddleware } from "../middleware/auth.middleware.ts";
+import { isAdmin } from "../middleware/auth.middleware.ts";
 const router = Router();
 router.get("/me", authMiddleware, getMe);
 
@@ -41,6 +44,8 @@ router.put("/users", authMiddleware, updateUser);
 
 // Deactivate user
 router.patch("/deactivate", authMiddleware, deactivateUser);
+router.get("/admin/users/:id", authMiddleware, isAdmin, getUserDetailsByAdmin);
+router.patch("/admin/users/:id/status", authMiddleware, isAdmin, toggleUserStatusByAdmin);
 // routes/authRoutes.ts
 
 

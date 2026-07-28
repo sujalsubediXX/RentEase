@@ -39,6 +39,7 @@ import { RevenuePage } from "./pages/admin/RevenuePage";
 import { ReviewsPage } from "./pages/admin/ReviewsPage";
 import { SettingsPage } from "./pages/admin/SettingsPage";
 import { OwnersPage } from "./pages/admin/OwnersPage";
+import { PaymentsPage } from "./pages/admin/PaymentsPage";
 import ProfilePage from "./pages/user/ProfilePage";
 import WishlistPage from "./pages/user/WishlistPage";
 import CartPage from "./pages/user/CartPage";
@@ -179,6 +180,7 @@ const router = createBrowserRouter([
       { path: "/admin/listings", element: <ListingsPage /> },
       { path: "/admin/listings/:id", element: <ListingDetailPage /> },
       { path: "/admin/bookings", element: <BookingsPage /> },
+      { path: "/admin/payments", element: <PaymentsPage /> },
       { path: "/admin/revenue", element: <RevenuePage /> },
       { path: "/admin/reviews", element: <ReviewsPage /> },
       { path: "/admin/kycreview", element: <Kycviewpage /> },

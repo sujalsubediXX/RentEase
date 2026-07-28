@@ -340,6 +340,7 @@ export const getUsersByRole = async (req: Request, res: Response) => {
 
     const response = users.map((user, index) => ({
       id: `U${String(index + 1).padStart(3, "0")}`,
+      dbId: user._id,
       fullName: user.fullName,
       email: user.email,
       phoneNumber: user.phoneNumber,
@@ -486,6 +487,91 @@ export const deactivateUser = async (req: Request, res: Response) => {
   }
 };
 
+export const getUserDetailsByAdmin = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User id is required",
+      });
+    }
+
+    const user = await User.findById(id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        address: user.address,
+        status: user.status,
+        kycStatus: user.kycStatus,
+        profileImage: user.profileImage,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching admin user details:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user details",
+    });
+  }
+};
+
+export const toggleUserStatusByAdmin = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User id is required",
+      });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.status = user.status === "active" ? "suspended" : "active";
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User ${user.status === "active" ? "activated" : "suspended"} successfully`,
+      user: {
+        id: user._id,
+        status: user.status,
+      },
+    });
+  } catch (error) {
+    console.error("Error toggling user status:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update user status",
+    });
+  }
+};
+
 
 
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -494,6 +580,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
     const response = users.map((user, index) => ({
       id: `U${String(index + 1).padStart(3, "0")}`,
+      dbId: user._id,
       fullName: user.fullName,
       email: user.email,
       phoneNumber: user.phoneNumber,

@@ -34,7 +34,7 @@ const CategoryManagement = () => {
   const handleConfirmDelete = async () => {
     if (!categoryToDelete) return;
     try {
-     await axios.delete(
+      await axios.delete(
         `${API_BASE_URL}/api/category/deletecategory/${categoryToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -307,10 +307,9 @@ const CategoryManagement = () => {
 
 
 
-
           {loading ? (
-            <div className="text-center py-20">
-              Loading...
+            <div className="flex items-center justify-center h-screen">
+              <div className="w-10 h-10 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
           ) : (
             <div className="max-h-[87vh] overflow-y-auto w-[68%] ">
@@ -390,16 +389,7 @@ const CategoryManagement = () => {
                   }
                 )}
 
-                <div className="border-2 border-dashed border-gray-300 rounded-3xl min-h-75 flex flex-col justify-center items-center">
-                  <Plus
-                    size={40}
-                    className="text-gray-400"
-                  />
 
-                  <p className="text-gray-500 mt-4">
-                    Add New Category
-                  </p>
-                </div>
               </div>
             </div>
           )}

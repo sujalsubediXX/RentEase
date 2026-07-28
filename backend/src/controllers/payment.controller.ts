@@ -1,6 +1,8 @@
 import type { Request,Response } from 'express';
 import  crypto from 'crypto';
 import Rentals from '../models/Rentals.model.ts';
+import Payments from '../models/Payments.model.ts';
+import Item from '../models/items.model.ts';
 
 const ESEWA_CONFIG = {
   PRODUCT_CODE: 'EPAYTEST',
@@ -17,7 +19,12 @@ const ESEWA_CONFIG = {
 export const initiatePayment = async (req: Request, res: Response) => {
 
   try {
+    const userId = (req as any).user?.id;
     const { rentalIds, tax_amount = 0, product_service_charge = 0, product_delivery_charge = 0 } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+    }
 
     if (!rentalIds || !Array.isArray(rentalIds) || rentalIds.length === 0) {
       return res.status(400).json({ status: 'error', message: 'No rentals provided' });
@@ -41,6 +48,23 @@ export const initiatePayment = async (req: Request, res: Response) => {
     }
 
     const transaction_uuid = `rent-${Date.now()}`;
+
+    await Payments.create({
+      userId,
+      amount: total_amount,
+      status: 'pending',
+      transactionId: transaction_uuid,
+      rentalIds,
+      paymentMethod: 'esewa',
+      paymentDetails: {
+        tax_amount: taxAmt,
+        product_service_charge: serviceCharge,
+        product_delivery_charge: deliveryCharge,
+        subtotal: amt,
+      },
+      esewaTransactionUuid: transaction_uuid,
+      productCode: ESEWA_CONFIG.PRODUCT_CODE,
+    });
 
     const signatureMessage = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${ESEWA_CONFIG.PRODUCT_CODE}`;
     const signature = crypto
@@ -73,7 +97,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
 /**
  * Endpoint 2: Complete Hook Verification Callback Server Verification
  */
-export const verifyPayment=(req:Request, res:Response) => {
+export const verifyPayment = async (req: Request, res: Response) => {
  try {
     const { data } = req.body;
     if (!data) {
@@ -109,7 +133,52 @@ export const verifyPayment=(req:Request, res:Response) => {
 
 
     if (localSignature === signature) {
-      return res.status(200).json({ status: 'verified', orderDetails: responseData });
+      const payment = await Payments.findOne({ transactionId: transaction_uuid });
+
+      if (!payment) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Payment record not found for this transaction',
+        });
+      }
+
+      if (payment.status !== 'completed') {
+        payment.status = 'completed';
+        payment.amount = Number(total_amount);
+        payment.esewaSignature = signature;
+        payment.esewaTransactionUuid = transaction_uuid;
+        payment.productCode = product_code;
+        payment.paymentDetails = {
+          ...payment.paymentDetails,
+          ...responseData,
+        };
+        await payment.save();
+
+        await Rentals.updateMany(
+          { _id: { $in: payment.rentalIds }, userId: payment.userId },
+          {
+            status: 'confirmed',
+            paymentId: payment._id,
+            paymentDetails: responseData,
+            paymentMethod: 'digital',
+          }
+        );
+
+        const rentals = await Rentals.find({ _id: { $in: payment.rentalIds }, userId: payment.userId });
+        for (const rental of rentals) {
+          await Item.findByIdAndUpdate(rental.itemId, { availability: 'rented' });
+        }
+      }
+
+      return res.status(200).json({
+        status: 'verified',
+        orderDetails: responseData,
+        payment: {
+          id: payment._id,
+          transactionId: payment.transactionId,
+          status: payment.status,
+        },
+      });
     } else {
       console.log("❌ Error: Signature Validation Mismatch!");
       return res.status(400).json({ status: 'tampered', message: 'Signature validation mismatch' });

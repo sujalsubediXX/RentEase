@@ -1,16 +1,27 @@
-import { Download, Search, Eye, Ban, CheckCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Download, Search, Eye, Ban, CheckCircle, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import API_BASE_URL from "../../config/api";
 import axios from "axios";
+import { authService } from "../../services/auth.services";
 
 interface User {
   id: string;
+  dbId?: string;
   fullName: string;
   email: string;
-  role: "user" | "owner";
+  role: "user" | "owner" | "renter";
   status: "active" | "suspended" | "inactive";
   joined: string;
   avatar: string;
+}
+
+interface UserDetails extends User {
+  phoneNumber?: string;
+  address?: string;
+  profileImage?: string;
+  kycStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
@@ -46,11 +57,20 @@ export const UsersPage = () => {
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [user, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
+  const [selectedUserLoading, setSelectedUserLoading] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<User | null>(null);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [actionError, setActionError] = useState<string>("");
+  const userRequestIdRef = useRef(0);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/user/role/renter`)
+        const token = authService.getAccessToken();
+        const res = await axios.get(`${API_BASE_URL}/api/user/role/renter`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         setUsers(res.data.users)
       } catch (error) {
         console.log(error)
@@ -96,6 +116,80 @@ export const UsersPage = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const openUserDetails = async (currentUser: User) => {
+    const userId = currentUser.dbId ?? currentUser.id;
+    const token = authService.getAccessToken();
+    const requestId = ++userRequestIdRef.current;
+
+    setActionError("");
+    setSelectedUserLoading(true);
+    setSelectedUser({ ...currentUser, dbId: userId });
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/user/admin/users/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (requestId === userRequestIdRef.current) {
+        setSelectedUser({ ...currentUser, ...res.data.user, dbId: userId });
+      }
+    } catch (error: any) {
+      if (requestId === userRequestIdRef.current) {
+        setActionError(error?.response?.data?.message || "Failed to load user details");
+      }
+    } finally {
+      if (requestId === userRequestIdRef.current) {
+        setSelectedUserLoading(false);
+      }
+    }
+  };
+
+  const askToggleStatus = (currentUser: User) => {
+    setActionError("");
+    setStatusTarget(currentUser);
+  };
+
+  const confirmToggleStatus = async () => {
+    if (!statusTarget) return;
+
+    const userId = statusTarget.dbId ?? statusTarget.id;
+    const token = authService.getAccessToken();
+
+    try {
+      setStatusUpdating(true);
+      await axios.patch(
+        `${API_BASE_URL}/api/user/admin/users/${userId}/status`,
+        {},
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      );
+
+      setUsers(prev => prev.map(item => (
+        item.id === statusTarget.id ? { ...item, status: item.status === "active" ? "suspended" : "active" } : item
+      )));
+
+      setSelectedUser(prev => (
+        prev && prev.id === statusTarget.id
+          ? { ...prev, status: prev.status === "active" ? "suspended" : "active" }
+          : prev
+      ));
+
+      setStatusTarget(null);
+    } catch (error: any) {
+      setActionError(error?.response?.data?.message || "Failed to update user status");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  const closeDetailModal = () => {
+    userRequestIdRef.current += 1;
+    setSelectedUser(null);
+    setSelectedUserLoading(false);
+    setActionError("");
   };
 
   return (
@@ -166,10 +260,10 @@ export const UsersPage = () => {
                 <td className="px-5 py-3.5 text-stone-500 text-xs">{u.joined}</td>
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-1">
-                    <button className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 hover:text-sky-400 transition-colors" title="View"><Eye size={14} /></button>
+                    <button onClick={() => openUserDetails(u)} className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 hover:text-sky-400 transition-colors" title="View"><Eye size={14} /></button>
                     {u.status === "active"
-                      ? <button className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 hover:text-red-400 transition-colors" title="Suspend"><Ban size={14} /></button>
-                      : <button className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 hover:text-emerald-400 transition-colors" title="Activate"><CheckCircle size={14} /></button>
+                      ? <button onClick={() => askToggleStatus(u)} className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 hover:text-red-400 transition-colors" title="Suspend"><Ban size={14} /></button>
+                      : <button onClick={() => askToggleStatus(u)} className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 hover:text-emerald-400 transition-colors" title="Activate"><CheckCircle size={14} /></button>
                     }
                   </div>
                 </td>
@@ -178,6 +272,141 @@ export const UsersPage = () => {
           </tbody>
         </table>
       </div>
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-stone-800 bg-stone-950 shadow-2xl shadow-black/40 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-4 p-6 border-b border-stone-800">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">User details</p>
+                <h2 className="text-xl font-bold text-white mt-1">{selectedUser.fullName}</h2>
+                <p className="text-sm text-stone-400">{selectedUser.email}</p>
+              </div>
+              <button onClick={closeDetailModal} className="p-2 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors" title="Close">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {selectedUserLoading ? (
+                <div className="py-14 flex items-center justify-center text-stone-400 gap-2">
+                  <Loader2 size={18} className="animate-spin" />
+                  Loading user information...
+                </div>
+              ) : (
+                <>
+                  {actionError && (
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                      {actionError}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-stone-800 overflow-hidden flex items-center justify-center text-lg font-bold text-white">
+                      {selectedUser.profileImage ? (
+                        <img
+                          src={selectedUser.profileImage.startsWith("http") ? selectedUser.profileImage : `${API_BASE_URL}${selectedUser.profileImage.startsWith("/") ? "" : "/"}${selectedUser.profileImage}`}
+                          alt={selectedUser.fullName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        selectedUser.avatar
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-stone-500">Role: <span className="text-stone-200 font-medium">{selectedUser.role}</span></p>
+                      <p className="text-sm text-stone-500">Status: <span className={`inline-flex mt-1 text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(selectedUser.status)}`}>{selectedUser.status}</span></p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-stone-800 bg-stone-900/70 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Phone</p>
+                      <p className="mt-2 text-sm text-stone-200">{selectedUser.phoneNumber || "Not provided"}</p>
+                    </div>
+                    <div className="rounded-xl border border-stone-800 bg-stone-900/70 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Joined</p>
+                      <p className="mt-2 text-sm text-stone-200">{selectedUser.joined}</p>
+                    </div>
+                    <div className="rounded-xl border border-stone-800 bg-stone-900/70 p-4 sm:col-span-2">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Address</p>
+                      <p className="mt-2 text-sm text-stone-200">{selectedUser.address || "Not provided"}</p>
+                    </div>
+                    <div className="rounded-xl border border-stone-800 bg-stone-900/70 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">KYC</p>
+                      <p className="mt-2 text-sm text-stone-200">{selectedUser.kycStatus || "unknown"}</p>
+                    </div>
+                    <div className="rounded-xl border border-stone-800 bg-stone-900/70 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Record ID</p>
+                      <p className="mt-2 text-sm text-stone-200">{selectedUser.dbId || selectedUser.id}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      onClick={() => askToggleStatus(selectedUser)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${selectedUser.status === "active" ? "bg-red-500/15 text-red-300 hover:bg-red-500/25" : "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"}`}
+                    >
+                      {selectedUser.status === "active" ? "Suspend user" : "Activate user"}
+                    </button>
+                    <button onClick={closeDetailModal} className="px-4 py-2 rounded-xl text-sm font-medium bg-stone-800 text-stone-200 hover:bg-stone-700 transition-colors">
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {statusTarget && (
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-stone-800 bg-stone-950 shadow-2xl shadow-black/40 p-6">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Confirm action</p>
+                <h3 className="text-lg font-bold text-white mt-1">
+                  {statusTarget.status === "active" ? "Suspend user?" : "Activate user?"}
+                </h3>
+              </div>
+              <button onClick={() => setStatusTarget(null)} className="p-2 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors" title="Close">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-sm text-stone-300 leading-6">
+              {statusTarget.status === "active"
+                ? `This will suspend ${statusTarget.fullName} and block access until an admin activates the account again.`
+                : `This will restore ${statusTarget.fullName}'s access and mark the account as active.`}
+            </p>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={() => setStatusTarget(null)}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-stone-800 text-stone-200 hover:bg-stone-700 transition-colors"
+                disabled={statusUpdating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmToggleStatus}
+                disabled={statusUpdating}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${statusTarget.status === "active" ? "bg-red-500 text-white hover:bg-red-400" : "bg-emerald-500 text-white hover:bg-emerald-400"}`}
+              >
+                {statusUpdating ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Updating...
+                  </span>
+                ) : (
+                  statusTarget.status === "active" ? "Suspend" : "Activate"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

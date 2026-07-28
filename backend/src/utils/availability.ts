@@ -1,7 +1,7 @@
 import Rentals from "../models/Rentals.model.ts";
 
 
-const ACTIVE_STATUSES = ["pending", "confirmed", "ongoing"] as const;
+const ACTIVE_STATUSES = ["pending", "approved", "ongoing"] as const;
 
 export interface DateRange {
   start: Date;

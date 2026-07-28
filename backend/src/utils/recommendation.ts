@@ -16,7 +16,9 @@ const RATING_ITEM_FIELD = "itemID"; // matches your schema field name
 // rental never actually happened and shouldn't boost an item's ranking.
 // `as const` keeps this as a tuple of string literals (not string[]) so it's
 // assignable to Mongoose's typed $in on the `status` enum field.
-const QUALIFYING_RENTAL_STATUSES = ["confirmed", "ongoing", "completed"] as const;
+// Use statuses that exist on the Rentals schema. 'confirmed' was invalid
+// according to the Rentals type; replace with 'approved'.
+const QUALIFYING_RENTAL_STATUSES = ["approved", "ongoing", "completed"] as const;
 
 // Scoring weights — tune based on what matters most for your platform.
 const WEIGHTS = {

@@ -9,6 +9,7 @@ import {
   LogOut,
   ShieldCheck,
   UserCheck,
+  CreditCard,
 } from "lucide-react";
 import { useSidebar } from "../../contexts/SidebarContext"
 import { Link } from "react-router-dom";
@@ -19,6 +20,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ size
   { href: "/admin/owners", label: "Owners", icon: UserCheck },
   { href: "/admin/listings", label: "Listings", icon: Package },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
+  { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/kycreview", label: "KYC Review", icon: ShieldCheck },
   { href: "/admin/revenue", label: "Revenue", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },

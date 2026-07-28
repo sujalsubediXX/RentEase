@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { DollarSign, Zap, Globe } from "lucide-react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { useAuth } from "../../hooks/useAuth";
-import { authService } from "../../services/auth.services";
-import API_BASE_URL from "../../config/api";
+import { getAdminPayments, type PaymentRecord } from "../../services/payment.service";
 
 interface MonthlyRevenue {
   month: string;
@@ -18,13 +16,6 @@ interface RevenueStats {
   ownerPayouts: number;
   monthlyData: MonthlyRevenue[];
 }
-
-const getApiUrl = (endpoint: string) => {
-  if (API_BASE_URL.endsWith('/api')) {
-    return `${API_BASE_URL}${endpoint}`;
-  }
-  return `${API_BASE_URL}/api${endpoint}`;
-};
 
 export const RevenuePage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -47,64 +38,20 @@ export const RevenuePage: React.FC = () => {
         return;
       }
 
-      const token = authService.getAccessToken();
-      
-      if (!token) {
-        toast.error('Authentication token not found');
-        setLoading(false);
+      const payments = await getAdminPayments();
+
+      if (payments.length === 0) {
+        setStats({
+          totalRevenue: 0,
+          platformCommission: 0,
+          ownerPayouts: 0,
+          monthlyData: [],
+        });
         return;
       }
 
-      let payments = [];
-      let rentals = [];
-
-      // Try to fetch payments first
-      try {
-        const paymentsResponse = await axios.get(
-          getApiUrl('/payment/getpayments'),
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        payments = paymentsResponse.data.data || paymentsResponse.data || [];
-        console.log('Payments found:', payments.length);
-      } catch (paymentErr) {
-        console.log('No payments endpoint or no payments found, using rentals instead');
-      }
-
-      // If no payments, fetch rentals for revenue data
-      if (payments.length === 0) {
-        const rentalsResponse = await axios.get(
-          getApiUrl('/rentals/filterStatus?status=all'),
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        rentals = rentalsResponse.data.data || rentalsResponse.data || [];
-        console.log('Rentals found:', rentals.length);
-        
-        // Use confirmed/completed rentals as revenue
-        const completedRentals = rentals.filter((r: any) => 
-          r.status === 'confirmed' || r.status === 'completed' || r.status === 'ongoing'
-        );
-        
-        // Convert rentals to payment-like objects
-        payments = completedRentals.map((r: any) => ({
-          amount: r.totalPrice || 0,
-          status: 'completed',
-          createdAt: r.createdAt,
-          _id: r._id
-        }));
-      }
-
       // Filter completed payments
-      const completedPayments = payments.filter((p: any) => p.status === 'completed');
+      const completedPayments = payments.filter((p: PaymentRecord) => p.status === 'completed');
 
       // Calculate total revenue
       const totalRevenue = completedPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
@@ -133,13 +80,13 @@ export const RevenuePage: React.FC = () => {
     }
   };
 
-  const generateMonthlyData = (payments: any[], year: string): MonthlyRevenue[] => {
+  const generateMonthlyData = (payments: PaymentRecord[], year: string): MonthlyRevenue[] => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyRevenue: { [key: string]: number } = {};
 
     months.forEach(m => monthlyRevenue[m] = 0);
 
-    payments.forEach((payment: any) => {
+    payments.forEach((payment: PaymentRecord) => {
       if (payment.createdAt) {
         const date = new Date(payment.createdAt);
         const paymentYear = date.getFullYear().toString();

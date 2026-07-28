@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL from "../../config/api";
@@ -20,7 +20,7 @@ const whyChoose = [
 ];
 
 const CategoriesPage: React.FC = () => {
-  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
 
   useEffect(() => {

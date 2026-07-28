@@ -61,8 +61,8 @@ const testimonials: Testimonial[] = [
 
 const trustPoints = [
   { icon: ShieldCheck, label: "Verified owners", detail: "KYC-checked before they list" },
-  { icon: MapPin, label: "No Delivery Options", detail: "Pick up from the owner's location" },
-  { icon: Clock3, label: "Book by the day", detail: "Rent for one day or several weeks" },
+  { icon: MapPin, label: "Easy pickup & return", detail: "Coordinate directly with the owner" },
+  { icon: Clock3, label: "Rent by the day", detail: "Book tools, gear, and essentials for any duration" },
 ];
 
 // ---- Reusable row for every horizontal product section on the page ----
@@ -540,7 +540,7 @@ export default function Body() {
         </h1>
 
         <p className="anim-2 max-w-130 text-[16px] text-gray-500 leading-relaxed mx-auto mb-10">
-          From power tools to party supplies, cameras to camping gear — find exactly what you need without the commitment of buying.
+          Rent tools, cameras, event supplies, travel gear, and other everyday items without paying full price to own them.
         </p>
 
         <div className="anim-3 w-full max-w-170">
@@ -572,7 +572,7 @@ export default function Body() {
               Trending <span style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Categories</span>
             </h2>
             <p className="text-gray-500 text-[15px] mt-3 max-w-125">
-              Everything from everyday essentials to specialty gear — discover your next rental.
+              Everything from everyday essentials to specialty gear — find the right item for the exact days you need it.
             </p>
           </Reveal>
 
@@ -634,7 +634,7 @@ export default function Body() {
       {/* RECOMMENDED FOR YOU (personalized when logged in, featured otherwise) */}
       <ProductRow
         eyebrow="Top Picks"
-        title={<>{isAuthenticated ? "Recommended " : "Featured "}<em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>{isAuthenticated ? "For You" : "Rentals"}</em></>}
+        title={<>{isAuthenticated ? "Recommended " : "Featured "}<em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>{isAuthenticated ? "For You" : "Items"}</em></>}
         products={items}
         loading={itemsLoading}
         wishlist={wishlist}
@@ -643,14 +643,14 @@ export default function Body() {
         addToCart={addToCart}
         handleRentNow={handleRentNow}
         viewAllHref="#"
-        emptyMessage="No listings yet — be the first to list an item in your area."
+        emptyMessage="No items yet — be the first to list a rentable item in your area."
         bg="white"
       />
 
       {/* MOST RENTED */}
       <ProductRow
         eyebrow="Fan Favorites"
-        title={<>Most <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Rented</em></>}
+        title={<>Most <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Rented Items</em></>}
         products={mostRentedItems}
         loading={mostRentedLoading}
         wishlist={wishlist}
@@ -664,7 +664,7 @@ export default function Body() {
       {/* POPULAR NEAR YOU */}
       <ProductRow
         eyebrow="Nearby"
-        title={<>Popular <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Items</em></>}
+        title={<>Popular <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Near You</em></>}
         products={popularNearYou}
         loading={itemsLoading}
         wishlist={wishlist}
@@ -678,7 +678,7 @@ export default function Body() {
       {/* RECENTLY ADDED */}
       <ProductRow
         eyebrow="Just Listed"
-        title={<>Recently <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Added</em></>}
+        title={<>Recently <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Listed</em></>}
         products={recentlyAdded}
         loading={itemsLoading}
         wishlist={wishlist}
@@ -692,8 +692,8 @@ export default function Body() {
       {/* BUDGET RENTALS */}
       <ProductRow
         eyebrow="Easy on the Wallet"
-        title={<>Budget <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Rentals</em></>}
-        subtitle="Quality gear under Rs. 500/day."
+        title={<>Budget <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Items</em></>}
+        subtitle="Affordable rentals under Rs. 500/day."
         products={budgetRentals}
         loading={itemsLoading}
         wishlist={wishlist}
@@ -701,7 +701,7 @@ export default function Body() {
         onQuickView={setQuickViewProduct}
         addToCart={addToCart}
         handleRentNow={handleRentNow}
-        emptyMessage="No budget listings under Rs. 500/day right now."
+        emptyMessage="No budget items under Rs. 500/day right now."
         bg="white"
       />
 
@@ -717,7 +717,7 @@ export default function Body() {
               <span className="block w-6 h-px bg-amber-400" />What Renters Say
             </div>
             <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(36px,4.5vw,58px)" }}>
-              Loved by <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Thousands</em>
+              Trusted by <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Renters</em>
             </h2>
           </Reveal>
 
@@ -749,34 +749,6 @@ export default function Body() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 px-[5vw] bg-gray-50 border-t border-b border-gray-100">
-        <div className="max-w-300 mx-auto">
-          <Reveal className="flex flex-col md:flex-row items-center justify-between gap-10">
-            <div>
-              <div className="text-[11px] tracking-[0.12em] uppercase mb-3 font-medium" style={{ color: AMBER }}>Start Today</div>
-              <h2 className="font-display font-light text-gray-900 leading-tight" style={{ fontSize: "clamp(34px,4vw,52px)" }}>
-                Have an item?<br />
-                <em style={{ fontStyle: "italic", color: AMBER_LIGHT }}>Earn while it sits.</em>
-              </h2>
-              <p className="text-[15px] text-gray-500 mt-3 max-w-110">
-                List your gear for free and earn passive income from renters right here in the Valley.
-              </p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <button
-                className="px-8 py-3.5 border-none rounded-lg text-[15px] font-semibold cursor-pointer whitespace-nowrap hover:brightness-110 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
-                style={{ background: AMBER, color: "#1a1209" }}
-              >
-                List Your Item
-              </button>
-              <button className="px-8 py-3.5 bg-transparent border border-gray-300 rounded-lg text-gray-500 text-[15px] cursor-pointer whitespace-nowrap hover:border-amber-400 hover:text-amber-600 transition-all duration-200">
-                Learn More
-              </button>
-            </div>
-          </Reveal>
-        </div>
-      </section>
 
 
     </div>
