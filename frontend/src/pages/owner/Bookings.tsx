@@ -9,7 +9,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { authService } from "../../services/auth.services";
 import ComplaintModal from "../../components/owner/ComplaintModal";
 
-type BookingStatus = "pending" | "approved" | "ongoing" | "completed" | "cancelled" | "rejected";
+type BookingStatus = "pending" | "approved" | "confirmed" | "ongoing" | "completed" | "cancelled" | "rejected";
 
 interface Booking {
     _id: string;
@@ -43,6 +43,7 @@ interface Booking {
 const statusColor: Record<string, string> = {
     pending: "bg-amber-100 text-amber-700",
     approved: "bg-emerald-100 text-emerald-700",
+    confirmed: "bg-green-100 text-green-700",
     ongoing: "bg-blue-100 text-blue-700",
     completed: "bg-slate-100 text-slate-600",
     cancelled: "bg-red-100 text-red-600",

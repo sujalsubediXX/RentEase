@@ -157,17 +157,14 @@ export const verifyPayment = async (req: Request, res: Response) => {
         await Rentals.updateMany(
           { _id: { $in: payment.rentalIds }, userId: payment.userId },
           {
-            status: 'confirmed',
+            status: 'approved',
             paymentId: payment._id,
             paymentDetails: responseData,
             paymentMethod: 'digital',
           }
         );
 
-        const rentals = await Rentals.find({ _id: { $in: payment.rentalIds }, userId: payment.userId });
-        for (const rental of rentals) {
-          await Item.findByIdAndUpdate(rental.itemId, { availability: 'rented' });
-        }
+     
       }
 
       return res.status(200).json({

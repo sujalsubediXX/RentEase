@@ -75,14 +75,7 @@ export const AdminLogin: React.FC = () => {
             }
           />
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-           
-  
-          </div>
+     
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">

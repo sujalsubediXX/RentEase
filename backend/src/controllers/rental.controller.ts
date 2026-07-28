@@ -373,7 +373,7 @@ export const confirmRental = async (req: Request, res: Response) => {
     const updateResult = await Rentals.updateMany(
       { _id: { $in: rentalIds }, userId: userId },
       { 
-        status: 'confirmed',
+        status: 'approved',
         paymentDetails: paymentDetails || {}
       }
     );
@@ -381,7 +381,7 @@ export const confirmRental = async (req: Request, res: Response) => {
     if (updateResult.modifiedCount === 0) {
       return res.status(404).json({
         success: false,
-        message: "Rentals not found or already confirmed"
+        message: "Rentals not found or already approved"
       });
     }
 
