@@ -1,0 +1,37 @@
+[{
+  "_id": {
+    "$oid": "6a53904d8ae899dae17589ee"
+  },
+  "rentalId": {
+    "$oid": "6a5084eb0b9ae7e96b9cba9b"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "ownerId": {
+    "$oid": "6a44b1ba81e8097e88f1447b"
+  },
+  "renterId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "category": "late_return",
+  "description": "cvbgnhmjk,l.",
+  "evidenceImages": [
+    "/uploads/complaints/complaint-1783861325196-70943637.png"
+  ],
+  "status": "resolved",
+  "createdAt": {
+    "$date": "2026-07-12T13:02:05.242Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-12T13:08:05.992Z"
+  },
+  "__v": 0,
+  "resolutionNote": "",
+  "resolvedAt": {
+    "$date": "2026-07-12T13:08:05.991Z"
+  },
+  "resolvedBy": {
+    "$oid": "6a44c79404cb81f0bea5a47e"
+  }
+}]

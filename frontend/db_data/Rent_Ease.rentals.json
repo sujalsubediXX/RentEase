@@ -1,0 +1,936 @@
+[{
+  "_id": {
+    "$oid": "6a4f2793fe0d2551c58d8fc8"
+  },
+  "itemId": {
+    "$oid": "6a4a2404e8e08ce1ab9f4746"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-07-01T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-02T18:15:00.000Z"
+  },
+  "totalPrice": 400,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-01T04:46:11.133Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-01T04:48:30.637Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2793fe0d2551c58d8fc9"
+  },
+  "itemId": {
+    "$oid": "6a4a2697e8e08ce1ab9f4766"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-07-01T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-02T18:15:00.000Z"
+  },
+  "totalPrice": 180,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-01T04:46:11.175Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-01T04:48:27.621Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2902fe0d2551c58d8fda"
+  },
+  "itemId": {
+    "$oid": "6a4a236ce8e08ce1ab9f473e"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-06-08T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-06-09T18:15:00.000Z"
+  },
+  "totalPrice": 1000,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-06-08T04:52:18.308Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T04:54:20.108Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2902fe0d2551c58d8fdb"
+  },
+  "itemId": {
+    "$oid": "6a4a21c2e8e08ce1ab9f472e"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-06-08T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-06-09T18:15:00.000Z"
+  },
+  "totalPrice": 450,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-06-08T04:52:18.310Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T04:56:12.787Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2902fe0d2551c58d8fdc"
+  },
+  "itemId": {
+    "$oid": "6a4a2235e8e08ce1ab9f4732"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-07-04T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-05T18:15:00.000Z"
+  },
+  "totalPrice": 300,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-04T04:52:18.311Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T04:56:08.140Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2e4bfe0d2551c58d8ffe"
+  },
+  "itemId": {
+    "$oid": "6a4a2162e8e08ce1ab9f472a"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-05T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-06T18:15:00.000Z"
+  },
+  "totalPrice": 1200,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-05T05:14:51.089Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T05:16:58.105Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2e4bfe0d2551c58d8fff"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-05T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-06T18:15:00.000Z"
+  },
+  "totalPrice": 500,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-05T05:14:51.092Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T05:17:41.683Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2e4bfe0d2551c58d9000"
+  },
+  "itemId": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4742"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-05T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-06T18:15:00.000Z"
+  },
+  "totalPrice": 249,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-05T05:14:51.094Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-05T05:16:53.468Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f2ff0fe0d2551c58d900a"
+  },
+  "itemId": {
+    "$oid": "6a4a2697e8e08ce1ab9f4766"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-08T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-09T18:15:00.000Z"
+  },
+  "totalPrice": 180,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T05:21:52.749Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:38:32.635Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f3052dae5ec696262f236"
+  },
+  "itemId": {
+    "$oid": "6a4a25b3e8e08ce1ab9f475a"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-07-08T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-09T18:15:00.000Z"
+  },
+  "totalPrice": 1500,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T05:23:30.109Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:38:11.868Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f73d05cc042fd841a5608"
+  },
+  "itemId": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4742"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-06-22T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-06-23T18:15:00.000Z"
+  },
+  "totalPrice": 747,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-06-22T10:11:28.522Z"
+  },
+  "updatedAt": {
+    "$date": "2026-06-22T11:53:59.192Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f73d05cc042fd841a5609"
+  },
+  "itemId": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474e"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-07-02T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-03T18:15:00.000Z"
+  },
+  "totalPrice": 900,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-02T10:11:28.537Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-02T11:37:32.469Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f787e5cc042fd841a5651"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-03T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-04T18:15:00.000Z"
+  },
+  "totalPrice": 500,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-03T10:31:26.737Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-03T10:42:20.762Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f787e5cc042fd841a5652"
+  },
+  "itemId": {
+    "$oid": "6a4a2697e8e08ce1ab9f4766"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-04T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-05T18:15:00.000Z"
+  },
+  "totalPrice": 180,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-04T10:31:26.745Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:39:49.866Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f787e5cc042fd841a5653"
+  },
+  "itemId": {
+    "$oid": "6a4a236ce8e08ce1ab9f473e"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-01T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-02T18:15:00.000Z"
+  },
+  "totalPrice": 1000,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-01T10:31:26.750Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:40:05.590Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f787e5cc042fd841a5654"
+  },
+  "itemId": {
+    "$oid": "6a4a2404e8e08ce1ab9f4746"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-02T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-03T18:15:00.000Z"
+  },
+  "totalPrice": 400,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-02T10:31:26.754Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:39:56.611Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f787e5cc042fd841a5655"
+  },
+  "itemId": {
+    "$oid": "6a4a23c5e8e08ce1ab9f4742"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-10T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-11T18:15:00.000Z"
+  },
+  "totalPrice": 249,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T10:31:26.761Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:38:05.999Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f816d5cc042fd841a5660"
+  },
+  "itemId": {
+    "$oid": "6a4a2162e8e08ce1ab9f472a"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-09T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-10T00:00:00.000Z"
+  },
+  "totalPrice": 1200,
+  "status": "cancelled",
+  "rejectionReason": "Cancelled by user or owner",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T11:09:33.145Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T11:33:01.271Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f886588009023f9616407"
+  },
+  "itemId": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474e"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-09T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-11T00:00:00.000Z"
+  },
+  "totalPrice": 1800,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 2,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T11:39:17.837Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T11:40:02.119Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f899188009023f9616409"
+  },
+  "itemId": {
+    "$oid": "6a4a25ffe8e08ce1ab9f475e"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-09T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-10T00:00:00.000Z"
+  },
+  "totalPrice": 399,
+  "status": "rejected",
+  "rejectionReason": "the user didnot clean the item properly",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T11:44:17.999Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T11:45:38.802Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f8a9a88009023f961640a"
+  },
+  "itemId": {
+    "$oid": "6a4a2162e8e08ce1ab9f472a"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "startDate": {
+    "$date": "2026-07-09T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-10T00:00:00.000Z"
+  },
+  "totalPrice": 1200,
+  "status": "cancelled",
+  "rejectionReason": "Cancelled by renter",
+  "customerDetails": {
+    "fullName": "User2",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Jarankhu"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-09T11:48:42.815Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T12:03:11.781Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a5084eb0b9ae7e96b9cba9b"
+  },
+  "itemId": {
+    "$oid": "6a4a2293e8e08ce1ab9f4736"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "startDate": {
+    "$date": "2026-07-10T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-16T00:00:00.000Z"
+  },
+  "totalPrice": 3000,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "Sujal Subedi",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Nepaltar"
+  },
+  "paymentMethod": "cash",
+  "rentalDays": 6,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-10T05:36:43.737Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-10T05:40:47.322Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a689624e5462d7ed3a26522"
+  },
+  "itemId": {
+    "$oid": "6a4a24b9e8e08ce1ab9f474e"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-28T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-29T00:00:00.000Z"
+  },
+  "totalPrice": 900,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-28T11:44:36.089Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-28T11:55:30.664Z"
+  },
+  "__v": 0,
+  "paymentDetails": {
+    "transaction_code": "000GB2V",
+    "status": "COMPLETE",
+    "total_amount": "900.0",
+    "transaction_uuid": "rent-1785239076113",
+    "product_code": "EPAYTEST",
+    "signed_field_names": "transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names",
+    "signature": "UD2hIh66Zh/Qj6tWn3ZVDfysHZPyN+MSaD9CNGZhcis="
+  },
+  "paymentId": {
+    "$oid": "6a689624e5462d7ed3a26523"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a6899a78fac271edc48d983"
+  },
+  "itemId": {
+    "$oid": "6a4a2106e8e08ce1ab9f4727"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-27T18:15:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-28T18:15:00.000Z"
+  },
+  "totalPrice": 800,
+  "status": "completed",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-28T11:59:35.773Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-28T12:04:08.997Z"
+  },
+  "__v": 0,
+  "paymentDetails": {
+    "transaction_code": "000GB35",
+    "status": "COMPLETE",
+    "total_amount": "800.0",
+    "transaction_uuid": "rent-1785239975793",
+    "product_code": "EPAYTEST",
+    "signed_field_names": "transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names",
+    "signature": "6KoBzutHEDuvvbLCJ36UAGF/v51IeB56PpE6JHoWelQ="
+  },
+  "paymentId": {
+    "$oid": "6a6899a78fac271edc48d985"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a689b6eb862019ede0aaa80"
+  },
+  "itemId": {
+    "$oid": "6a4a27b4e8e08ce1ab9f4772"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "startDate": {
+    "$date": "2026-07-28T00:00:00.000Z"
+  },
+  "returnDate": {
+    "$date": "2026-07-29T00:00:00.000Z"
+  },
+  "totalPrice": 420,
+  "status": "approved",
+  "rejectionReason": "",
+  "customerDetails": {
+    "fullName": "User",
+    "phoneNumber": "9828290052",
+    "deliveryAddress": "Dadagaun"
+  },
+  "paymentMethod": "digital",
+  "rentalDays": 1,
+  "quantity": 1,
+  "securityDeposit": 0,
+  "createdAt": {
+    "$date": "2026-07-28T12:07:10.742Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-28T12:07:29.484Z"
+  },
+  "__v": 0,
+  "paymentDetails": {
+    "transaction_code": "000GB38",
+    "status": "COMPLETE",
+    "total_amount": "420.0",
+    "transaction_uuid": "rent-1785240430753",
+    "product_code": "EPAYTEST",
+    "signed_field_names": "transaction_code,status,total_amount,transaction_uuid,product_code,signed_field_names",
+    "signature": "Flq2E95J32JjpeGBampGympoEE/9ZB3w4OJRmCFhyP4="
+  },
+  "paymentId": {
+    "$oid": "6a689b6eb862019ede0aaa81"
+  }
+}]

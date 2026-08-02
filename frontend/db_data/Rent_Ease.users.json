@@ -2,7 +2,7 @@
   "_id": {
     "$oid": "6a44b18981e8097e88f1447a"
   },
-  "fullName": "Sujal Subedidcfvb",
+  "fullName": "Sujal Subedi",
   "email": "sujalsubedi541@gmail.com",
   "phoneNumber": "9828290052",
   "password": "$2b$10$Do/sF5pe6LgMnKrReJgZ..WSbPyj2X7O/H22MBCdLkbAy96nWQGPm",
@@ -14,12 +14,14 @@
     "$date": "2026-07-01T06:19:53.576Z"
   },
   "updatedAt": {
-    "$date": "2026-07-04T13:29:07.954Z"
+    "$date": "2026-07-06T09:48:32.406Z"
   },
   "__v": 0,
   "status": "active",
-  "resetPasswordToken": null,
-  "resetPasswordExpires": null
+  "resetPasswordToken": "",
+  "resetPasswordExpires": {
+    "$date": "1970-01-01T00:00:00.000Z"
+  }
 },
 {
   "_id": {
@@ -32,7 +34,7 @@
   "profileImage": "",
   "role": "owner",
   "address": "dadagaun",
-  "kycStatus": "pending",
+  "kycStatus": "verified",
   "createdAt": {
     "$date": "2026-07-01T06:20:42.890Z"
   },
@@ -40,7 +42,11 @@
     "$date": "2026-07-04T05:58:11.209Z"
   },
   "__v": 0,
-  "status": "active"
+  "status": "active",
+  "resetPasswordToken": "",
+  "resetPasswordExpires": {
+    "$date": "1970-01-01T00:00:00.000Z"
+  }
 },
 {
   "_id": {
@@ -61,5 +67,72 @@
     "$date": "2026-07-01T07:53:56.077Z"
   },
   "__v": 0,
-  "status": "active"
+  "status": "active",
+  "resetPasswordExpires": {
+    "$date": "1970-01-01T00:00:00.000Z"
+  },
+  "resetPasswordToken": ""
+},
+{
+  "_id": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "fullName": "User",
+  "email": "user1@gmail.com",
+  "phoneNumber": "9828290052",
+  "password": "$2b$10$6KSFuG9kr9HMegOvFquvYOVrtZ4fdVpVOtPAZFzGy6CxhsxBG48Mq",
+  "profileImage": "",
+  "role": "renter",
+  "address": "Dadagaun",
+  "status": "active",
+  "kycStatus": "verified",
+  "createdAt": {
+    "$date": "2026-07-09T04:58:56.682Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-28T11:21:33.309Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "fullName": "User2",
+  "email": "user2@gmail.com",
+  "phoneNumber": "9828290052",
+  "password": "$2b$10$v5VE8.nsK4YnjutuMyjiA.bwOVLkoJK3R.wqY1nXz3ubgNWhTB0EK",
+  "profileImage": "",
+  "role": "renter",
+  "address": "Jarankhu",
+  "status": "active",
+  "kycStatus": "verified",
+  "createdAt": {
+    "$date": "2026-07-09T10:13:31.257Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:16:07.355Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6a6889a9a9dfb1d3ed695e6e"
+  },
+  "fullName": "Nischal Shrestha",
+  "email": "nishan@gmail.com",
+  "phoneNumber": "9828290052",
+  "password": "$2b$10$0lAXhNiUcYUwpc3f0emRDOpduP7KCcEEdpPX1a7xAPMYyRxKgTaqK",
+  "profileImage": "",
+  "role": "owner",
+  "address": "dadagaun",
+  "status": "active",
+  "kycStatus": "pending",
+  "createdAt": {
+    "$date": "2026-07-28T10:51:21.126Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-28T10:51:21.126Z"
+  },
+  "__v": 0
 }]

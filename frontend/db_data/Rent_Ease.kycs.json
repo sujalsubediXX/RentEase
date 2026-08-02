@@ -1,0 +1,144 @@
+[{
+  "_id": {
+    "$oid": "6a44dbcce2d42be74ff70d2b"
+  },
+  "user": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "personalInfo": {
+    "fullName": "sujalsubedi",
+    "dob": {
+      "$date": "2005-06-15T00:00:00.000Z"
+    },
+    "gender": "Male",
+    "nationality": "Nepali",
+    "address": "dfghjk",
+    "city": "Bhaktapur",
+    "phone": "9876543212",
+    "email": "sujalsubedi541@gmail.com"
+  },
+  "documentInfo": {
+    "docType": "Passport",
+    "docNumber": "456789",
+    "issuedDate": {
+      "$date": "2026-05-27T00:00:00.000Z"
+    },
+    "expiryDate": {
+      "$date": "2026-07-30T00:00:00.000Z"
+    },
+    "frontImage": "uploads\\kyc\\1782897612697-242732631.png",
+    "backImage": null
+  },
+  "selfieImage": "uploads\\kyc\\1782897612819-772985486.png",
+  "status": "verified",
+  "submittedAt": {
+    "$date": "2026-07-01T09:20:12.859Z"
+  },
+  "createdAt": {
+    "$date": "2026-07-01T09:20:12.895Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-01T09:22:34.560Z"
+  },
+  "__v": 0,
+  "rejectionReason": null,
+  "reviewedAt": {
+    "$date": "2026-07-01T09:22:34.548Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4f2b95fe0d2551c58d8fe4"
+  },
+  "user": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "personalInfo": {
+    "fullName": "User",
+    "dob": {
+      "$date": "2008-01-10T00:00:00.000Z"
+    },
+    "gender": "Male",
+    "nationality": "Nepali",
+    "address": "Dadagaun",
+    "city": "Kathmandu",
+    "phone": "9876543212",
+    "email": "user1@gmail.com"
+  },
+  "documentInfo": {
+    "docType": "Passport",
+    "docNumber": "987654345",
+    "issuedDate": {
+      "$date": "2025-02-27T00:00:00.000Z"
+    },
+    "expiryDate": {
+      "$date": "2026-07-31T00:00:00.000Z"
+    },
+    "frontImage": "uploads\\kyc\\1783573397449-206167578.png",
+    "backImage": null
+  },
+  "selfieImage": "uploads\\kyc\\1783573397454-701453613.jpg",
+  "status": "verified",
+  "submittedAt": {
+    "$date": "2026-07-09T05:03:17.521Z"
+  },
+  "createdAt": {
+    "$date": "2026-07-09T05:03:17.524Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T05:12:47.356Z"
+  },
+  "__v": 0,
+  "rejectionReason": null,
+  "reviewedAt": {
+    "$date": "2026-07-09T05:12:47.346Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a4f74aa5cc042fd841a560d"
+  },
+  "user": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "personalInfo": {
+    "fullName": "user ii",
+    "dob": {
+      "$date": "2004-11-11T00:00:00.000Z"
+    },
+    "gender": "Male",
+    "nationality": "Nepali",
+    "address": "Jarankhu",
+    "city": "Kathmandu",
+    "phone": "9765432346",
+    "email": "user2@gmail.com"
+  },
+  "documentInfo": {
+    "docType": "Passport",
+    "docNumber": "45678765432",
+    "issuedDate": {
+      "$date": "2019-10-17T00:00:00.000Z"
+    },
+    "expiryDate": {
+      "$date": "2030-06-11T00:00:00.000Z"
+    },
+    "frontImage": "uploads\\kyc\\1783592106147-768854185.png",
+    "backImage": null
+  },
+  "selfieImage": "uploads\\kyc\\1783592106155-158732341.png",
+  "status": "verified",
+  "submittedAt": {
+    "$date": "2026-07-09T10:15:06.196Z"
+  },
+  "createdAt": {
+    "$date": "2026-07-09T10:15:06.205Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:16:07.350Z"
+  },
+  "__v": 0,
+  "rejectionReason": null,
+  "reviewedAt": {
+    "$date": "2026-07-09T10:16:07.349Z"
+  }
+}]

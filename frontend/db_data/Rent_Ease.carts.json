@@ -1,0 +1,97 @@
+[{
+  "_id": {
+    "$oid": "6a4f277cfe0d2551c58d8fc0"
+  },
+  "userId": {
+    "$oid": "6a44b18981e8097e88f1447a"
+  },
+  "items": [
+    {
+      "itemId": {
+        "$oid": "6a4a2293e8e08ce1ab9f4736"
+      },
+      "quantity": 1,
+      "rentalDays": 1,
+      "startDate": "2026-07-16T18:15:00.000Z",
+      "endDate": "2026-07-17T18:15:00.000Z",
+      "_id": {
+        "$oid": "6a50853a0b9ae7e96b9cba9c"
+      }
+    },
+    {
+      "itemId": {
+        "$oid": "6a4a253ee8e08ce1ab9f4756"
+      },
+      "quantity": 1,
+      "rentalDays": 1,
+      "startDate": "2026-07-09T18:15:00.000Z",
+      "endDate": "2026-07-10T18:15:00.000Z",
+      "_id": {
+        "$oid": "6a50853c0b9ae7e96b9cba9e"
+      }
+    },
+    {
+      "itemId": {
+        "$oid": "6a4a2106e8e08ce1ab9f4727"
+      },
+      "quantity": 2,
+      "rentalDays": 1,
+      "startDate": "2026-08-01T18:15:00.000Z",
+      "endDate": "2026-08-02T18:15:00.000Z",
+      "_id": {
+        "$oid": "6a660ef48e09bed43e5b0491"
+      }
+    },
+    {
+      "itemId": {
+        "$oid": "6a4a2729e8e08ce1ab9f476e"
+      },
+      "quantity": 1,
+      "rentalDays": 1,
+      "startDate": "2026-08-01T18:15:00.000Z",
+      "endDate": "2026-08-02T18:15:00.000Z",
+      "_id": {
+        "$oid": "6a6ebff1cd8b148800d55aff"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2026-07-09T04:45:48.488Z"
+  },
+  "updatedAt": {
+    "$date": "2026-08-02T03:56:33.264Z"
+  },
+  "__v": 15
+},
+{
+  "_id": {
+    "$oid": "6a4f2ddffe0d2551c58d8fe5"
+  },
+  "userId": {
+    "$oid": "6a4f2a90fe0d2551c58d8fe3"
+  },
+  "items": [],
+  "createdAt": {
+    "$date": "2026-07-09T05:13:03.274Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-28T11:59:35.781Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "6a4f76625cc042fd841a560e"
+  },
+  "userId": {
+    "$oid": "6a4f744b5cc042fd841a560c"
+  },
+  "items": [],
+  "createdAt": {
+    "$date": "2026-07-09T10:22:26.433Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-09T10:31:26.769Z"
+  },
+  "__v": 7
+}]
